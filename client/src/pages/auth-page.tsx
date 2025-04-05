@@ -15,6 +15,7 @@ export default function AuthPage() {
   // Redirect to dashboard if already logged in
   useEffect(() => {
     if (user) {
+      console.log("User is logged in, redirecting to dashboard...", user);
       navigate("/");
     }
   }, [user, navigate]);

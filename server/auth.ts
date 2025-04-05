@@ -21,13 +21,16 @@ async function comparePasswords(supplied: string, stored: string): Promise<boole
 
 export function setupAuth(app: Express) {
   // Very simple in-memory session configuration
+  // Very simple session configuration
   const sessionSettings = {
     secret: SECRET_KEY,
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false,
-      maxAge: 1000 * 60 * 60 * 24 // 1 day
+      secure: false, // Set to true in production with HTTPS
+      maxAge: 1000 * 60 * 60 * 24, // 1 day
+      httpOnly: true,
+      sameSite: 'lax' as const
     }
   };
 

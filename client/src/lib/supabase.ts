@@ -1,43 +1,9 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+// THIS FILE IS DEPRECATED - WE ARE NOW USING EXPRESS SESSION AUTH INSTEAD OF SUPABASE
+import { SupabaseClient } from '@supabase/supabase-js';
 
-const createSupabaseClient = () => {
-  try {
-    // Hardcode the correct URL based on the project ID
-    const supabaseUrl = 'https://krjrscwygfftoudwguud.supabase.co';
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    
-    // Simple validation
-    if (!supabaseKey) {
-      console.warn('Missing Supabase anon key');
-      throw new Error('Supabase configuration incomplete');
-    }
-    
-    console.log('Initializing Supabase with URL:', supabaseUrl);
-    
-    // Create client with basic configuration
-    return createClient(supabaseUrl, supabaseKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true
-      }
-    });
-  } catch (error) {
-    console.error('Failed to initialize Supabase client:', error);
-    throw error;
-  }
-};
-
-let supabase: SupabaseClient;
-
-try {
-  supabase = createSupabaseClient();
-  console.log('Supabase client initialized successfully');
-} catch (error) {
-  console.error('Using fallback mechanism due to Supabase initialization failure');
-  // Provide a dummy client - our app will detect this and use mock data
-  supabase = {} as SupabaseClient;
-}
+// Provide a dummy client since we're not using Supabase anymore
+console.log('Note: Supabase is disabled - using Express session auth instead');
+const supabase = {} as SupabaseClient;
 
 // Export the client instance
 export { supabase };

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { queryClient } from "@/lib/queryClient";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -35,7 +36,16 @@ export default function LoginForm() {
         email: values.email,
         password: values.password
       });
-      setLocation("/");
+      
+      // Force reload user data after login to ensure we have the latest state
+      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
+      // Add a small delay to ensure the query has time to resolve
+      setTimeout(() => {
+        setLocation("/");
+      }, 200);
+      
+      console.log("Login successful, redirecting to dashboard...");
     } catch (error) {
       // Error is handled in the mutation's onError callback
       console.error("Login error:", error);

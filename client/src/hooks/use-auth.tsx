@@ -42,7 +42,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useQuery<any, Error>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
+    staleTime: 0, // Always fetch fresh data
   });
+  
+  // Log user data for debugging
+  if (user) {
+    console.log("User data fetched:", user);
+  }
+  if (error) {
+    console.error("Error fetching user data:", error);
+  }
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
@@ -54,10 +63,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userData = response.user;
       // Store the whole response in the cache as returned by the server
       queryClient.setQueryData(["/api/user"], response);
+      // Invalidate the query to ensure we have the latest state
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Login successful",
         description: `Welcome back, ${userData.fullName || userData.email}!`,
       });
+      console.log("Auth state updated after login", response);
     },
     onError: (error: Error) => {
       toast({

@@ -17,6 +17,11 @@ app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  
+  // Log the request body for debugging
+  if (req.method === 'POST' && path.startsWith("/api")) {
+    console.log(`[DEBUG] ${req.method} ${path} with body:`, req.body);
+  }
 
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
@@ -32,10 +37,7 @@ app.use((req, res, next) => {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
+      // No line length limit for debugging
       log(logLine);
     }
   });

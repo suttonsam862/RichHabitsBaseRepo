@@ -2,15 +2,17 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const createSupabaseClient = () => {
   try {
-    // Get environment variables or use fallbacks for development
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    // Hardcode the correct URL based on the project ID
+    const supabaseUrl = 'https://krjrscwygfftoudwguud.supabase.co';
     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
     
     // Simple validation
-    if (!supabaseUrl || !supabaseKey) {
-      console.warn('Missing Supabase environment variables');
+    if (!supabaseKey) {
+      console.warn('Missing Supabase anon key');
       throw new Error('Supabase configuration incomplete');
     }
+    
+    console.log('Initializing Supabase with URL:', supabaseUrl);
     
     // Create client with basic configuration
     return createClient(supabaseUrl, supabaseKey, {

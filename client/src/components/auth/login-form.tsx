@@ -37,22 +37,41 @@ export default function LoginForm() {
   const onSubmit = async (values: LoginFormValues) => {
     setIsLoading(true);
     try {
+      console.log('Submitting login form for:', values.email);
+      
       const { data, error } = await signIn(values.email, values.password);
       
       if (error) {
+        console.error('Login error in form submission:', error);
         throw error;
       }
+      
+      console.log('Login successful, redirecting to dashboard');
       
       toast({
         title: "Login successful",
         description: "Welcome back!",
       });
       
+      // Redirect to dashboard after successful login
       setLocation("/dashboard");
     } catch (error: any) {
+      console.error('Caught error in login form:', error);
+      
+      // Provide specific error messages based on common authentication issues
+      let errorMessage = "Please check your credentials and try again";
+      
+      if (error.message?.includes("Invalid login credentials")) {
+        errorMessage = "The email or password you entered is incorrect";
+      } else if (error.message?.includes("Email not confirmed")) {
+        errorMessage = "Please verify your email address before logging in";
+      } else if (error.message?.includes("rate limit")) {
+        errorMessage = "Too many login attempts. Please try again later";
+      }
+      
       toast({
         title: "Login failed",
-        description: error.message || "Please check your credentials and try again",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

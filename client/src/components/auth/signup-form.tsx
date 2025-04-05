@@ -44,23 +44,43 @@ export default function SignupForm() {
   const onSubmit = async (values: SignupFormValues) => {
     setIsLoading(true);
     try {
+      console.log('Submitting signup form for:', values.email);
+      
       const { data, error } = await signUp(values.email, values.password, values.fullName);
       
       if (error) {
+        console.error('Signup error in form submission:', error);
         throw error;
       }
       
+      console.log('Signup successful in form, data:', data);
+      
       toast({
-        title: "Account created",
-        description: "Please check your email to verify your account",
+        title: "Account created successfully",
+        description: "Your admin account has been created. You can now log in.",
+        variant: "default",
       });
       
-      // In a real app, might redirect to a verification page instead
-      setLocation("/login");
+      // Auto-redirect to login page after successful signup
+      setTimeout(() => {
+        setLocation("/login");
+      }, 1500);
+      
     } catch (error: any) {
+      console.error('Caught error in signup form:', error);
+      
+      // More descriptive error messages based on common Supabase errors
+      let errorMessage = "There was an error creating your account";
+      
+      if (error.message?.includes("email")) {
+        errorMessage = "This email is already in use or invalid";
+      } else if (error.message?.includes("password")) {
+        errorMessage = "Password doesn't meet the requirements";
+      }
+      
       toast({
         title: "Signup failed",
-        description: error.message || "There was an error creating your account",
+        description: error.message || errorMessage,
         variant: "destructive",
       });
     } finally {

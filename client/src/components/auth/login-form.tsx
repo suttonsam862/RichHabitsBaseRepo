@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient } from "@/lib/queryClient";
 
+// Our schema still uses email for the UI, but we'll map it to username for the backend
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
@@ -31,9 +32,12 @@ export default function LoginForm() {
 
   const onSubmit = async (values: LoginFormValues) => {
     try {
-      // Our backend expects email and password
+      console.log("Submitting login with email:", values.email);
+      
+      // For our backend authentication, we need to convert email field to username
+      // since our auth system expects username/password
       await loginMutation.mutateAsync({
-        email: values.email,
+        username: values.email, // Map email to username for the backend
         password: values.password
       });
       
@@ -43,7 +47,7 @@ export default function LoginForm() {
       // Add a small delay to ensure the query has time to resolve
       setTimeout(() => {
         setLocation("/");
-      }, 200);
+      }, 300);
       
       console.log("Login successful, redirecting to dashboard...");
     } catch (error) {

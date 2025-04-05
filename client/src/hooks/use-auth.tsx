@@ -19,7 +19,7 @@ type AuthContextType = {
 };
 
 type LoginData = {
-  email: string;
+  username: string; // Changed from email to username to match our backend expectations
   password: string;
 };
 

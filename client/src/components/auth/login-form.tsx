@@ -30,9 +30,9 @@ export default function LoginForm() {
 
   const onSubmit = async (values: LoginFormValues) => {
     try {
-      // Our backend expects username and password, so we use email as username
+      // Our backend expects email and password
       await loginMutation.mutateAsync({
-        username: values.email,
+        email: values.email,
         password: values.password
       });
       setLocation("/");

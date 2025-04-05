@@ -19,7 +19,7 @@ type AuthContextType = {
 };
 
 type LoginData = {
-  username: string;
+  email: string;
   password: string;
 };
 
@@ -49,11 +49,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/login", credentials);
       return await res.json();
     },
-    onSuccess: (userData: User) => {
-      queryClient.setQueryData(["/api/user"], userData);
+    onSuccess: (response: any) => {
+      // The server returns { user: User }
+      const userData = response.user;
+      queryClient.setQueryData(["/api/user"], { user: userData });
       toast({
         title: "Login successful",
-        description: `Welcome back, ${userData.fullName || userData.username}!`,
+        description: `Welcome back, ${userData.fullName || userData.email}!`,
       });
     },
     onError: (error: Error) => {
@@ -70,11 +72,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/register", userData);
       return await res.json();
     },
-    onSuccess: (userData: User) => {
-      queryClient.setQueryData(["/api/user"], userData);
+    onSuccess: (response: any) => {
+      // The server returns { user: User }
+      const userData = response.user;
+      queryClient.setQueryData(["/api/user"], { user: userData });
       toast({
         title: "Registration successful",
-        description: `Welcome, ${userData.fullName || userData.username}!`,
+        description: `Welcome, ${userData.fullName || userData.email}!`,
       });
     },
     onError: (error: Error) => {
@@ -107,8 +111,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   // Map the User from backend to AuthUser for frontend
-  const mapUserToAuthUser = (userFromDb: User | undefined): AuthUser | null => {
+  const mapUserToAuthUser = (response: any): AuthUser | null => {
+    if (!response) return null;
+    
+    // Check if we have a nested user object (from API response)
+    const userFromDb = response.user || response;
+    
     if (!userFromDb) return null;
+    
     return {
       id: userFromDb.id.toString(),
       email: userFromDb.email || userFromDb.username,

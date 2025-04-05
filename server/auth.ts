@@ -2,63 +2,32 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
-import { promisify } from "util";
 import { storage } from "./storage";
-import { User, insertUserSchema } from "@shared/schema";
-import connectPg from "connect-pg-simple";
-import { pool } from "./db";
+import { User } from "@shared/schema";
+import * as crypto from "crypto";
+import bcrypt from "bcryptjs";
 
-const PostgresSessionStore = connectPg(session);
+// For simplicity, just use a basic in-memory session store
+const SECRET_KEY = crypto.randomBytes(32).toString("hex");
 
-// Define our own AuthUser type to avoid circular references
-type AuthUser = {
-  id: number;
-  email: string;
-  username: string;
-  fullName?: string | null;
-  avatarUrl?: string | null;
-  role?: string;
-  createdAt: Date;
-};
-
-declare global {
-  namespace Express {
-    interface User extends AuthUser {}
-  }
+// Simplified bcrypt password functions
+async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 10);
 }
 
-const scryptAsync = promisify(scrypt);
-
-async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
-}
-
-async function comparePasswords(supplied: string, stored: string) {
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
+async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
+  return bcrypt.compare(supplied, stored);
 }
 
 export function setupAuth(app: Express) {
-  // Use PostgreSQL for session storage
-  const sessionStore = new PostgresSessionStore({
-    pool,
-    tableName: 'session', // Default is "session"
-    createTableIfMissing: true
-  });
-
-  const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || 'rich-habits-secret-key',
+  // Very simple in-memory session configuration
+  const sessionSettings = {
+    secret: SECRET_KEY,
     resave: false,
     saveUninitialized: false,
-    store: sessionStore,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+      secure: false,
+      maxAge: 1000 * 60 * 60 * 24 // 1 day
     }
   };
 
@@ -173,6 +142,7 @@ export function setupAuth(app: Express) {
           user: {
             id: user.id,
             email: user.email,
+            username: user.username, // Include username in response
             fullName: user.fullName,
             role: user.role,
           } 
@@ -200,6 +170,7 @@ export function setupAuth(app: Express) {
       user: {
         id: user.id,
         email: user.email,
+        username: user.username, // Include username in response
         fullName: user.fullName,
         role: user.role,
       } 

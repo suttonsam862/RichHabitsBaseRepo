@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Page</title>
+</head>
+<body>
+  <h1>Test Connection</h1>
+  <button id="testBtn">Test API</button>
+  <div id="result"></div>
+
+  <script>
+    document.getElementById('testBtn').addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/user', {
+          credentials: 'include'
+        });
+        const data = await response.json();
+        document.getElementById('result').textContent = JSON.stringify(data);
+      } catch (error) {
+        document.getElementById('result').textContent = 'Error: ' + error.message;
+      }
+    });
+  </script>
+</body>
+</html>

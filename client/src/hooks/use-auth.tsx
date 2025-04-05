@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: user,
     error,
     isLoading,
-  } = useQuery<User | undefined, Error>({
+  } = useQuery<any, Error>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
@@ -52,7 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: (response: any) => {
       // The server returns { user: User }
       const userData = response.user;
-      queryClient.setQueryData(["/api/user"], { user: userData });
+      // Store the whole response in the cache as returned by the server
+      queryClient.setQueryData(["/api/user"], response);
       toast({
         title: "Login successful",
         description: `Welcome back, ${userData.fullName || userData.email}!`,
@@ -75,7 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: (response: any) => {
       // The server returns { user: User }
       const userData = response.user;
-      queryClient.setQueryData(["/api/user"], { user: userData });
+      // Store the whole response in the cache as returned by the server
+      queryClient.setQueryData(["/api/user"], response);
       toast({
         title: "Registration successful",
         description: `Welcome, ${userData.fullName || userData.email}!`,

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -24,7 +24,7 @@ export const leads = pgTable("leads", {
   source: text("source"),
   status: text("status").default("new").notNull(),
   notes: text("notes"),
-  value: text("value"),
+  value: numeric("value"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -35,7 +35,7 @@ export const orders = pgTable("orders", {
   orderId: text("order_id").notNull().unique(),
   customerName: text("customer_name").notNull(),
   customerEmail: text("customer_email"),
-  amount: text("amount").notNull(),
+  totalAmount: numeric("total_amount").notNull(),
   status: text("status").default("pending").notNull(),
   items: text("items"),
   shippingAddress: text("shipping_address"),

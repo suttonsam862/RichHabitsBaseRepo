@@ -2,7 +2,12 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
+import { db } from "./db";
+import { sql, eq, or } from "drizzle-orm";
 import { 
+  leads,
+  orders,
+  messages,
   insertLeadSchema, 
   insertOrderSchema, 
   insertMessageSchema,
@@ -15,14 +20,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
+      // Get lead count
+      const leadCount = await db.select({ count: sql`COUNT(*)` }).from(leads);
+      
+      // Get active order count
+      const activeOrderCount = await db.select({ count: sql`COUNT(*)` }).from(orders).where(
+        or(
+          eq(orders.status, 'pending'),
+          eq(orders.status, 'processing'),
+          eq(orders.status, 'paid')
+        )
+      );
+      
+      // Get monthly revenue
+      const revenueResult = await db.execute(sql`
+        SELECT SUM("total_amount") as revenue
+        FROM ${orders}
+        WHERE "status" = 'paid' OR "status" = 'delivered'
+        AND "created_at" >= date_trunc('month', current_date)
+      `);
+      
+      const monthlyRevenue = revenueResult.rows[0]?.revenue || 0;
+      
+      // Get unread message count
+      const unreadMessageCount = await db.select({ count: sql`COUNT(*)` }).from(messages).where(
+        eq(messages.status, 'unread')
+      );
+      
       const stats = {
-        totalLeads: 248,
-        activeOrders: 36,
-        monthlyRevenue: "$42,586",
-        unreadMessages: 12
+        totalLeads: Number(leadCount[0]?.count || 0),
+        activeOrders: Number(activeOrderCount[0]?.count || 0),
+        monthlyRevenue: `$${Number(monthlyRevenue).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
+        unreadMessages: Number(unreadMessageCount[0]?.count || 0)
       };
+      
       res.json({ data: stats });
     } catch (error: any) {
+      console.error("Error fetching dashboard stats:", error);
       res.status(500).json({ error: error.message });
     }
   });

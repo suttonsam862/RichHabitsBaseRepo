@@ -10,7 +10,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string>("");
   const [email, setEmail] = useState("samsutton@rich-habits.com");
-  const [password, setPassword] = useState("Arlodog2010!");
+  const [password, setPassword] = useState("Arlodog2013!");
 
   async function testUserEndpoint() {
     setLoading(true);

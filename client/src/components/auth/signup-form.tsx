@@ -1,14 +1,13 @@
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocation } from "wouter";
-import { signUp } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 const signupSchema = z.object({
   fullName: z.string().min(2, { message: "Full name must be at least 2 characters" }),
@@ -23,15 +22,11 @@ const signupSchema = z.object({
 type SignupFormValues = z.infer<typeof signupSchema>;
 
 export default function SignupForm() {
-  const [isLoading, setIsLoading] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { registerMutation } = useAuth();
   
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<SignupFormValues>({
+  const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
       fullName: "",
@@ -42,123 +37,97 @@ export default function SignupForm() {
   });
 
   const onSubmit = async (values: SignupFormValues) => {
-    setIsLoading(true);
     try {
-      console.log('Submitting signup form for:', values.email);
+      // Omit confirmPassword as it's not needed for the API
+      const { confirmPassword, ...signupData } = values;
       
-      const { data, error } = await signUp(values.email, values.password, values.fullName);
+      await registerMutation.mutateAsync({
+        username: values.email,
+        password: values.password,
+        fullName: values.fullName,
+        email: values.email
+      });
       
-      if (error) {
-        console.error('Signup error in form submission:', error);
-        throw error;
-      }
-      
-      console.log('Signup successful in form, data:', data);
-      
+      // On successful registration, we'll be redirected to the dashboard
+      // by the auth provider, but we can add a toast notification
       toast({
         title: "Account created successfully",
-        description: "Your admin account has been created. You can now log in.",
+        description: "Welcome to Rich Habits Dashboard!",
         variant: "default",
       });
       
-      // Auto-redirect to login page after successful signup
-      setTimeout(() => {
-        setLocation("/login");
-      }, 1500);
-      
-    } catch (error: any) {
-      console.error('Caught error in signup form:', error);
-      
-      // More descriptive error messages based on common Supabase errors
-      let errorMessage = "There was an error creating your account";
-      
-      if (error.message?.includes("email")) {
-        errorMessage = "This email is already in use or invalid";
-      } else if (error.message?.includes("password")) {
-        errorMessage = "Password doesn't meet the requirements";
-      }
-      
-      toast({
-        title: "Signup failed",
-        description: error.message || errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      setLocation("/");
+    } catch (error) {
+      // Error is handled in the mutation's onError callback
+      console.error("Registration error:", error);
     }
   };
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
-        <CardDescription>Enter your details to create a new account</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Full Name</Label>
-            <Input 
-              id="fullName" 
-              type="text" 
-              placeholder="John Doe" 
-              {...register("fullName")} 
-            />
-            {errors.fullName && (
-              <p className="text-sm text-red-500">{errors.fullName.message}</p>
+    <div className="space-y-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="fullName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Full Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="John Doe" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input 
-              id="email" 
-              type="email" 
-              placeholder="name@example.com" 
-              {...register("email")} 
-            />
-            {errors.email && (
-              <p className="text-sm text-red-500">{errors.email.message}</p>
+          />
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input placeholder="name@example.com" type="email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input 
-              id="password" 
-              type="password" 
-              {...register("password")} 
-            />
-            {errors.password && (
-              <p className="text-sm text-red-500">{errors.password.message}</p>
+          />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <Input type="password" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input 
-              id="confirmPassword" 
-              type="password" 
-              {...register("confirmPassword")} 
-            />
-            {errors.confirmPassword && (
-              <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
+          />
+          <FormField
+            control={form.control}
+            name="confirmPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Confirm Password</FormLabel>
+                <FormControl>
+                  <Input type="password" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-          </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Creating account..." : "Create account"}
+          />
+          <Button 
+            type="submit" 
+            className="w-full mt-6" 
+            disabled={registerMutation.isPending}
+          >
+            {registerMutation.isPending ? "Creating account..." : "Create account"}
           </Button>
         </form>
-      </CardContent>
-      <CardFooter className="flex justify-center">
-        <div className="text-sm text-gray-500 dark:text-gray-400">
-          Already have an account?{" "}
-          <Button 
-            variant="link" 
-            className="p-0 h-auto text-brand-600 dark:text-brand-400"
-            onClick={() => setLocation("/login")}
-          >
-            Sign in
-          </Button>
-        </div>
-      </CardFooter>
-    </Card>
+      </Form>
+    </div>
   );
 }

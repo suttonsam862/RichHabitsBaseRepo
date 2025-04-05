@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { z } from "zod";
 import { db } from "./db";
 import { sql, eq, or } from "drizzle-orm";
+import { setupAuth } from "./auth";
 import { 
   leads,
   orders,
@@ -16,6 +17,9 @@ import {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
+  
+  // Set up authentication routes
+  setupAuth(app);
   
   // Dashboard stats
   app.get("/api/dashboard/stats", async (req, res) => {

@@ -1,11 +1,16 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { storage } from "./storage";
-import { User } from "@shared/schema";
+import { User, Permission, ROLES, PERMISSIONS } from "@shared/schema";
 import * as crypto from "crypto";
 import bcrypt from "bcryptjs";
+import { hasPermission, getPermissionsForRole } from "@shared/permissions";
+
+// We don't need a custom declaration here, as we're using
+// the User type directly via casting in our code when needed.
+// The original declaration in auth.ts is causing problems.
 
 // For simplicity, just use a basic in-memory session store
 const SECRET_KEY = crypto.randomBytes(32).toString("hex");
@@ -17,6 +22,50 @@ async function hashPassword(password: string): Promise<string> {
 
 async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
   return bcrypt.compare(supplied, stored);
+}
+
+// Middleware to check if user is authenticated
+export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ error: "Not authenticated" });
+}
+
+// Middleware to check if user has required permission
+export function hasRequiredPermission(requiredPermission: Permission) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    const user = req.user as User;
+    if (
+      hasPermission(
+        user.role as any, 
+        user.permissions as Permission[] | undefined, 
+        requiredPermission
+      )
+    ) {
+      return next();
+    }
+    
+    res.status(403).json({ error: "Forbidden: Insufficient permissions" });
+  };
+}
+
+// Middleware to check if user is admin
+export function isAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  
+  const user = req.user as User;
+  if (user.role === ROLES.ADMIN) {
+    return next();
+  }
+  
+  res.status(403).json({ error: "Forbidden: Admin access required" });
 }
 
 export function setupAuth(app: Express) {
@@ -79,8 +128,8 @@ export function setupAuth(app: Express) {
     )
   );
 
-  passport.serializeUser((user: Express.User, done) => {
-    done(null, (user as any).id);
+  passport.serializeUser((user: any, done) => {
+    done(null, user.id);
   });
 
   passport.deserializeUser(async (id: number, done) => {
@@ -95,7 +144,7 @@ export function setupAuth(app: Express) {
   // Authentication routes
   app.post("/api/register", async (req, res) => {
     try {
-      const { email, password, fullName } = req.body;
+      const { email, password, fullName, role = ROLES.VIEWER } = req.body;
       
       // Basic validation
       if (!email || !password || !fullName) {
@@ -111,6 +160,67 @@ export function setupAuth(app: Express) {
       // Create username from email (required field)
       const username = email.split('@')[0];
       
+      // If there is an authenticated user, check if they have permission to create users
+      // Only admins can create admin users
+      if (req.isAuthenticated()) {
+        const currentUser = req.user as User;
+        
+        // Non-admins cannot create users
+        if (currentUser.role !== ROLES.ADMIN) {
+          return res.status(403).json({ error: "Only administrators can create new users" });
+        }
+        
+        // Even admins cannot set role higher than their own
+        if (role === ROLES.ADMIN && currentUser.role !== ROLES.ADMIN) {
+          return res.status(403).json({ error: "Cannot assign admin role" });
+        }
+      } else {
+        // If no users exist yet, make the first user an admin
+        const count = await storage.getUserCount();
+        if (count === 0) {
+          // First user is always admin
+          console.log("Creating first user as admin");
+          
+          // Create new user as admin
+          const hashedPassword = await hashPassword(password);
+          const permissions = getPermissionsForRole(ROLES.ADMIN);
+          
+          const newUser = await storage.createUser({
+            email,
+            username,
+            password: hashedPassword,
+            fullName,
+            role: ROLES.ADMIN,
+            permissions,
+            createdAt: new Date()
+          });
+          
+          // Log the user in
+          req.login(newUser, (err) => {
+            if (err) {
+              return res.status(500).json({ error: "Authentication error" });
+            }
+            return res.status(201).json({ 
+              user: {
+                id: newUser.id,
+                email: newUser.email,
+                username: newUser.username,
+                fullName: newUser.fullName,
+                role: newUser.role,
+              }
+            });
+          });
+          
+          return; // Early return to avoid the code below
+        } else {
+          // If we're not logged in and users exist, we can't register
+          return res.status(401).json({ error: "New user registration requires admin privileges" });
+        }
+      }
+      
+      // Get default permissions for role
+      const permissions = getPermissionsForRole(role as any);
+      
       // Create new user
       const hashedPassword = await hashPassword(password);
       const newUser = await storage.createUser({
@@ -118,7 +228,8 @@ export function setupAuth(app: Express) {
         username,
         password: hashedPassword,
         fullName,
-        role: "admin", // Set as admin by default as requested
+        role,
+        permissions,
         createdAt: new Date()
       });
       
@@ -159,9 +270,10 @@ export function setupAuth(app: Express) {
           user: {
             id: user.id,
             email: user.email,
-            username: user.username, // Include username in response
+            username: user.username,
             fullName: user.fullName,
             role: user.role,
+            permissions: user.permissions,
           } 
         });
       });
@@ -187,10 +299,107 @@ export function setupAuth(app: Express) {
       user: {
         id: user.id,
         email: user.email,
-        username: user.username, // Include username in response
+        username: user.username,
         fullName: user.fullName,
         role: user.role,
+        permissions: user.permissions,
       } 
     });
+  });
+  
+  // User Management APIs (accessible only by admins)
+  app.get("/api/users", isAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      // Don't return passwords in the API response
+      const safeUsers = users.map(user => ({
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        fullName: user.fullName,
+        role: user.role,
+        permissions: user.permissions,
+        createdAt: user.createdAt,
+      }));
+      
+      res.json({ users: safeUsers });
+    } catch (error: any) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ error: error.message || "Failed to fetch users" });
+    }
+  });
+  
+  app.patch("/api/users/:id/role", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { role } = req.body;
+      
+      if (!Object.values(ROLES).includes(role as any)) {
+        return res.status(400).json({ error: "Invalid role" });
+      }
+      
+      // An admin cannot demote themselves
+      const currentUser = req.user as User;
+      if (currentUser.id === userId && currentUser.role === ROLES.ADMIN && role !== ROLES.ADMIN) {
+        return res.status(403).json({ error: "Cannot demote yourself from admin" });
+      }
+      
+      const user = await storage.updateUserRole(userId, role);
+      
+      // Also update permissions based on the new role
+      const defaultPermissions = getPermissionsForRole(role as any);
+      await storage.updateUserPermissions(userId, defaultPermissions);
+      
+      res.json({
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          fullName: user.fullName,
+          role: user.role,
+          permissions: defaultPermissions,
+        }
+      });
+    } catch (error: any) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ error: error.message || "Failed to update user role" });
+    }
+  });
+  
+  app.patch("/api/users/:id/permissions", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { permissions } = req.body;
+      
+      if (!Array.isArray(permissions)) {
+        return res.status(400).json({ error: "Permissions must be an array" });
+      }
+      
+      // Validate that all permissions are valid
+      const allPermissions = Object.values(PERMISSIONS);
+      const invalidPermissions = permissions.filter(p => !allPermissions.includes(p as any));
+      
+      if (invalidPermissions.length > 0) {
+        return res.status(400).json({ 
+          error: `Invalid permissions: ${invalidPermissions.join(', ')}` 
+        });
+      }
+      
+      const user = await storage.updateUserPermissions(userId, permissions);
+      
+      res.json({
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          fullName: user.fullName,
+          role: user.role,
+          permissions: user.permissions,
+        }
+      });
+    } catch (error: any) {
+      console.error("Error updating user permissions:", error);
+      res.status(500).json({ error: error.message || "Failed to update user permissions" });
+    }
   });
 }

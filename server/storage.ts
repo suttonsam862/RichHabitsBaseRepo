@@ -30,8 +30,12 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserCount(): Promise<number>;
   createUser(user: InsertUser): Promise<User>;
   updateUserSettings(userId: number, settingType: string, settings: any): Promise<void>;
+  getAllUsers(): Promise<User[]>;
+  updateUserRole(userId: number, role: string): Promise<User>;
+  updateUserPermissions(userId: number, permissions: string[]): Promise<User>;
   
   // Lead methods
   getLeads(): Promise<Lead[]>;
@@ -87,6 +91,15 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user || undefined;
   }
+  
+  async getUserCount(): Promise<number> {
+    const result = await db.select({ count: sql`count(*)` }).from(users);
+    return Number(result[0].count);
+  }
+  
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users).orderBy(asc(users.fullName));
+  }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db
@@ -94,6 +107,24 @@ export class DatabaseStorage implements IStorage {
       .values(insertUser)
       .returning();
     return user;
+  }
+  
+  async updateUserRole(userId: number, role: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ role })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
+  }
+  
+  async updateUserPermissions(userId: number, permissions: string[]): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ permissions })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
   }
   
   async updateUserSettings(userId: number, settingType: string, settings: any): Promise<void> {

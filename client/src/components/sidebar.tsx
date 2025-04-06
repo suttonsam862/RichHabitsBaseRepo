@@ -1,8 +1,8 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { signOut } from "@/lib/supabase";
 import { AuthUser } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import {
   LayoutDashboard,
   Users,
@@ -12,7 +12,9 @@ import {
   BarChart3,
   User,
   Settings,
-  LogOut
+  LogOut,
+  UserCog,
+  Shield
 } from "lucide-react";
 
 interface SidebarProps {
@@ -24,12 +26,12 @@ interface SidebarProps {
 export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   const [location] = useLocation();
   const { toast } = useToast();
+  const { logoutMutation } = useAuth();
 
   const handleSignOut = async () => {
     try {
-      const { error } = await signOut();
-      if (error) throw error;
-      window.location.href = "/login";
+      await logoutMutation.mutateAsync();
+      // No need to redirect, the auth provider will handle this
     } catch (error) {
       toast({
         title: "Error signing out",
@@ -39,63 +41,79 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
     }
   };
 
-  const menuItems = [
-    {
-      title: "Main",
-      items: [
-        {
-          name: "Dashboard",
-          href: "/dashboard",
-          icon: <LayoutDashboard className="mr-2" size={16} />,
-        },
-        {
-          name: "Leads",
-          href: "/leads",
-          icon: <Users className="mr-2" size={16} />,
-        },
-        {
-          name: "Orders",
-          href: "/orders",
-          icon: <ShoppingBag className="mr-2" size={16} />,
-        },
-        {
-          name: "Messages",
-          href: "/messages",
-          icon: <MessageSquare className="mr-2" size={16} />,
-        },
-      ],
-    },
-    {
-      title: "Analytics",
-      items: [
-        {
-          name: "Reports",
-          href: "/reports",
-          icon: <FileBarChart className="mr-2" size={16} />,
-        },
-        {
-          name: "Analytics",
-          href: "/analytics",
-          icon: <BarChart3 className="mr-2" size={16} />,
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      items: [
-        {
-          name: "Profile",
-          href: "/profile",
-          icon: <User className="mr-2" size={16} />,
-        },
-        {
-          name: "Settings",
-          href: "/settings",
-          icon: <Settings className="mr-2" size={16} />,
-        },
-      ],
-    },
-  ];
+  // Get menu items based on user role
+  const getMenuItems = () => {
+    const items = [
+      {
+        title: "Main",
+        items: [
+          {
+            name: "Dashboard",
+            href: "/dashboard",
+            icon: <LayoutDashboard className="mr-2" size={16} />,
+          },
+          {
+            name: "Leads",
+            href: "/leads",
+            icon: <Users className="mr-2" size={16} />,
+          },
+          {
+            name: "Orders",
+            href: "/orders",
+            icon: <ShoppingBag className="mr-2" size={16} />,
+          },
+          {
+            name: "Messages",
+            href: "/messages",
+            icon: <MessageSquare className="mr-2" size={16} />,
+          },
+        ],
+      },
+      {
+        title: "Analytics",
+        items: [
+          {
+            name: "Reports",
+            href: "/reports",
+            icon: <FileBarChart className="mr-2" size={16} />,
+          },
+          {
+            name: "Analytics",
+            href: "/analytics",
+            icon: <BarChart3 className="mr-2" size={16} />,
+          },
+        ],
+      },
+      {
+        title: "Settings",
+        items: [
+          {
+            name: "Profile",
+            href: "/profile",
+            icon: <User className="mr-2" size={16} />,
+          },
+          {
+            name: "Settings",
+            href: "/settings",
+            icon: <Settings className="mr-2" size={16} />,
+          },
+        ],
+      },
+    ];
+    
+    // Add User Management for admins only
+    if (user?.role === 'admin') {
+      items[2].items.unshift({
+        name: "User Management",
+        href: "/users",
+        icon: <UserCog className="mr-2" size={16} />,
+      });
+    }
+    
+    return items;
+  };
+  
+  const menuItems = getMenuItems();
 
   return (
     <aside

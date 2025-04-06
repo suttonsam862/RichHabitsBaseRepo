@@ -1,6 +1,45 @@
-import { pgTable, text, serial, integer, boolean, timestamp, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, numeric, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// Define available roles and their permissions
+export const ROLES = {
+  ADMIN: 'admin',
+  MANAGER: 'manager',
+  AGENT: 'agent',
+  VIEWER: 'viewer',
+} as const;
+
+export type Role = typeof ROLES[keyof typeof ROLES];
+
+// Define permissions
+export const PERMISSIONS = {
+  // User management
+  MANAGE_USERS: 'manage_users',
+  VIEW_USERS: 'view_users',
+  
+  // Lead management
+  CREATE_LEADS: 'create_leads',
+  EDIT_LEADS: 'edit_leads',
+  DELETE_LEADS: 'delete_leads',
+  VIEW_LEADS: 'view_leads',
+  
+  // Order management
+  CREATE_ORDERS: 'create_orders',
+  EDIT_ORDERS: 'edit_orders',
+  DELETE_ORDERS: 'delete_orders',
+  VIEW_ORDERS: 'view_orders',
+  
+  // Message management
+  SEND_MESSAGES: 'send_messages',
+  VIEW_MESSAGES: 'view_messages',
+  
+  // Reports & Analytics
+  VIEW_REPORTS: 'view_reports',
+  VIEW_ANALYTICS: 'view_analytics',
+} as const;
+
+export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
 
 // User model
 export const users = pgTable("users", {
@@ -10,7 +49,8 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   fullName: text("full_name"),
   avatarUrl: text("avatar_url"),
-  role: text("role").default("user").notNull(),
+  role: text("role").default(ROLES.VIEWER).notNull(),
+  permissions: json("permissions").$type<Permission[]>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

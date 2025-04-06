@@ -10,6 +10,7 @@ import Analytics from "./pages/analytics";
 import Profile from "./pages/profile";
 import Settings from "./pages/settings";
 import AuthPage from "./pages/auth-page";
+import UserManagement from "./pages/user-management";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 import { useAuth, AuthProvider } from "@/hooks/use-auth";
@@ -28,6 +29,7 @@ function DashboardLayout() {
         <Route path="/messages" component={Messages} />
         <Route path="/reports" component={Reports} />
         <Route path="/analytics" component={Analytics} />
+        <Route path="/users" component={UserManagement} />
         <Route path="/profile" component={Profile} />
         <Route path="/settings" component={Settings} />
         <Route component={NotFound} />

@@ -9,11 +9,16 @@ import {
   leads,
   orders,
   messages,
+  users,
   insertLeadSchema, 
   insertOrderSchema, 
   insertMessageSchema,
-  insertActivitySchema
+  insertActivitySchema,
+  ROLES,
+  PERMISSIONS,
+  type Permission
 } from "@shared/schema";
+import { isAdmin, hasRequiredPermission } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -278,6 +283,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       await storage.updateUserSettings(userId, settingType, req.body);
       res.json({ success: true, message: `${settingType} settings updated successfully` });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // User Management endpoints
+  // Get all users - Admin only
+  app.get("/api/users", isAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json({ users });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update user role - Admin only
+  app.patch("/api/users/:id/role", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { role } = req.body;
+      
+      if (!Object.values(ROLES).includes(role)) {
+        return res.status(400).json({ error: "Invalid role" });
+      }
+      
+      const updatedUser = await storage.updateUserRole(userId, role);
+      
+      // Create activity for role change
+      if (req.user) {
+        await storage.createActivity({
+          userId: req.user.id,
+          type: "user",
+          content: `Updated user ${updatedUser.username} role to ${role}`,
+          relatedId: userId,
+          relatedType: "user"
+        });
+      }
+      
+      res.json(updatedUser);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update user permissions - Admin only
+  app.patch("/api/users/:id/permissions", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { permissions } = req.body;
+      
+      if (!Array.isArray(permissions)) {
+        return res.status(400).json({ error: "Permissions must be an array" });
+      }
+      
+      // Validate that all permissions are valid
+      for (const permission of permissions) {
+        if (!Object.values(PERMISSIONS).includes(permission)) {
+          return res.status(400).json({ error: `Invalid permission: ${permission}` });
+        }
+      }
+      
+      const updatedUser = await storage.updateUserPermissions(userId, permissions);
+      
+      // Create activity for permissions change
+      if (req.user) {
+        await storage.createActivity({
+          userId: req.user.id,
+          type: "user",
+          content: `Updated user ${updatedUser.username} permissions`,
+          relatedId: userId,
+          relatedType: "user"
+        });
+      }
+      
+      res.json(updatedUser);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

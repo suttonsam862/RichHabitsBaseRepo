@@ -14,7 +14,17 @@ import {
   Settings,
   LogOut,
   UserCog,
-  Shield
+  Shield,
+  Palette,
+  Factory,
+  Building,
+  Building2,
+  UsersRound,
+  BriefcaseBusiness,
+  PenTool,
+  HardHat,
+  BadgeDollarSign,
+  CalendarClock
 } from "lucide-react";
 
 interface SidebarProps {
@@ -43,7 +53,292 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
 
   // Get menu items based on user role
   const getMenuItems = () => {
-    const items = [
+    // Admin dashboard
+    if (user?.role === 'admin') {
+      return [
+        {
+          title: "Main",
+          items: [
+            {
+              name: "Dashboard",
+              href: "/dashboard",
+              icon: <LayoutDashboard className="mr-2" size={16} />,
+            },
+            {
+              name: "Leads",
+              href: "/leads",
+              icon: <Users className="mr-2" size={16} />,
+            },
+            {
+              name: "Orders",
+              href: "/orders",
+              icon: <ShoppingBag className="mr-2" size={16} />,
+            },
+            {
+              name: "Design",
+              href: "/design",
+              icon: <Palette className="mr-2" size={16} />,
+            },
+            {
+              name: "Manufacturing",
+              href: "/manufacturing",
+              icon: <Factory className="mr-2" size={16} />,
+            },
+            {
+              name: "Customers",
+              href: "/customers",
+              icon: <UsersRound className="mr-2" size={16} />,
+            },
+            {
+              name: "Organizations",
+              href: "/organizations",
+              icon: <Building2 className="mr-2" size={16} />,
+            },
+            {
+              name: "Messages",
+              href: "/messages",
+              icon: <MessageSquare className="mr-2" size={16} />,
+            },
+          ],
+        },
+        {
+          title: "Admin",
+          items: [
+            {
+              name: "Sales Team",
+              href: "/admin/sales-team",
+              icon: <BriefcaseBusiness className="mr-2" size={16} />,
+            },
+            {
+              name: "Design Team",
+              href: "/admin/design-team",
+              icon: <PenTool className="mr-2" size={16} />,
+            },
+            {
+              name: "Manufacturing Team",
+              href: "/admin/manufacturing-team",
+              icon: <HardHat className="mr-2" size={16} />,
+            },
+            {
+              name: "Corporate",
+              href: "/admin/corporate",
+              icon: <Building className="mr-2" size={16} />,
+            },
+            {
+              name: "Financial",
+              href: "/admin/financial",
+              icon: <BadgeDollarSign className="mr-2" size={16} />,
+            },
+            {
+              name: "Reports",
+              href: "/admin/reports",
+              icon: <FileBarChart className="mr-2" size={16} />,
+            },
+            {
+              name: "Events",
+              href: "/admin/events",
+              icon: <CalendarClock className="mr-2" size={16} />,
+            },
+            {
+              name: "User Management",
+              href: "/users",
+              icon: <UserCog className="mr-2" size={16} />,
+            },
+          ],
+        },
+        {
+          title: "Settings",
+          items: [
+            {
+              name: "Profile",
+              href: "/profile",
+              icon: <User className="mr-2" size={16} />,
+            },
+            {
+              name: "Settings",
+              href: "/settings",
+              icon: <Settings className="mr-2" size={16} />,
+            },
+          ],
+        },
+      ];
+    }
+    
+    // Sales team dashboard
+    if (user?.role === 'sales') {
+      return [
+        {
+          title: "Main",
+          items: [
+            {
+              name: "Dashboard",
+              href: "/dashboard",
+              icon: <LayoutDashboard className="mr-2" size={16} />,
+            },
+            {
+              name: "Job Postings",
+              href: "/job-postings",
+              icon: <BriefcaseBusiness className="mr-2" size={16} />,
+            },
+            {
+              name: "My Leads",
+              href: "/my-leads",
+              icon: <Users className="mr-2" size={16} />,
+            },
+            {
+              name: "My Orders",
+              href: "/my-orders",
+              icon: <ShoppingBag className="mr-2" size={16} />,
+            },
+            {
+              name: "Messages",
+              href: "/messages",
+              icon: <MessageSquare className="mr-2" size={16} />,
+            },
+          ],
+        },
+        {
+          title: "Finance",
+          items: [
+            {
+              name: "My Earnings",
+              href: "/earnings",
+              icon: <BadgeDollarSign className="mr-2" size={16} />,
+            },
+          ],
+        },
+        {
+          title: "Settings",
+          items: [
+            {
+              name: "Profile",
+              href: "/profile",
+              icon: <User className="mr-2" size={16} />,
+            },
+            {
+              name: "Settings",
+              href: "/settings",
+              icon: <Settings className="mr-2" size={16} />,
+            },
+          ],
+        },
+      ];
+    }
+    
+    // Designer dashboard
+    if (user?.role === 'designer') {
+      return [
+        {
+          title: "Main",
+          items: [
+            {
+              name: "Dashboard",
+              href: "/dashboard",
+              icon: <LayoutDashboard className="mr-2" size={16} />,
+            },
+            {
+              name: "Design Jobs",
+              href: "/design-jobs",
+              icon: <Palette className="mr-2" size={16} />,
+            },
+            {
+              name: "My Designs",
+              href: "/my-designs",
+              icon: <PenTool className="mr-2" size={16} />,
+            },
+            {
+              name: "Messages",
+              href: "/messages",
+              icon: <MessageSquare className="mr-2" size={16} />,
+            },
+          ],
+        },
+        {
+          title: "Finance",
+          items: [
+            {
+              name: "My Earnings",
+              href: "/earnings",
+              icon: <BadgeDollarSign className="mr-2" size={16} />,
+            },
+          ],
+        },
+        {
+          title: "Settings",
+          items: [
+            {
+              name: "Profile",
+              href: "/profile",
+              icon: <User className="mr-2" size={16} />,
+            },
+            {
+              name: "Settings",
+              href: "/settings",
+              icon: <Settings className="mr-2" size={16} />,
+            },
+          ],
+        },
+      ];
+    }
+    
+    // Manufacturing team dashboard
+    if (user?.role === 'manufacturing') {
+      return [
+        {
+          title: "Main",
+          items: [
+            {
+              name: "Dashboard",
+              href: "/dashboard",
+              icon: <LayoutDashboard className="mr-2" size={16} />,
+            },
+            {
+              name: "Production Jobs",
+              href: "/production-jobs",
+              icon: <Factory className="mr-2" size={16} />,
+            },
+            {
+              name: "Active Orders",
+              href: "/active-orders",
+              icon: <ShoppingBag className="mr-2" size={16} />,
+            },
+            {
+              name: "Messages",
+              href: "/messages",
+              icon: <MessageSquare className="mr-2" size={16} />,
+            },
+          ],
+        },
+        {
+          title: "Finance",
+          items: [
+            {
+              name: "Invoices",
+              href: "/invoices",
+              icon: <BadgeDollarSign className="mr-2" size={16} />,
+            },
+          ],
+        },
+        {
+          title: "Settings",
+          items: [
+            {
+              name: "Profile",
+              href: "/profile",
+              icon: <User className="mr-2" size={16} />,
+            },
+            {
+              name: "Settings",
+              href: "/settings",
+              icon: <Settings className="mr-2" size={16} />,
+            },
+          ],
+        },
+      ];
+    }
+    
+    // Default menu items (fallback)
+    return [
       {
         title: "Main",
         items: [
@@ -53,34 +348,9 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             icon: <LayoutDashboard className="mr-2" size={16} />,
           },
           {
-            name: "Leads",
-            href: "/leads",
-            icon: <Users className="mr-2" size={16} />,
-          },
-          {
-            name: "Orders",
-            href: "/orders",
-            icon: <ShoppingBag className="mr-2" size={16} />,
-          },
-          {
             name: "Messages",
             href: "/messages",
             icon: <MessageSquare className="mr-2" size={16} />,
-          },
-        ],
-      },
-      {
-        title: "Analytics",
-        items: [
-          {
-            name: "Reports",
-            href: "/reports",
-            icon: <FileBarChart className="mr-2" size={16} />,
-          },
-          {
-            name: "Analytics",
-            href: "/analytics",
-            icon: <BarChart3 className="mr-2" size={16} />,
           },
         ],
       },
@@ -100,17 +370,6 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
         ],
       },
     ];
-    
-    // Add User Management for admins only
-    if (user?.role === 'admin') {
-      items[2].items.unshift({
-        name: "User Management",
-        href: "/users",
-        icon: <UserCog className="mr-2" size={16} />,
-      });
-    }
-    
-    return items;
   };
   
   const menuItems = getMenuItems();

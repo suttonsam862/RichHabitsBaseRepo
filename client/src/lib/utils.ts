@@ -21,27 +21,41 @@ export function formatDate(date: string | Date): string {
 }
 
 export function getRelativeTime(date: string | Date): string {
-  const now = new Date();
-  const past = new Date(date);
-  const diffMs = now.getTime() - past.getTime();
-  
-  const diffSecs = Math.round(diffMs / 1000);
-  const diffMins = Math.round(diffSecs / 60);
-  const diffHours = Math.round(diffMins / 60);
-  const diffDays = Math.round(diffHours / 24);
-  
-  if (diffSecs < 60) {
-    return 'just now';
-  } else if (diffMins < 60) {
-    return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
-  } else if (diffHours < 24) {
-    return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-  } else if (diffDays === 1) {
-    return 'Yesterday';
-  } else if (diffDays < 7) {
-    return `${diffDays} days ago`;
-  } else {
-    return formatDate(date);
+  try {
+    const now = new Date();
+    
+    // Handle SQL date format (YYYY-MM-DD HH:MM:SS.SSS)
+    const past = typeof date === 'string' && date.includes(' ') 
+      ? new Date(date.replace(' ', 'T')) 
+      : new Date(date);
+    
+    if (isNaN(past.getTime())) {
+      return 'Unknown date';
+    }
+    
+    const diffMs = now.getTime() - past.getTime();
+    
+    const diffSecs = Math.round(diffMs / 1000);
+    const diffMins = Math.round(diffSecs / 60);
+    const diffHours = Math.round(diffMins / 60);
+    const diffDays = Math.round(diffHours / 24);
+    
+    if (diffSecs < 60) {
+      return 'just now';
+    } else if (diffMins < 60) {
+      return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else {
+      return formatDate(past);
+    }
+  } catch (error) {
+    console.error("Error parsing date:", date, error);
+    return "Invalid date";
   }
 }
 

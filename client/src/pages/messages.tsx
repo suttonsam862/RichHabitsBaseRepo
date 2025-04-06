@@ -12,13 +12,13 @@ export default function Messages() {
   const [selectedConversation, setSelectedConversation] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
 
-  const { data: conversationsData, isLoading: conversationsLoading } = useQuery<{data: Conversation[]}>({
+  const { data: conversationsData, isLoading: conversationsLoading } = useQuery<{data: any[]}>({
     queryKey: ['/api/messages/conversations'],
     refetchInterval: false,
     refetchOnWindowFocus: false,
   });
 
-  const { data: messagesData, isLoading: messagesLoading } = useQuery<{data: MessageWithContent[]}>({
+  const { data: messagesData, isLoading: messagesLoading } = useQuery<{data: any[]}>({
     queryKey: ['/api/messages/conversation', selectedConversation],
     enabled: !!selectedConversation,
     refetchInterval: false,
@@ -124,9 +124,20 @@ export default function Messages() {
     },
   ];
 
-  const conversations: Conversation[] = conversationsData?.data || sampleConversations;
+  // Transform API data to match our Conversation type
+  const conversations: Conversation[] = conversationsData?.data 
+    ? conversationsData.data.map((c: any) => ({
+        id: c.conversation_id,
+        name: c.sender,
+        avatar: null,
+        lastMessage: c.content,
+        time: c.created_at,
+        unread: parseInt(c.unread_count || '0', 10),
+      }))
+    : sampleConversations;
+  
   // Add type assertion to handle any API differences
-  const messages: MessageWithContent[] = (messagesData?.data as MessageWithContent[] || (selectedConversation === 1 ? sampleMessages : [])) as MessageWithContent[];
+  const messages: MessageWithContent[] = (messagesData?.data || (selectedConversation === 1 ? sampleMessages : [])) as MessageWithContent[];
 
   const sendMessage = () => {
     if (!newMessage.trim() || !selectedConversation) return;

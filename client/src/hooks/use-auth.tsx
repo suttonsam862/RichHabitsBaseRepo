@@ -59,15 +59,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (response: any) => {
-      // The server returns { user: User }
-      const userData = response.user;
-      // Store the whole response in the cache as returned by the server
+      // Directly set the user object as returned by server
       queryClient.setQueryData(["/api/user"], response);
       // Invalidate the query to ensure we have the latest state
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
+      const userName = response.fullName || response.username || response.email;
       toast({
         title: "Login successful",
-        description: `Welcome back, ${userData.fullName || userData.email}!`,
+        description: `Welcome back, ${userName}!`,
       });
       console.log("Auth state updated after login", response);
     },
@@ -86,13 +86,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (response: any) => {
-      // The server returns { user: User }
-      const userData = response.user;
-      // Store the whole response in the cache as returned by the server
+      // Store the response directly in the cache
       queryClient.setQueryData(["/api/user"], response);
+      // Invalidate the query to ensure we have the latest state
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
+      const userName = response.fullName || response.username || response.email;
       toast({
         title: "Registration successful",
-        description: `Welcome, ${userData.fullName || userData.email}!`,
+        description: `Welcome, ${userName}!`,
       });
     },
     onError: (error: Error) => {

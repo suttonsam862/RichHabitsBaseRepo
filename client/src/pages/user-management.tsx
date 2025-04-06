@@ -76,7 +76,10 @@ export default function UserManagement() {
   // Fetch all users
   const { data: usersData, isLoading, error } = useQuery<{ users: UserListItem[] }>({
     queryKey: ['/api/users'],
-    queryFn: ({ queryKey }) => apiRequest('GET', queryKey[0] as string),
+    queryFn: async ({ queryKey }) => {
+      const response = await apiRequest('GET', queryKey[0] as string);
+      return response.json();
+    },
   });
   
   // Mutation to update user role
@@ -281,7 +284,7 @@ export default function UserManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
+              {users.map((user: UserListItem) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.fullName}</TableCell>
                   <TableCell>{user.email}</TableCell>

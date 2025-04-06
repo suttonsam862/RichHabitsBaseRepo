@@ -313,8 +313,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create activity for role change
       if (req.user) {
+        const currentUser = req.user as any;
         await storage.createActivity({
-          userId: req.user.id,
+          userId: currentUser.id,
           type: "user",
           content: `Updated user ${updatedUser.username} role to ${role}`,
           relatedId: userId,
@@ -340,17 +341,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate that all permissions are valid
       for (const permission of permissions) {
-        if (!Object.values(PERMISSIONS).includes(permission)) {
+        if (!Object.values(PERMISSIONS).includes(permission as any)) {
           return res.status(400).json({ error: `Invalid permission: ${permission}` });
         }
       }
       
-      const updatedUser = await storage.updateUserPermissions(userId, permissions);
+      const updatedUser = await storage.updateUserPermissions(userId, permissions as Permission[]);
       
       // Create activity for permissions change
       if (req.user) {
+        const currentUser = req.user as any;
         await storage.createActivity({
-          userId: req.user.id,
+          userId: currentUser.id,
           type: "user",
           content: `Updated user ${updatedUser.username} permissions`,
           relatedId: userId,

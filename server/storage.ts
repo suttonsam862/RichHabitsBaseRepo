@@ -13,7 +13,8 @@ import {
   type Message, 
   type InsertMessage, 
   type Activity, 
-  type InsertActivity 
+  type InsertActivity,
+  type Permission
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, or, isNull, asc } from "drizzle-orm";
@@ -35,7 +36,7 @@ export interface IStorage {
   updateUserSettings(userId: number, settingType: string, settings: any): Promise<void>;
   getAllUsers(): Promise<User[]>;
   updateUserRole(userId: number, role: string): Promise<User>;
-  updateUserPermissions(userId: number, permissions: string[]): Promise<User>;
+  updateUserPermissions(userId: number, permissions: Permission[]): Promise<User>;
   
   // Lead methods
   getLeads(): Promise<Lead[]>;
@@ -104,7 +105,7 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
-      .values(insertUser)
+      .values(insertUser as any)
       .returning();
     return user;
   }
@@ -118,10 +119,10 @@ export class DatabaseStorage implements IStorage {
     return updatedUser;
   }
   
-  async updateUserPermissions(userId: number, permissions: string[]): Promise<User> {
+  async updateUserPermissions(userId: number, permissions: Permission[]): Promise<User> {
     const [updatedUser] = await db
       .update(users)
-      .set({ permissions })
+      .set({ permissions: permissions as any })
       .where(eq(users.id, userId))
       .returning();
     return updatedUser;

@@ -5,28 +5,48 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Message } from "@/types";
+import { Message } from "@shared/schema";
 import { getRelativeTime } from "@/lib/utils";
 
 export default function Messages() {
   const [selectedConversation, setSelectedConversation] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
 
-  const { data: conversationsData, isLoading: conversationsLoading } = useQuery({
+  const { data: conversationsData, isLoading: conversationsLoading } = useQuery<{data: Conversation[]}>({
     queryKey: ['/api/messages/conversations'],
     refetchInterval: false,
     refetchOnWindowFocus: false,
   });
 
-  const { data: messagesData, isLoading: messagesLoading } = useQuery({
+  const { data: messagesData, isLoading: messagesLoading } = useQuery<{data: MessageWithContent[]}>({
     queryKey: ['/api/messages/conversation', selectedConversation],
     enabled: !!selectedConversation,
     refetchInterval: false,
     refetchOnWindowFocus: false,
   });
 
+  // Define the Conversation type
+  interface Conversation {
+    id: number;
+    name: string;
+    avatar: string | null;
+    lastMessage: string;
+    time: string;
+    unread: number;
+  }
+  
+  // Update the Message type to match what we're using here
+  type MessageWithContent = {
+    id: number;
+    userId: number;
+    leadId: number;
+    content: string;
+    isRead: boolean;
+    createdAt: string;
+  }
+
   // Sample data - would normally come from the API
-  const sampleConversations = [
+  const sampleConversations: Conversation[] = [
     {
       id: 1,
       name: "John Smith",
@@ -61,7 +81,7 @@ export default function Messages() {
     },
   ];
 
-  const sampleMessages: Message[] = [
+  const sampleMessages: MessageWithContent[] = [
     {
       id: 1,
       userId: 2,
@@ -104,8 +124,9 @@ export default function Messages() {
     },
   ];
 
-  const conversations = conversationsData?.data || sampleConversations;
-  const messages = messagesData?.data || (selectedConversation === 1 ? sampleMessages : []);
+  const conversations: Conversation[] = conversationsData?.data || sampleConversations;
+  // Add type assertion to handle any API differences
+  const messages: MessageWithContent[] = (messagesData?.data as MessageWithContent[] || (selectedConversation === 1 ? sampleMessages : [])) as MessageWithContent[];
 
   const sendMessage = () => {
     if (!newMessage.trim() || !selectedConversation) return;
@@ -133,7 +154,7 @@ export default function Messages() {
               <Input placeholder="Search conversations..." className="w-full" />
             </div>
             <div className="flex-1 overflow-y-auto p-2">
-              {conversations.map((conversation) => (
+              {conversations.map((conversation: Conversation) => (
                 <div
                   key={conversation.id}
                   className={`flex items-center p-3 rounded-lg cursor-pointer mb-1 ${
@@ -145,7 +166,7 @@ export default function Messages() {
                 >
                   <Avatar className="h-10 w-10 mr-3">
                     <AvatarImage src={conversation.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${conversation.name}`} alt={conversation.name} />
-                    <AvatarFallback>{conversation.name.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>{conversation.name ? conversation.name.charAt(0) : '?'}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
@@ -176,23 +197,24 @@ export default function Messages() {
                   <Avatar className="h-8 w-8 mr-3">
                     <AvatarImage
                       src={`https://api.dicebear.com/7.x/initials/svg?seed=${
-                        conversations.find(c => c.id === selectedConversation)?.name || ""
+                        conversations.find((c: Conversation) => c.id === selectedConversation)?.name || ""
                       }`}
-                      alt={conversations.find(c => c.id === selectedConversation)?.name || ""}
+                      alt={conversations.find((c: Conversation) => c.id === selectedConversation)?.name || ""}
                     />
                     <AvatarFallback>
-                      {(conversations.find(c => c.id === selectedConversation)?.name || "").charAt(0)}
+                      {conversations.find((c: Conversation) => c.id === selectedConversation)?.name ? 
+                        conversations.find((c: Conversation) => c.id === selectedConversation)?.name.charAt(0) : '?'}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {conversations.find(c => c.id === selectedConversation)?.name}
+                      {conversations.find((c: Conversation) => c.id === selectedConversation)?.name}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {messages.map((message) => (
+                  {messages.map((message: MessageWithContent) => (
                     <div
                       key={message.id}
                       className={`flex ${message.userId === 1 ? "justify-end" : "justify-start"}`}

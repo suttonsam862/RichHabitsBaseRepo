@@ -99,6 +99,11 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               href: "/messages",
               icon: <MessageSquare className="mr-2" size={16} />,
             },
+            {
+              name: "Order Tracking",
+              href: "/order-tracking",
+              icon: <ShoppingBag className="mr-2" size={16} />,
+            },
           ],
         },
         {
@@ -130,6 +135,16 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               icon: <BadgeDollarSign className="mr-2" size={16} />,
             },
             {
+              name: "Pending Bills",
+              href: "/admin/pending-bills",
+              icon: <BadgeDollarSign className="mr-2" size={16} />,
+            },
+            {
+              name: "Pending Payouts",
+              href: "/admin/pending-payouts",
+              icon: <BadgeDollarSign className="mr-2" size={16} />,
+            },
+            {
               name: "Reports",
               href: "/admin/reports",
               icon: <FileBarChart className="mr-2" size={16} />,
@@ -143,6 +158,11 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               name: "User Management",
               href: "/users",
               icon: <UserCog className="mr-2" size={16} />,
+            },
+            {
+              name: "Integrations",
+              href: "/admin/integrations",
+              icon: <Settings className="mr-2" size={16} />,
             },
           ],
         },
@@ -191,6 +211,21 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               icon: <ShoppingBag className="mr-2" size={16} />,
             },
             {
+              name: "Submit to Design",
+              href: "/submit-design",
+              icon: <Palette className="mr-2" size={16} />,
+            },
+            {
+              name: "Submit to Manufacturing",
+              href: "/submit-manufacturing",
+              icon: <Factory className="mr-2" size={16} />,
+            },
+            {
+              name: "Order Tracking",
+              href: "/order-tracking",
+              icon: <ShoppingBag className="mr-2" size={16} />,
+            },
+            {
               name: "Messages",
               href: "/messages",
               icon: <MessageSquare className="mr-2" size={16} />,
@@ -203,6 +238,11 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             {
               name: "My Earnings",
               href: "/earnings",
+              icon: <BadgeDollarSign className="mr-2" size={16} />,
+            },
+            {
+              name: "Pending Payouts",
+              href: "/pending-payouts",
               icon: <BadgeDollarSign className="mr-2" size={16} />,
             },
           ],
@@ -247,6 +287,16 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               icon: <PenTool className="mr-2" size={16} />,
             },
             {
+              name: "Active Designs",
+              href: "/active-designs",
+              icon: <PenTool className="mr-2" size={16} />,
+            },
+            {
+              name: "Completed Designs",
+              href: "/completed-designs",
+              icon: <PenTool className="mr-2" size={16} />,
+            },
+            {
               name: "Messages",
               href: "/messages",
               icon: <MessageSquare className="mr-2" size={16} />,
@@ -259,6 +309,16 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             {
               name: "My Earnings",
               href: "/earnings",
+              icon: <BadgeDollarSign className="mr-2" size={16} />,
+            },
+            {
+              name: "Pending Payouts",
+              href: "/pending-payouts",
+              icon: <BadgeDollarSign className="mr-2" size={16} />,
+            },
+            {
+              name: "Payment History",
+              href: "/payment-history",
               icon: <BadgeDollarSign className="mr-2" size={16} />,
             },
           ],
@@ -303,6 +363,11 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               icon: <ShoppingBag className="mr-2" size={16} />,
             },
             {
+              name: "Cost Submission",
+              href: "/cost-submission",
+              icon: <BadgeDollarSign className="mr-2" size={16} />,
+            },
+            {
               name: "Messages",
               href: "/messages",
               icon: <MessageSquare className="mr-2" size={16} />,
@@ -313,8 +378,79 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           title: "Finance",
           items: [
             {
+              name: "Submit Bills",
+              href: "/submit-bills",
+              icon: <BadgeDollarSign className="mr-2" size={16} />,
+            },
+            {
+              name: "Pending Payments",
+              href: "/pending-payments",
+              icon: <BadgeDollarSign className="mr-2" size={16} />,
+            },
+          ],
+        },
+        {
+          title: "Settings",
+          items: [
+            {
+              name: "Profile",
+              href: "/profile",
+              icon: <User className="mr-2" size={16} />,
+            },
+            {
+              name: "Settings",
+              href: "/settings",
+              icon: <Settings className="mr-2" size={16} />,
+            },
+          ],
+        },
+      ];
+    }
+    
+    // Customer dashboard
+    if (user?.role === 'customer') {
+      return [
+        {
+          title: "Main",
+          items: [
+            {
+              name: "Dashboard",
+              href: "/dashboard",
+              icon: <LayoutDashboard className="mr-2" size={16} />,
+            },
+            {
+              name: "My Orders",
+              href: "/my-orders",
+              icon: <ShoppingBag className="mr-2" size={16} />,
+            },
+            {
+              name: "Order Tracking",
+              href: "/order-tracking",
+              icon: <ShoppingBag className="mr-2" size={16} />,
+            },
+            {
+              name: "Request Design",
+              href: "/request-design",
+              icon: <Palette className="mr-2" size={16} />,
+            },
+            {
+              name: "Messages",
+              href: "/messages",
+              icon: <MessageSquare className="mr-2" size={16} />,
+            },
+          ],
+        },
+        {
+          title: "Billing",
+          items: [
+            {
               name: "Invoices",
               href: "/invoices",
+              icon: <BadgeDollarSign className="mr-2" size={16} />,
+            },
+            {
+              name: "Payment Methods",
+              href: "/payment-methods",
               icon: <BadgeDollarSign className="mr-2" size={16} />,
             },
           ],

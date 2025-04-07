@@ -14,6 +14,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
+import { formatDate } from "@/lib/utils";
 import { insertLeadSchema } from "@shared/schema";
 import { Lead, LeadStatus } from "@/types";
 
@@ -26,7 +27,9 @@ export default function Leads() {
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [openViewDialog, setOpenViewDialog] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null);
+  const [selectedLead, setSelectedLead] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -410,11 +413,9 @@ export default function Leads() {
                             size="sm" 
                             className="mr-2" 
                             onClick={() => {
-                              // Display lead details
-                              toast({
-                                title: `Viewing ${lead.name}`,
-                                description: `${lead.name} - ${lead.email} (${lead.status})`,
-                              });
+                              // Display lead details in a view dialog
+                              setSelectedLead(lead);
+                              setOpenViewDialog(true);
                             }}
                           >
                             View
@@ -454,6 +455,233 @@ export default function Leads() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Lead Dialog */}
+      <Dialog open={openEditDialog} onOpenChange={setOpenEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Lead</DialogTitle>
+            <DialogDescription>
+              Update the lead information below.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onUpdate)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="john@example.com" type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="+1 (555) 123-4567" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="source"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Source</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a source" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Website">Website</SelectItem>
+                          <SelectItem value="Referral">Referral</SelectItem>
+                          <SelectItem value="Social Media">Social Media</SelectItem>
+                          <SelectItem value="Email Campaign">Email Campaign</SelectItem>
+                          <SelectItem value="Trade Show">Trade Show</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">New</SelectItem>
+                          <SelectItem value="contacted">Contacted</SelectItem>
+                          <SelectItem value="qualified">Qualified</SelectItem>
+                          <SelectItem value="proposal">Proposal</SelectItem>
+                          <SelectItem value="negotiation">Negotiation</SelectItem>
+                          <SelectItem value="closed">Closed</SelectItem>
+                          <SelectItem value="lost">Lost</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Add any additional notes here..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => {
+                  setOpenEditDialog(false);
+                  setSelectedLeadId(null);
+                }}>
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  className="bg-brand-600 hover:bg-brand-700 text-white"
+                  disabled={updateLeadMutation.isPending}
+                >
+                  {updateLeadMutation.isPending ? "Updating..." : "Update Lead"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Lead Dialog */}
+      <Dialog open={openViewDialog} onOpenChange={setOpenViewDialog}>
+        <DialogContent className="bg-white">
+          <DialogHeader>
+            <DialogTitle>Lead Details</DialogTitle>
+            <DialogDescription>
+              Detailed information about this lead.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedLead && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Name</h3>
+                  <p className="mt-1 text-base text-gray-900">{selectedLead.name}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Email</h3>
+                  <p className="mt-1 text-base text-gray-900">{selectedLead.email}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Phone</h3>
+                  <p className="mt-1 text-base text-gray-900">{selectedLead.phone || "—"}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Source</h3>
+                  <p className="mt-1 text-base text-gray-900">{selectedLead.source}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Status</h3>
+                  <div className="mt-1">
+                    <Badge className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedLead.status as LeadStatus)}`}>
+                      {selectedLead.status.charAt(0).toUpperCase() + selectedLead.status.slice(1)}
+                    </Badge>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Date Added</h3>
+                  <p className="mt-1 text-base text-gray-900">{formatDate(selectedLead.createdAt)}</p>
+                </div>
+              </div>
+              
+              <div className="col-span-2">
+                <h3 className="text-sm font-medium text-gray-500">Notes</h3>
+                <p className="mt-1 text-base text-gray-900 whitespace-pre-wrap">{selectedLead.notes || "No notes available."}</p>
+              </div>
+              
+              <DialogFooter className="mt-6">
+                <Button type="button" variant="outline" onClick={() => {
+                  setOpenViewDialog(false);
+                  setSelectedLead(null);
+                }}>
+                  Close
+                </Button>
+                <Button 
+                  type="button" 
+                  className="bg-brand-600 hover:bg-brand-700 text-white"
+                  onClick={() => {
+                    setOpenViewDialog(false);
+                    // Set up the edit dialog with this lead's data
+                    form.reset({
+                      name: selectedLead.name,
+                      email: selectedLead.email,
+                      phone: selectedLead.phone || "",
+                      source: selectedLead.source,
+                      status: selectedLead.status as any,
+                      notes: selectedLead.notes || ""
+                    });
+                    setSelectedLeadId(selectedLead.id);
+                    setOpenEditDialog(true);
+                  }}
+                >
+                  Edit Lead
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

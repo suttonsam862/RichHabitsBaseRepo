@@ -36,15 +36,22 @@ export default function LoginForm() {
       
       // For our backend authentication, we need to convert email field to username
       // since our auth system expects username/password
-      await loginMutation.mutateAsync({
+      const result = await loginMutation.mutateAsync({
         username: values.email, // Map email to username for the backend
         password: values.password
       });
       
-      // The auth page useEffect will detect logged in user and redirect
-      setLocation('/');
+      console.log("Login successful, got result:", result);
       
-      console.log("Login successful, redirecting to dashboard...");
+      // Force a query refetch to ensure we have the latest user data
+      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
+      // Add a small delay to ensure state is updated before redirect
+      setTimeout(() => {
+        // Navigate to dashboard
+        setLocation('/');
+        console.log("Redirecting to dashboard...");
+      }, 100);
     } catch (error) {
       // Error is handled in the mutation's onError callback
       console.error("Login error:", error);

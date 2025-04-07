@@ -16,7 +16,10 @@ export default function AuthPage() {
   useEffect(() => {
     if (user) {
       console.log("User is logged in, redirecting to dashboard...", user);
-      navigate("/");
+      // Use setTimeout to ensure state is fully updated before redirect
+      setTimeout(() => {
+        navigate("/");
+      }, 10);
     }
   }, [user, navigate]);
   

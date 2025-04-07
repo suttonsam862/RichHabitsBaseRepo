@@ -85,11 +85,6 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               icon: <Factory className="mr-2" size={16} />,
             },
             {
-              name: "Customers",
-              href: "/customers",
-              icon: <UsersRound className="mr-2" size={16} />,
-            },
-            {
               name: "Organizations",
               href: "/organizations",
               icon: <Building2 className="mr-2" size={16} />,

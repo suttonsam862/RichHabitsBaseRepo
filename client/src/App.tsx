@@ -18,6 +18,10 @@ import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 import { useAuth, AuthProvider } from "@/hooks/use-auth";
 
+// Admin pages
+import SalesTeam from "./pages/admin/sales-team";
+import DesignTeam from "./pages/admin/design-team";
+
 // The main dashboard layout with all protected routes
 function DashboardLayout() {
   const { user } = useAuth();
@@ -38,6 +42,10 @@ function DashboardLayout() {
         <Route path="/users" component={UserManagement} />
         <Route path="/profile" component={Profile} />
         <Route path="/settings" component={Settings} />
+        
+        {/* Admin Routes */}
+        <Route path="/admin/sales-team" component={SalesTeam} />
+        <Route path="/admin/design-team" component={DesignTeam} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

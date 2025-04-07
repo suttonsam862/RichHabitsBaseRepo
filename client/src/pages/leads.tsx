@@ -201,7 +201,7 @@ export default function Leads() {
           
           <Dialog open={openAddDialog} onOpenChange={setOpenAddDialog}>
             <DialogTrigger asChild>
-              <Button className="bg-brand-600 hover:bg-brand-700">
+              <Button className="bg-brand-600 hover:bg-brand-700 text-white">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Add Lead
               </Button>

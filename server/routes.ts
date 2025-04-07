@@ -22,6 +22,7 @@ import {
   insertFabricOptionSchema,
   insertFabricCutSchema,
   insertCustomizationOptionSchema,
+  insertSalesTeamMemberSchema,
   ROLES,
   PERMISSIONS,
   type Permission

@@ -30,17 +30,17 @@ export default function AuthPage() {
   
   return (
     <div className="container relative min-h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-      <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary to-primary/80" />
-        <div className="relative z-20 flex items-center text-lg font-medium">
-          Rich Habits
+      <div className="relative hidden h-full flex-col bg-white p-10 text-gray-900 lg:flex border-r">
+        <div className="absolute inset-0 bg-gray-50" />
+        <div className="relative z-20 flex items-center text-xl font-bold">
+          <span className="text-primary">Rich</span> Habits
         </div>
         <div className="relative z-20 mt-auto">
           <blockquote className="space-y-2">
-            <p className="text-lg">
+            <p className="text-lg text-gray-700">
               "Our dashboard has transformed how we track leads, manage orders, and communicate with clients. This comprehensive system helps us build rich business habits every day."
             </p>
-            <footer className="text-sm">Samuel Sutton, CEO</footer>
+            <footer className="text-sm text-gray-600">Samuel Sutton, CEO</footer>
           </blockquote>
         </div>
       </div>

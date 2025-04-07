@@ -194,6 +194,29 @@ export default function Settings() {
       });
     },
   });
+  
+  // Clear Example Data
+  const clearExampleData = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/data/clear-example-data", {});
+    },
+    onSuccess: () => {
+      // Invalidate all queries to refresh the data
+      queryClient.invalidateQueries();
+      
+      toast({
+        title: "Data cleared",
+        description: "All example data has been cleared successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to clear example data",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Timezones for the dropdown
   const timezones = [
@@ -634,145 +657,179 @@ export default function Settings() {
           
           {/* System Settings Tab */}
           <TabsContent value="system">
-            <Card>
-              <CardHeader>
-                <CardTitle>System Settings</CardTitle>
-                <CardDescription>
-                  Configure system-wide settings
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Form {...systemForm}>
-                  <form onSubmit={systemForm.handleSubmit((data) => saveSystemSettings.mutate(data))} className="space-y-6">
-                    <FormField
-                      control={systemForm.control}
-                      name="dateFormat"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Date Format</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select date format" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
-                              <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-                              <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={systemForm.control}
-                      name="timeFormat"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Time Format</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select time format" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="12h">12-hour (1:30 PM)</SelectItem>
-                              <SelectItem value="24h">24-hour (13:30)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={systemForm.control}
-                      name="timezone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Timezone</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select timezone" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {timezones.map((timezone) => (
-                                <SelectItem key={timezone.value} value={timezone.value}>
-                                  {timezone.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={systemForm.control}
-                      name="language"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Language</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select language" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="en">English</SelectItem>
-                              <SelectItem value="es">Spanish</SelectItem>
-                              <SelectItem value="fr">French</SelectItem>
-                              <SelectItem value="de">German</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={systemForm.control}
-                      name="currency"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Currency</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select currency" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="USD">US Dollar (USD)</SelectItem>
-                              <SelectItem value="EUR">Euro (EUR)</SelectItem>
-                              <SelectItem value="GBP">British Pound (GBP)</SelectItem>
-                              <SelectItem value="CAD">Canadian Dollar (CAD)</SelectItem>
-                              <SelectItem value="AUD">Australian Dollar (AUD)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <Button 
-                      type="submit" 
-                      disabled={saveSystemSettings.isPending}
-                    >
-                      {saveSystemSettings.isPending ? "Saving..." : "Save Settings"}
-                    </Button>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>System Settings</CardTitle>
+                  <CardDescription>
+                    Configure system-wide settings
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...systemForm}>
+                    <form onSubmit={systemForm.handleSubmit((data) => saveSystemSettings.mutate(data))} className="space-y-6">
+                      <FormField
+                        control={systemForm.control}
+                        name="dateFormat"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Date Format</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select date format" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+                                <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+                                <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={systemForm.control}
+                        name="timeFormat"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Time Format</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select time format" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="12h">12-hour (1:30 PM)</SelectItem>
+                                <SelectItem value="24h">24-hour (13:30)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={systemForm.control}
+                        name="timezone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Timezone</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select timezone" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {timezones.map((timezone) => (
+                                  <SelectItem key={timezone.value} value={timezone.value}>
+                                    {timezone.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={systemForm.control}
+                        name="language"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Language</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select language" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="en">English</SelectItem>
+                                <SelectItem value="es">Spanish</SelectItem>
+                                <SelectItem value="fr">French</SelectItem>
+                                <SelectItem value="de">German</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={systemForm.control}
+                        name="currency"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Currency</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select currency" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="USD">US Dollar (USD)</SelectItem>
+                                <SelectItem value="EUR">Euro (EUR)</SelectItem>
+                                <SelectItem value="GBP">British Pound (GBP)</SelectItem>
+                                <SelectItem value="CAD">Canadian Dollar (CAD)</SelectItem>
+                                <SelectItem value="AUD">Australian Dollar (AUD)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <Button 
+                        type="submit" 
+                        disabled={saveSystemSettings.isPending}
+                      >
+                        {saveSystemSettings.isPending ? "Saving..." : "Save Settings"}
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+              
+              {/* Data Management Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Data Management</CardTitle>
+                  <CardDescription>
+                    Manage system data
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    <div className="border rounded-lg p-4">
+                      <div className="flex flex-col gap-2">
+                        <h3 className="text-lg font-medium">Clear Example Data</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Remove all example data from the system, keeping only the admin user account. 
+                          This action cannot be undone.
+                        </p>
+                        <div className="flex items-center mt-2">
+                          <Button 
+                            variant="destructive"
+                            onClick={() => clearExampleData.mutate()}
+                            disabled={clearExampleData.isPending}
+                          >
+                            {clearExampleData.isPending ? "Clearing..." : "Clear Example Data"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

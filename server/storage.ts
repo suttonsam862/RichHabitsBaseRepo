@@ -64,6 +64,9 @@ export interface IStorage {
   getSalesByProductData(period: string): Promise<any[]>;
   getSalesByChannelData(period: string): Promise<any[]>;
   getLeadConversionData(period: string): Promise<any[]>;
+  
+  // Data management
+  clearExampleData(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -270,6 +273,26 @@ export class DatabaseStorage implements IStorage {
   async getLeadConversionData(period: string): Promise<any[]> {
     // For demo purposes - in a real app we would query the database
     return [];
+  }
+  
+  // Data management
+  async clearExampleData(): Promise<void> {
+    // We'll preserve the admin user only (id=1), but clear all other data
+    try {
+      // Keep user 1 (admin) but delete all other users
+      await db.delete(users).where(sql`id != 1`);
+      
+      // Clear all other tables completely
+      await db.delete(leads);
+      await db.delete(orders);
+      await db.delete(messages);
+      await db.delete(activities);
+      
+      console.log("Example data cleared successfully");
+    } catch (error) {
+      console.error("Error clearing example data:", error);
+      throw error;
+    }
   }
 }
 

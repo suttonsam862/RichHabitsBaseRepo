@@ -366,5 +366,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Data management endpoints - Admin only
+  app.post("/api/data/clear-example-data", isAdmin, async (req, res) => {
+    try {
+      await storage.clearExampleData();
+      res.json({ success: true, message: "Example data cleared successfully" });
+    } catch (error: any) {
+      console.error("Error clearing example data:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return httpServer;
 }

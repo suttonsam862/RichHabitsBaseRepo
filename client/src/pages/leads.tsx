@@ -25,6 +25,8 @@ export default function Leads() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
   const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -128,6 +130,29 @@ export default function Leads() {
       });
     },
   });
+  
+  const updateLeadMutation = useMutation({
+    mutationFn: async (values: z.infer<typeof formSchema> & { id: number }) => {
+      const { id, ...data } = values;
+      return await apiRequest("PATCH", `/api/leads/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+      toast({
+        title: "Lead updated",
+        description: "Lead has been updated successfully",
+      });
+      setOpenEditDialog(false);
+      setSelectedLeadId(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update lead",
+        variant: "destructive",
+      });
+    },
+  });
 
   const filteredLeads = leads.filter((lead) => {
     const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -159,6 +184,12 @@ export default function Leads() {
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     addLeadMutation.mutate(values);
+  }
+  
+  function onUpdate(values: z.infer<typeof formSchema>) {
+    if (selectedLeadId) {
+      updateLeadMutation.mutate({ ...values, id: selectedLeadId });
+    }
   }
 
   return (
@@ -311,8 +342,8 @@ export default function Leads() {
 
       {/* Content */}
       <div className="p-6">
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="bg-white">
+          <CardHeader className="pb-3 bg-white">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="relative w-full md:w-96">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
@@ -347,41 +378,72 @@ export default function Leads() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="bg-white">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left p-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
-                    <th className="text-left p-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
-                    <th className="text-left p-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phone</th>
-                    <th className="text-left p-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Source</th>
-                    <th className="text-left p-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                    <th className="text-right p-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="text-right p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="divide-y divide-gray-200">
                   {filteredLeads.length > 0 ? (
                     filteredLeads.map((lead) => (
-                      <tr key={lead.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                        <td className="p-4 text-sm text-gray-900 dark:text-gray-100">{lead.name}</td>
-                        <td className="p-4 text-sm text-gray-600 dark:text-gray-300">{lead.email}</td>
-                        <td className="p-4 text-sm text-gray-600 dark:text-gray-300">{lead.phone}</td>
-                        <td className="p-4 text-sm text-gray-600 dark:text-gray-300">{lead.source}</td>
+                      <tr key={lead.id} className="hover:bg-gray-50">
+                        <td className="p-4 text-sm text-gray-900">{lead.name}</td>
+                        <td className="p-4 text-sm text-gray-600">{lead.email}</td>
+                        <td className="p-4 text-sm text-gray-600">{lead.phone}</td>
+                        <td className="p-4 text-sm text-gray-600">{lead.source}</td>
                         <td className="p-4">
                           <Badge className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(lead.status as LeadStatus)}`}>
                             {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
                           </Badge>
                         </td>
                         <td className="p-4 text-right">
-                          <Button variant="ghost" size="sm">View</Button>
-                          <Button variant="ghost" size="sm">Edit</Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="mr-2" 
+                            onClick={() => {
+                              // Display lead details
+                              toast({
+                                title: `Viewing ${lead.name}`,
+                                description: `${lead.name} - ${lead.email} (${lead.status})`,
+                              });
+                            }}
+                          >
+                            View
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              // Open edit dialog with lead details
+                              form.reset({
+                                name: lead.name,
+                                email: lead.email,
+                                phone: lead.phone || "",
+                                source: lead.source,
+                                status: lead.status as any,
+                                notes: lead.notes || ""
+                              });
+                              setSelectedLeadId(lead.id);
+                              setOpenEditDialog(true);
+                            }}
+                          >
+                            Edit
+                          </Button>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6} className="p-4 text-center text-gray-500 dark:text-gray-400">
+                      <td colSpan={6} className="p-4 text-center text-gray-500">
                         No leads found matching your criteria.
                       </td>
                     </tr>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,6 +21,8 @@ import { Lead, LeadStatus } from "@/types";
 
 const formSchema = insertLeadSchema.extend({
   status: z.enum(["new", "contacted", "qualified", "proposal", "negotiation", "closed", "lost"]),
+  value: z.string().optional().nullable(),
+  autoClaimLead: z.boolean().optional(),
 });
 
 export default function Leads() {
@@ -109,6 +112,8 @@ export default function Leads() {
       source: "",
       status: "new",
       notes: "",
+      value: "",
+      autoClaimLead: false,
     },
   });
 
@@ -185,8 +190,60 @@ export default function Leads() {
     }
   };
 
+  // Create a mutation to convert a lead into an order
+  const convertToOrderMutation = useMutation({
+    mutationFn: async (leadId: number) => {
+      return await apiRequest("POST", `/api/leads/${leadId}/convert-to-order`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      toast({
+        title: "Lead converted",
+        description: "Lead has been successfully converted to an order",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to convert lead to order",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Create a mutation to delete a lead
+  const deleteLeadMutation = useMutation({
+    mutationFn: async (leadId: number) => {
+      return await apiRequest("DELETE", `/api/leads/${leadId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+      toast({
+        title: "Lead deleted",
+        description: "Lead has been successfully deleted",
+      });
+      setOpenViewDialog(false);
+      setSelectedLead(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete lead",
+        variant: "destructive",
+      });
+    },
+  });
+
   function onSubmit(values: z.infer<typeof formSchema>) {
-    addLeadMutation.mutate(values);
+    addLeadMutation.mutate(values, {
+      onSuccess: (data) => {
+        // If autoClaimLead is true, convert the newly created lead to an order
+        if (values.autoClaimLead && data.data?.id) {
+          convertToOrderMutation.mutate(data.data.id);
+        }
+      }
+    });
   }
   
   function onUpdate(values: z.infer<typeof formSchema>) {
@@ -324,6 +381,47 @@ export default function Leads() {
                           <Textarea placeholder="Add any additional notes here..." {...field} />
                         </FormControl>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="value"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Estimated Value ($)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="text" 
+                            placeholder="0.00"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="autoClaimLead"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>
+                            Automatically Claim Lead
+                          </FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Converts this lead into an order assigned to you
+                          </p>
+                        </div>
                       </FormItem>
                     )}
                   />
@@ -651,32 +749,57 @@ export default function Leads() {
               </div>
               
               <DialogFooter className="mt-6">
-                <Button type="button" variant="outline" onClick={() => {
-                  setOpenViewDialog(false);
-                  setSelectedLead(null);
-                }}>
-                  Close
-                </Button>
-                <Button 
-                  type="button" 
-                  className="bg-brand-600 hover:bg-brand-700 text-white"
-                  onClick={() => {
+                <div className="flex space-x-2 mr-auto">
+                  <Button 
+                    type="button" 
+                    variant="destructive" 
+                    onClick={() => {
+                      if (confirm("Are you sure you want to delete this lead? This action cannot be undone.")) {
+                        deleteLeadMutation.mutate(selectedLead.id);
+                      }
+                    }}
+                  >
+                    Delete Lead
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      convertToOrderMutation.mutate(selectedLead.id);
+                    }}
+                  >
+                    Convert to Order
+                  </Button>
+                </div>
+                <div className="flex space-x-2">
+                  <Button type="button" variant="outline" onClick={() => {
                     setOpenViewDialog(false);
-                    // Set up the edit dialog with this lead's data
-                    form.reset({
-                      name: selectedLead.name,
-                      email: selectedLead.email,
-                      phone: selectedLead.phone || "",
-                      source: selectedLead.source,
-                      status: selectedLead.status as any,
-                      notes: selectedLead.notes || ""
-                    });
-                    setSelectedLeadId(selectedLead.id);
-                    setOpenEditDialog(true);
-                  }}
-                >
-                  Edit Lead
-                </Button>
+                    setSelectedLead(null);
+                  }}>
+                    Close
+                  </Button>
+                  <Button 
+                    type="button" 
+                    className="bg-brand-600 hover:bg-brand-700 text-white"
+                    onClick={() => {
+                      setOpenViewDialog(false);
+                      // Set up the edit dialog with this lead's data
+                      form.reset({
+                        name: selectedLead.name,
+                        email: selectedLead.email,
+                        phone: selectedLead.phone || "",
+                        source: selectedLead.source,
+                        status: selectedLead.status as any,
+                        notes: selectedLead.notes || "",
+                        value: selectedLead.value || ""
+                      });
+                      setSelectedLeadId(selectedLead.id);
+                      setOpenEditDialog(true);
+                    }}
+                  >
+                    Edit Lead
+                  </Button>
+                </div>
               </DialogFooter>
             </div>
           )}

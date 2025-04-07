@@ -27,6 +27,12 @@ const formSchema = insertOrderSchema.extend({
 export default function Orders() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
+  const [openViewDialog, setOpenViewDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -376,43 +382,72 @@ export default function Orders() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="bg-white">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left p-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Order ID</th>
-                    <th className="text-left p-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Customer</th>
-                    <th className="text-left p-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
-                    <th className="text-left p-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                    <th className="text-left p-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
-                    <th className="text-right p-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="text-right p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="divide-y divide-gray-200">
                   {filteredOrders.length > 0 ? (
                     filteredOrders.map((order) => (
-                      <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                        <td className="p-4 text-sm font-medium text-gray-900 dark:text-gray-100">{order.orderId}</td>
-                        <td className="p-4 text-sm text-gray-600 dark:text-gray-300">{order.customerName}</td>
-                        <td className="p-4 text-sm text-gray-600 dark:text-gray-300">{order.amount}</td>
+                      <tr key={order.id} className="hover:bg-gray-50">
+                        <td className="p-4 text-sm font-medium text-gray-900">{order.orderId}</td>
+                        <td className="p-4 text-sm text-gray-600">{order.customerName}</td>
+                        <td className="p-4 text-sm text-gray-600">{order.totalAmount}</td>
                         <td className="p-4">
                           <Badge className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status as OrderStatus)}`}>
                             {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                           </Badge>
                         </td>
-                        <td className="p-4 text-sm text-gray-600 dark:text-gray-300">
+                        <td className="p-4 text-sm text-gray-600">
                           {new Date(order.createdAt).toLocaleDateString()}
                         </td>
                         <td className="p-4 text-right">
-                          <Button variant="ghost" size="sm">View</Button>
-                          <Button variant="ghost" size="sm">Edit</Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="mr-2"
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setOpenViewDialog(true);
+                            }}
+                          >
+                            View
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setSelectedOrderId(order.id);
+                              form.reset({
+                                customerName: order.customerName,
+                                customerEmail: order.customerEmail,
+                                totalAmount: order.totalAmount,
+                                status: order.status as any,
+                                items: order.items,
+                                shippingAddress: order.shippingAddress || "",
+                                notes: order.notes || ""
+                              });
+                              setOpenEditDialog(true);
+                            }}
+                          >
+                            Edit
+                          </Button>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6} className="p-4 text-center text-gray-500 dark:text-gray-400">
+                      <td colSpan={6} className="p-4 text-center text-gray-500">
                         No orders found matching your criteria.
                       </td>
                     </tr>

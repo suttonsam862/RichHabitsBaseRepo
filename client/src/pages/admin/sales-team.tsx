@@ -1337,7 +1337,7 @@ export default function SalesTeamPage() {
 
       {/* Add Team Member Dialog */}
       <Dialog open={isAddMemberDialogOpen} onOpenChange={setIsAddMemberDialogOpen}>
-        <DialogContent className="sm:max-w-[525px]">
+        <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Sales Team Member</DialogTitle>
             <DialogDescription>
@@ -1630,7 +1630,7 @@ export default function SalesTeamPage() {
 
       {/* Assign Lead Dialog */}
       <Dialog open={isAssignLeadDialogOpen} onOpenChange={setIsAssignLeadDialogOpen}>
-        <DialogContent className="sm:max-w-[525px]">
+        <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Assign Lead</DialogTitle>
             <DialogDescription>

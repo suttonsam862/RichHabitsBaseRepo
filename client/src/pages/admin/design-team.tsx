@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { ScrollableDialogContent } from "@/components/ui/scrollable-dialog-content";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
@@ -1059,7 +1060,7 @@ export default function DesignTeamPage() {
 
       {/* Add Team Member Dialog */}
       <Dialog open={isAddMemberDialogOpen} onOpenChange={setIsAddMemberDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <ScrollableDialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Add Team Member</DialogTitle>
             <DialogDescription>
@@ -1320,12 +1321,12 @@ export default function DesignTeamPage() {
               Add Team Member
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </ScrollableDialogContent>
       </Dialog>
 
       {/* Assign Design Dialog */}
       <Dialog open={isAssignDesignDialogOpen} onOpenChange={setIsAssignDesignDialogOpen}>
-        <DialogContent className="sm:max-w-[525px]">
+        <ScrollableDialogContent className="sm:max-w-[525px]">
           <DialogHeader>
             <DialogTitle>Assign Design</DialogTitle>
             <DialogDescription>
@@ -1391,7 +1392,7 @@ export default function DesignTeamPage() {
               Assign Design
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </ScrollableDialogContent>
       </Dialog>
     </div>
   );

@@ -69,7 +69,7 @@ const ProductCard: FC<ProductCardProps> = ({ product, viewMode }) => {
             <Shirt className="w-12 h-12 text-gray-400" />
           </div>
         )}
-        <Badge className="absolute top-2 right-2 bg-primary">${product.price}</Badge>
+        <Badge className="absolute top-2 right-2 bg-primary">${product.wholesalePrice}</Badge>
       </div>
       
       <div className="flex flex-col flex-1">
@@ -88,17 +88,15 @@ const ProductCard: FC<ProductCardProps> = ({ product, viewMode }) => {
         <CardContent className={viewMode === 'list' ? "py-2" : ""}>
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground line-clamp-2">
-              {product.description}
+              {product.item}
             </p>
             <div className="flex flex-wrap gap-1 mt-2">
               <Badge variant="secondary" className="text-xs">
                 {product.category}
               </Badge>
-              {product.gender && (
-                <Badge variant="secondary" className="text-xs">
-                  {product.gender}
-                </Badge>
-              )}
+              <Badge variant="secondary" className="text-xs">
+                {product.fabricOptions}
+              </Badge>
             </div>
           </div>
         </CardContent>
@@ -108,7 +106,7 @@ const ProductCard: FC<ProductCardProps> = ({ product, viewMode }) => {
           viewMode === 'list' ? "py-3" : ""
         )}>
           <div className="text-xs text-muted-foreground">
-            Min. Order: {product.minOrder || 1}
+            COGS: ${product.cogs}
           </div>
           <Button size="sm" variant="outline" className="gap-1">
             <ShoppingBag className="w-4 h-4" /> 
@@ -133,8 +131,10 @@ const CatalogPage: FC = () => {
   });
   
   // Get unique sports and categories for filters
-  const uniqueSports = [...new Set(products.map(p => p.sport))].sort();
-  const uniqueCategories = [...new Set(products.map(p => p.category))].sort();
+  const sportsSet = new Set(products.map(p => p.sport));
+  const uniqueSports = Array.from(sportsSet).sort();
+  const categoriesSet = new Set(products.map(p => p.category));
+  const uniqueCategories = Array.from(categoriesSet).sort();
   
   // Filter products based on selected filters and search term
   const filteredProducts = products.filter(product => {
@@ -142,7 +142,7 @@ const CatalogPage: FC = () => {
     const matchesCategory = selectedCategory ? product.category === selectedCategory : true;
     const matchesSearch = searchTerm 
       ? product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.sku.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
     

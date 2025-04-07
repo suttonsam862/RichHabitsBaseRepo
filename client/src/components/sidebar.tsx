@@ -102,6 +102,16 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               icon: <ShoppingBag className="mr-2" size={16} />,
             },
             {
+              name: "Design Communication",
+              href: "/design-communication",
+              icon: <Palette className="mr-2" size={16} />,
+            },
+            {
+              name: "Production Communication",
+              href: "/production-communication",
+              icon: <Factory className="mr-2" size={16} />,
+            },
+            {
               name: "Product Catalog",
               href: "/catalog",
               icon: <Shirt className="mr-2" size={16} />,
@@ -238,6 +248,16 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               icon: <Shirt className="mr-2" size={16} />,
             },
             {
+              name: "Design Communication",
+              href: "/design-communication",
+              icon: <Palette className="mr-2" size={16} />,
+            },
+            {
+              name: "Production Communication",
+              href: "/production-communication",
+              icon: <Factory className="mr-2" size={16} />,
+            },
+            {
               name: "Messages",
               href: "/messages",
               icon: <MessageSquare className="mr-2" size={16} />,
@@ -309,6 +329,11 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               icon: <PenTool className="mr-2" size={16} />,
             },
             {
+              name: "Design Communication",
+              href: "/design-communication",
+              icon: <Palette className="mr-2" size={16} />,
+            },
+            {
               name: "Messages",
               href: "/messages",
               icon: <MessageSquare className="mr-2" size={16} />,
@@ -378,6 +403,11 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               name: "Cost Submission",
               href: "/cost-submission",
               icon: <BadgeDollarSign className="mr-2" size={16} />,
+            },
+            {
+              name: "Production Communication",
+              href: "/production-communication",
+              icon: <Factory className="mr-2" size={16} />,
             },
             {
               name: "Messages",

@@ -16,6 +16,8 @@ import Manufacturing from "./pages/manufacturing";
 import Organizations from "./pages/organizations";
 import Catalog from "./pages/catalog";
 import Corporate from "./pages/corporate";
+import DesignCommunication from "./pages/design-communication";
+import ProductionCommunication from "./pages/production-communication";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 import { useAuth, AuthProvider } from "@/hooks/use-auth";
@@ -48,6 +50,8 @@ function DashboardLayout() {
         <Route path="/settings" component={Settings} />
         <Route path="/catalog" component={Catalog} />
         <Route path="/corporate" component={Corporate} />
+        <Route path="/design-communication" component={DesignCommunication} />
+        <Route path="/production-communication" component={ProductionCommunication} />
         
         {/* Admin Routes */}
         <Route path="/admin/sales-team" component={SalesTeam} />

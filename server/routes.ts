@@ -480,6 +480,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
+  
+  // Set a user's password (admin only)
+  app.post("/api/users/set-password", isAdmin, async (req, res) => {
+    try {
+      const { userId, password } = req.body;
+      
+      if (!userId || !password) {
+        return res.status(400).json({ error: "User ID and password are required" });
+      }
+      
+      if (typeof userId !== 'number') {
+        return res.status(400).json({ error: "User ID must be a number" });
+      }
+      
+      if (typeof password !== 'string' || password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters long" });
+      }
+      
+      // Check if user exists
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Hash the password and update in the database
+      const hashedPassword = await hashPassword(password);
+      
+      // Update the user in the database
+      await db.update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, userId));
+      
+      // Get the updated user
+      const updatedUser = await storage.getUser(userId);
+      
+      // Create activity for password change
+      if (req.user) {
+        const currentUser = req.user as any;
+        await storage.createActivity({
+          userId: currentUser.id,
+          type: "user",
+          content: `Updated password for user ${user.username}`,
+          relatedId: userId,
+          relatedType: "user"
+        });
+      }
+      
+      res.json(updatedUser);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   // Data management endpoints - Admin only
   app.post("/api/data/clear-example-data", isAdmin, async (req, res) => {

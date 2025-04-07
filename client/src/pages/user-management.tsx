@@ -4,8 +4,9 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { ROLES, Permission, type Role } from "@shared/schema";
 import { getPermissionDisplayName, getRoleDisplayName, getPermissionGroups, getPermissionsForRole } from "@shared/permissions";
-import { Loader2, Shield, ShieldAlert, ShieldCheck, User, Settings, UserPlus, Layers } from "lucide-react";
+import { Loader2, Shield, ShieldAlert, ShieldCheck, User, Settings, UserPlus, Layers, Key } from "lucide-react";
 import { PageVisibilitySettings, getDefaultVisiblePages } from "@/components/ui/page-visibility-settings";
+import { SetPasswordDialog } from "@/components/user/set-password-dialog";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +65,7 @@ export default function UserManagement() {
   const [permissionDialogOpen, setPermissionDialogOpen] = useState(false);
   const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
   const [visibilityDialogOpen, setVisibilityDialogOpen] = useState(false);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserListItem | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
@@ -199,6 +201,12 @@ export default function UserManagement() {
     setSelectedUser(user);
     setSelectedVisiblePages(user.visiblePages || []);
     setVisibilityDialogOpen(true);
+  };
+  
+  // When a user is selected for password reset
+  const handlePasswordReset = (user: UserListItem) => {
+    setSelectedUser(user);
+    setPasswordDialogOpen(true);
   };
   
   // Handle role update submission
@@ -359,6 +367,14 @@ export default function UserManagement() {
                     >
                       <Layers className="h-4 w-4 mr-1" />
                       Page Access
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handlePasswordReset(user)}
+                    >
+                      <Key className="h-4 w-4 mr-1" />
+                      Password
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -602,6 +618,16 @@ export default function UserManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Set Password Dialog */}
+      {selectedUser && (
+        <SetPasswordDialog
+          isOpen={passwordDialogOpen}
+          onClose={() => setPasswordDialogOpen(false)}
+          userId={selectedUser.id}
+          username={selectedUser.username}
+        />
+      )}
     </div>
   );
 }

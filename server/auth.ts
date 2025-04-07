@@ -16,7 +16,7 @@ import { hasPermission, getPermissionsForRole } from "@shared/permissions";
 const SECRET_KEY = crypto.randomBytes(32).toString("hex");
 
 // Simplified bcrypt password functions
-async function hashPassword(password: string): Promise<string> {
+export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10);
 }
 

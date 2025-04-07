@@ -265,6 +265,7 @@ export default function SalesTeamPage() {
   const { data: teamMembers = [], isLoading: isLoadingTeamMembers } = useQuery({
     queryKey: ["/api/admin/sales-team"],
     select: (data: any) => data.data || [],
+    refetchInterval: 5000, // Auto-refresh every 5 seconds
   });
 
   // Fetch team performance
@@ -283,18 +284,21 @@ export default function SalesTeamPage() {
         revenue: "$0",
       },
     },
+    refetchInterval: 5000, // Auto-refresh every 5 seconds
   });
 
   // Fetch unassigned leads
   const { data: unassignedLeads = [], isLoading: isLoadingUnassignedLeads } = useQuery({
     queryKey: ["/api/admin/leads/unassigned"],
     select: (data: any) => data.data || [],
+    refetchInterval: 5000, // Auto-refresh every 5 seconds
   });
 
   // Fetch lead assignments
   const { data: leadAssignments = [], isLoading: isLoadingLeadAssignments } = useQuery({
     queryKey: ["/api/admin/leads/assignments"],
     select: (data: any) => data.data || [],
+    refetchInterval: 5000, // Auto-refresh every 5 seconds
   });
 
   // Add new team member mutation

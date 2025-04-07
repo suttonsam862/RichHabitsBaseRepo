@@ -133,7 +133,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             },
             {
               name: "Corporate",
-              href: "/admin/corporate",
+              href: "/corporate",
               icon: <Building className="mr-2" size={16} />,
             },
             {

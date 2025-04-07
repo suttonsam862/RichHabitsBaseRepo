@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { z } from "zod";
 import { db } from "./db";
 import { sql, eq, or } from "drizzle-orm";
-import { setupAuth } from "./auth";
+import { setupAuth, hashPassword } from "./auth";
 import { 
   leads,
   orders,
@@ -519,6 +519,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/sales-team", hasRequiredPermission(PERMISSIONS.MANAGE_USERS), async (req, res) => {
     try {
       const validatedData = insertSalesTeamMemberSchema.parse(req.body);
+      
+      // Hash the password if creating a user account
+      if (validatedData.createUserAccount && validatedData.password) {
+        const hashedPassword = await hashPassword(validatedData.password);
+        validatedData.password = hashedPassword;
+      }
+      
       const newMember = await storage.createSalesTeamMember(validatedData);
       
       // Create activity for the new team member
@@ -554,7 +561,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Team member not found" });
       }
       
-      const updatedMember = await storage.updateSalesTeamMember(id, req.body);
+      // Make a copy of the request body so we can modify it
+      const updateData = { ...req.body };
+      
+      // Hash the password if it's being updated
+      if (updateData.password) {
+        updateData.password = await hashPassword(updateData.password);
+      }
+      
+      const updatedMember = await storage.updateSalesTeamMember(id, updateData);
       
       // Create activity for the updated team member
       await storage.createActivity({

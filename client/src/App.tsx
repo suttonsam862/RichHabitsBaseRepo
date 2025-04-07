@@ -11,6 +11,9 @@ import Profile from "./pages/profile";
 import Settings from "./pages/settings";
 import AuthPage from "./pages/auth-page";
 import UserManagement from "./pages/user-management";
+import Design from "./pages/design";
+import Manufacturing from "./pages/manufacturing";
+import Organizations from "./pages/organizations";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 import { useAuth, AuthProvider } from "@/hooks/use-auth";
@@ -26,6 +29,9 @@ function DashboardLayout() {
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/leads" component={Leads} />
         <Route path="/orders" component={Orders} />
+        <Route path="/design" component={Design} />
+        <Route path="/manufacturing" component={Manufacturing} />
+        <Route path="/organizations" component={Organizations} />
         <Route path="/messages" component={Messages} />
         <Route path="/reports" component={Reports} />
         <Route path="/analytics" component={Analytics} />

@@ -526,7 +526,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           className="md:hidden ml-auto text-gray-500 hover:text-gray-700 dark:text-gray-400"
           onClick={onClose}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
       
@@ -540,18 +540,15 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               <Link 
                 key={item.href} 
                 href={item.href}
+                className={cn(
+                  "flex items-center px-3 py-2 text-sm font-medium rounded-md",
+                  location === item.href || (item.href === "/dashboard" && location === "/") 
+                    ? "bg-brand-50 dark:bg-gray-700 text-brand-600 dark:text-brand-400" 
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                )}
               >
-                <a 
-                  className={cn(
-                    "flex items-center px-3 py-2 text-sm font-medium rounded-md",
-                    location === item.href || (item.href === "/dashboard" && location === "/") 
-                      ? "bg-brand-50 dark:bg-gray-700 text-brand-600 dark:text-brand-400" 
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  )}
-                >
-                  {item.icon}
-                  {item.name}
-                </a>
+                {item.icon}
+                {item.name}
               </Link>
             ))}
           </div>

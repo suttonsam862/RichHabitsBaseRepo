@@ -158,12 +158,34 @@ export function getPermissionGroups(): { category: string; permissions: Permissi
         PERMISSIONS.EDIT_ORDERS,
         PERMISSIONS.DELETE_ORDERS,
         PERMISSIONS.VIEW_ORDERS,
+        PERMISSIONS.APPROVE_ORDERS,
+      ],
+    },
+    {
+      category: 'Design Management',
+      permissions: [
+        PERMISSIONS.CREATE_DESIGNS,
+        PERMISSIONS.EDIT_DESIGNS,
+        PERMISSIONS.DELETE_DESIGNS,
+        PERMISSIONS.VIEW_DESIGNS,
+        PERMISSIONS.APPROVE_DESIGNS,
+      ],
+    },
+    {
+      category: 'Production Management',
+      permissions: [
+        PERMISSIONS.CREATE_PRODUCTION,
+        PERMISSIONS.EDIT_PRODUCTION,
+        PERMISSIONS.DELETE_PRODUCTION,
+        PERMISSIONS.VIEW_PRODUCTION,
+        PERMISSIONS.COMPLETE_PRODUCTION,
       ],
     },
     {
       category: 'Catalog Management',
       permissions: [
         PERMISSIONS.VIEW_CATALOG,
+        PERMISSIONS.EDIT_CATALOG,
         PERMISSIONS.MANAGE_CATALOG,
       ],
     },

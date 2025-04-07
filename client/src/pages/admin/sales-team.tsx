@@ -177,48 +177,87 @@ export default function SalesTeamPage() {
     
     // Sales team presets
     salesBasic: { name: "Sales Basic", permissions: [
-      PERMISSIONS.VIEW_LEADS, PERMISSIONS.VIEW_ORDERS, PERMISSIONS.VIEW_MESSAGES
+      PERMISSIONS.VIEW_LEADS, PERMISSIONS.VIEW_ORDERS, PERMISSIONS.VIEW_MESSAGES,
+      PERMISSIONS.VIEW_CATALOG
     ]},
     salesStandard: { name: "Sales Standard", permissions: [
       PERMISSIONS.CREATE_LEADS, PERMISSIONS.EDIT_LEADS, PERMISSIONS.VIEW_LEADS, 
       PERMISSIONS.CREATE_ORDERS, PERMISSIONS.VIEW_ORDERS, 
-      PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES
+      PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES,
+      PERMISSIONS.VIEW_CATALOG
     ]},
     salesAdvanced: { name: "Sales Advanced", permissions: [
       PERMISSIONS.CREATE_LEADS, PERMISSIONS.EDIT_LEADS, PERMISSIONS.VIEW_LEADS,
       PERMISSIONS.CREATE_ORDERS, PERMISSIONS.EDIT_ORDERS, PERMISSIONS.VIEW_ORDERS,
       PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES,
-      PERMISSIONS.VIEW_REPORTS
+      PERMISSIONS.VIEW_REPORTS, PERMISSIONS.VIEW_CATALOG
+    ]},
+
+    // Sales manager presets
+    salesManager: { name: "Sales Manager", permissions: [
+      PERMISSIONS.CREATE_LEADS, PERMISSIONS.EDIT_LEADS, PERMISSIONS.VIEW_LEADS, PERMISSIONS.DELETE_LEADS,
+      PERMISSIONS.CREATE_ORDERS, PERMISSIONS.EDIT_ORDERS, PERMISSIONS.VIEW_ORDERS, PERMISSIONS.DELETE_ORDERS,
+      PERMISSIONS.APPROVE_ORDERS, PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES,
+      PERMISSIONS.VIEW_REPORTS, PERMISSIONS.VIEW_CATALOG
     ]},
     
     // Design team presets
     designBasic: { name: "Design Basic", permissions: [
-      PERMISSIONS.VIEW_DESIGNS, PERMISSIONS.VIEW_ORDERS, PERMISSIONS.VIEW_MESSAGES
+      PERMISSIONS.VIEW_DESIGNS, PERMISSIONS.VIEW_ORDERS, PERMISSIONS.VIEW_MESSAGES,
+      PERMISSIONS.VIEW_CATALOG
     ]},
     designStandard: { name: "Design Standard", permissions: [
       PERMISSIONS.CREATE_DESIGNS, PERMISSIONS.EDIT_DESIGNS, PERMISSIONS.VIEW_DESIGNS,
-      PERMISSIONS.VIEW_ORDERS, PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES
+      PERMISSIONS.VIEW_ORDERS, PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES,
+      PERMISSIONS.VIEW_CATALOG
     ]},
     designAdvanced: { name: "Design Advanced", permissions: [
       PERMISSIONS.CREATE_DESIGNS, PERMISSIONS.EDIT_DESIGNS, PERMISSIONS.VIEW_DESIGNS,
       PERMISSIONS.APPROVE_DESIGNS, PERMISSIONS.VIEW_ORDERS, 
       PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES,
-      PERMISSIONS.VIEW_REPORTS
+      PERMISSIONS.VIEW_REPORTS, PERMISSIONS.VIEW_CATALOG, PERMISSIONS.EDIT_CATALOG
+    ]},
+
+    // Design manager presets
+    designManager: { name: "Design Manager", permissions: [
+      PERMISSIONS.CREATE_DESIGNS, PERMISSIONS.EDIT_DESIGNS, PERMISSIONS.VIEW_DESIGNS,
+      PERMISSIONS.APPROVE_DESIGNS, PERMISSIONS.DELETE_DESIGNS, PERMISSIONS.VIEW_ORDERS,
+      PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES, PERMISSIONS.VIEW_REPORTS,
+      PERMISSIONS.VIEW_CATALOG, PERMISSIONS.EDIT_CATALOG, PERMISSIONS.MANAGE_CATALOG
     ]},
     
     // Manufacturing presets
     manufacturingBasic: { name: "Manufacturing Basic", permissions: [
-      PERMISSIONS.VIEW_PRODUCTION, PERMISSIONS.VIEW_DESIGNS, PERMISSIONS.VIEW_MESSAGES
+      PERMISSIONS.VIEW_PRODUCTION, PERMISSIONS.VIEW_DESIGNS, PERMISSIONS.VIEW_MESSAGES,
+      PERMISSIONS.VIEW_CATALOG
     ]},
     manufacturingStandard: { name: "Manufacturing Standard", permissions: [
       PERMISSIONS.EDIT_PRODUCTION, PERMISSIONS.VIEW_PRODUCTION, 
       PERMISSIONS.VIEW_DESIGNS, PERMISSIONS.VIEW_ORDERS,
-      PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES
+      PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES,
+      PERMISSIONS.VIEW_CATALOG
     ]},
     manufacturingAdvanced: { name: "Manufacturing Advanced", permissions: [
       PERMISSIONS.CREATE_PRODUCTION, PERMISSIONS.EDIT_PRODUCTION, PERMISSIONS.VIEW_PRODUCTION,
       PERMISSIONS.COMPLETE_PRODUCTION, PERMISSIONS.VIEW_DESIGNS, PERMISSIONS.VIEW_ORDERS,
-      PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES
+      PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES, PERMISSIONS.VIEW_CATALOG
+    ]},
+
+    // Manufacturing manager presets
+    manufacturingManager: { name: "Manufacturing Manager", permissions: [
+      PERMISSIONS.CREATE_PRODUCTION, PERMISSIONS.EDIT_PRODUCTION, PERMISSIONS.VIEW_PRODUCTION,
+      PERMISSIONS.COMPLETE_PRODUCTION, PERMISSIONS.DELETE_PRODUCTION, PERMISSIONS.VIEW_DESIGNS,
+      PERMISSIONS.VIEW_ORDERS, PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES,
+      PERMISSIONS.VIEW_REPORTS, PERMISSIONS.VIEW_CATALOG, PERMISSIONS.EDIT_CATALOG
+    ]},
+
+    // Administrator presets
+    adminFull: { name: "Admin (Full Access)", permissions: Object.values(PERMISSIONS) },
+    adminBasic: { name: "Admin (Basic)", permissions: [
+      PERMISSIONS.MANAGE_USERS, PERMISSIONS.VIEW_USERS,
+      PERMISSIONS.VIEW_LEADS, PERMISSIONS.VIEW_ORDERS, PERMISSIONS.VIEW_DESIGNS, 
+      PERMISSIONS.VIEW_PRODUCTION, PERMISSIONS.VIEW_MESSAGES, PERMISSIONS.VIEW_REPORTS,
+      PERMISSIONS.VIEW_CATALOG, PERMISSIONS.MANAGE_CATALOG
     ]}
   };
 
@@ -1498,23 +1537,35 @@ export default function SalesTeamPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="default">Default Role Permissions</SelectItem>
+                        
                         <SelectGroup>
                           <SelectLabel>Sales Team</SelectLabel>
                           <SelectItem value="salesBasic">Sales Basic</SelectItem>
                           <SelectItem value="salesStandard">Sales Standard</SelectItem>
                           <SelectItem value="salesAdvanced">Sales Advanced</SelectItem>
+                          <SelectItem value="salesManager">Sales Manager</SelectItem>
                         </SelectGroup>
+                        
                         <SelectGroup>
                           <SelectLabel>Design Team</SelectLabel>
                           <SelectItem value="designBasic">Design Basic</SelectItem>
                           <SelectItem value="designStandard">Design Standard</SelectItem>
                           <SelectItem value="designAdvanced">Design Advanced</SelectItem>
+                          <SelectItem value="designManager">Design Manager</SelectItem>
                         </SelectGroup>
+                        
                         <SelectGroup>
                           <SelectLabel>Manufacturing</SelectLabel>
                           <SelectItem value="manufacturingBasic">Manufacturing Basic</SelectItem>
                           <SelectItem value="manufacturingStandard">Manufacturing Standard</SelectItem>
                           <SelectItem value="manufacturingAdvanced">Manufacturing Advanced</SelectItem>
+                          <SelectItem value="manufacturingManager">Manufacturing Manager</SelectItem>
+                        </SelectGroup>
+                        
+                        <SelectGroup>
+                          <SelectLabel>Administrator</SelectLabel>
+                          <SelectItem value="adminBasic">Admin (Basic)</SelectItem>
+                          <SelectItem value="adminFull">Admin (Full Access)</SelectItem>
                         </SelectGroup>
                       </SelectContent>
                     </Select>

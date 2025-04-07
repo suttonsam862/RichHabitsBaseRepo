@@ -31,6 +31,7 @@ export const PERMISSIONS = {
   EDIT_ORDERS: 'edit_orders',
   DELETE_ORDERS: 'delete_orders',
   VIEW_ORDERS: 'view_orders',
+  APPROVE_ORDERS: 'approve_orders',
   
   // Design management
   CREATE_DESIGNS: 'create_designs',
@@ -44,6 +45,7 @@ export const PERMISSIONS = {
   EDIT_PRODUCTION: 'edit_production',
   VIEW_PRODUCTION: 'view_production',
   COMPLETE_PRODUCTION: 'complete_production',
+  DELETE_PRODUCTION: 'delete_production',
   
   // Message management
   SEND_MESSAGES: 'send_messages',
@@ -51,6 +53,7 @@ export const PERMISSIONS = {
   
   // Catalog management
   VIEW_CATALOG: 'view_catalog',
+  EDIT_CATALOG: 'edit_catalog',
   MANAGE_CATALOG: 'manage_catalog',
   
   // Reports & Analytics

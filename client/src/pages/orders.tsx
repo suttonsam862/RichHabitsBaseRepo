@@ -251,7 +251,7 @@ export default function Orders() {
     <>
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={openDeleteDialog} onOpenChange={setOpenDeleteDialog}>
-        <AlertDialogContent className="bg-white">
+        <AlertDialogContent className="bg-white max-h-[90vh] overflow-y-auto">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-gray-900">Delete Order</AlertDialogTitle>
             <AlertDialogDescription className="text-gray-600">
@@ -307,7 +307,7 @@ export default function Orders() {
                   Add Order
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add New Order</DialogTitle>
                   <DialogDescription>

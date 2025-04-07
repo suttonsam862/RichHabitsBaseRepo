@@ -43,15 +43,9 @@ export default function LoginForm() {
       
       console.log("Login successful, got result:", result);
       
-      // Force a query refetch to ensure we have the latest user data
-      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      // Force a hard browser refresh to ensure a clean state
+      window.location.href = '/';
       
-      // Add a small delay to ensure state is updated before redirect
-      setTimeout(() => {
-        // Navigate to dashboard
-        setLocation('/');
-        console.log("Redirecting to dashboard...");
-      }, 100);
     } catch (error) {
       // Error is handled in the mutation's onError callback
       console.error("Login error:", error);

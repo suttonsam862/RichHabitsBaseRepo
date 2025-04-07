@@ -269,7 +269,7 @@ export default function Leads() {
                 Add Lead
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Lead</DialogTitle>
                 <DialogDescription>
@@ -559,7 +559,7 @@ export default function Leads() {
 
       {/* Edit Lead Dialog */}
       <Dialog open={openEditDialog} onOpenChange={setOpenEditDialog}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Lead</DialogTitle>
             <DialogDescription>
@@ -700,7 +700,7 @@ export default function Leads() {
 
       {/* View Lead Dialog */}
       <Dialog open={openViewDialog} onOpenChange={setOpenViewDialog}>
-        <DialogContent className="bg-white">
+        <DialogContent className="bg-white max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Lead Details</DialogTitle>
             <DialogDescription>

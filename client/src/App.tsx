@@ -21,6 +21,7 @@ import { useAuth, AuthProvider } from "@/hooks/use-auth";
 // Admin pages
 import SalesTeam from "./pages/admin/sales-team";
 import DesignTeam from "./pages/admin/design-team";
+import ManufacturingTeam from "./pages/admin/manufacturing-team";
 
 // The main dashboard layout with all protected routes
 function DashboardLayout() {
@@ -46,6 +47,7 @@ function DashboardLayout() {
         {/* Admin Routes */}
         <Route path="/admin/sales-team" component={SalesTeam} />
         <Route path="/admin/design-team" component={DesignTeam} />
+        <Route path="/admin/manufacturing-team" component={ManufacturingTeam} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

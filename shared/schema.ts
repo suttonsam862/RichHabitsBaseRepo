@@ -7,6 +7,8 @@ export const ROLES = {
   ADMIN: 'admin',
   MANAGER: 'manager',
   AGENT: 'agent',
+  DESIGNER: 'designer',
+  MANUFACTURER: 'manufacturer',
   VIEWER: 'viewer',
 } as const;
 
@@ -29,6 +31,19 @@ export const PERMISSIONS = {
   EDIT_ORDERS: 'edit_orders',
   DELETE_ORDERS: 'delete_orders',
   VIEW_ORDERS: 'view_orders',
+  
+  // Design management
+  CREATE_DESIGNS: 'create_designs',
+  EDIT_DESIGNS: 'edit_designs',
+  DELETE_DESIGNS: 'delete_designs',
+  VIEW_DESIGNS: 'view_designs',
+  APPROVE_DESIGNS: 'approve_designs',
+  
+  // Manufacturing management
+  CREATE_PRODUCTION: 'create_production',
+  EDIT_PRODUCTION: 'edit_production',
+  VIEW_PRODUCTION: 'view_production',
+  COMPLETE_PRODUCTION: 'complete_production',
   
   // Message management
   SEND_MESSAGES: 'send_messages',

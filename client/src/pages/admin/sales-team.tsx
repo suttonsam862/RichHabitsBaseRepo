@@ -1,8 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { ROLES, PERMISSIONS, Role, Permission } from "@shared/schema";
+import { 
+  getPermissionGroups, 
+  getRoleDisplayName, 
+  getPermissionDisplayName,
+  DEFAULT_ROLE_PERMISSIONS 
+} from "@shared/permissions";
 import {
   Card,
   CardContent,
@@ -37,7 +47,16 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Select, 
+  SelectContent, 
+  SelectGroup,
+  SelectItem, 
+  SelectLabel,
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -88,6 +107,12 @@ interface SalesTeamMember {
   assignedIndustries: string[];
   specialization: string;
   notes?: string;
+  // User account fields
+  username?: string;
+  password?: string;
+  systemRole?: Role;
+  systemPermissions?: Permission[];
+  createUserAccount?: boolean;
 }
 
 interface TeamPerformance {
@@ -134,7 +159,64 @@ export default function SalesTeamPage() {
     status: "active",
     role: "Junior Sales Rep",
     commissionRate: "5.00",
+    createUserAccount: false,
+    systemRole: ROLES.AGENT,
   });
+  
+  // Permission management states
+  const [selectedPermissionPreset, setSelectedPermissionPreset] = useState<string>("default");
+  const [customPermissions, setCustomPermissions] = useState<Permission[]>([]);
+  
+  // Define permission presets
+  const permissionPresets = {
+    default: { name: "Default Role Permissions", permissions: [] },
+    
+    // Sales team presets
+    salesBasic: { name: "Sales Basic", permissions: [
+      PERMISSIONS.VIEW_LEADS, PERMISSIONS.VIEW_ORDERS, PERMISSIONS.VIEW_MESSAGES
+    ]},
+    salesStandard: { name: "Sales Standard", permissions: [
+      PERMISSIONS.CREATE_LEADS, PERMISSIONS.EDIT_LEADS, PERMISSIONS.VIEW_LEADS, 
+      PERMISSIONS.CREATE_ORDERS, PERMISSIONS.VIEW_ORDERS, 
+      PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES
+    ]},
+    salesAdvanced: { name: "Sales Advanced", permissions: [
+      PERMISSIONS.CREATE_LEADS, PERMISSIONS.EDIT_LEADS, PERMISSIONS.VIEW_LEADS,
+      PERMISSIONS.CREATE_ORDERS, PERMISSIONS.EDIT_ORDERS, PERMISSIONS.VIEW_ORDERS,
+      PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES,
+      PERMISSIONS.VIEW_REPORTS
+    ]},
+    
+    // Design team presets
+    designBasic: { name: "Design Basic", permissions: [
+      PERMISSIONS.VIEW_DESIGNS, PERMISSIONS.VIEW_ORDERS, PERMISSIONS.VIEW_MESSAGES
+    ]},
+    designStandard: { name: "Design Standard", permissions: [
+      PERMISSIONS.CREATE_DESIGNS, PERMISSIONS.EDIT_DESIGNS, PERMISSIONS.VIEW_DESIGNS,
+      PERMISSIONS.VIEW_ORDERS, PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES
+    ]},
+    designAdvanced: { name: "Design Advanced", permissions: [
+      PERMISSIONS.CREATE_DESIGNS, PERMISSIONS.EDIT_DESIGNS, PERMISSIONS.VIEW_DESIGNS,
+      PERMISSIONS.APPROVE_DESIGNS, PERMISSIONS.VIEW_ORDERS, 
+      PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES,
+      PERMISSIONS.VIEW_REPORTS
+    ]},
+    
+    // Manufacturing presets
+    manufacturingBasic: { name: "Manufacturing Basic", permissions: [
+      PERMISSIONS.VIEW_PRODUCTION, PERMISSIONS.VIEW_DESIGNS, PERMISSIONS.VIEW_MESSAGES
+    ]},
+    manufacturingStandard: { name: "Manufacturing Standard", permissions: [
+      PERMISSIONS.EDIT_PRODUCTION, PERMISSIONS.VIEW_PRODUCTION, 
+      PERMISSIONS.VIEW_DESIGNS, PERMISSIONS.VIEW_ORDERS,
+      PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES
+    ]},
+    manufacturingAdvanced: { name: "Manufacturing Advanced", permissions: [
+      PERMISSIONS.CREATE_PRODUCTION, PERMISSIONS.EDIT_PRODUCTION, PERMISSIONS.VIEW_PRODUCTION,
+      PERMISSIONS.COMPLETE_PRODUCTION, PERMISSIONS.VIEW_DESIGNS, PERMISSIONS.VIEW_ORDERS,
+      PERMISSIONS.SEND_MESSAGES, PERMISSIONS.VIEW_MESSAGES
+    ]}
+  };
 
   // Fetch team members
   const { data: teamMembers = [], isLoading: isLoadingTeamMembers } = useQuery({
@@ -189,7 +271,11 @@ export default function SalesTeamPage() {
         status: "active",
         role: "Junior Sales Rep",
         commissionRate: "5.00",
+        createUserAccount: false,
+        systemRole: ROLES.AGENT
       });
+      setSelectedPermissionPreset("default");
+      setCustomPermissions([]);
       toast({
         title: "Team member added",
         description: "New sales team member has been added successfully",
@@ -316,8 +402,73 @@ export default function SalesTeamPage() {
     }
   };
 
+  // Handle permission preset change
+  const handlePermissionPresetChange = (presetKey: string) => {
+    setSelectedPermissionPreset(presetKey);
+    
+    if (presetKey === "default") {
+      // Use default permissions for the selected role
+      const defaultPermissions = DEFAULT_ROLE_PERMISSIONS[newMember.systemRole as Role] || [];
+      setCustomPermissions(defaultPermissions);
+      setNewMember({
+        ...newMember,
+        systemPermissions: defaultPermissions
+      });
+    } else if (presetKey in permissionPresets) {
+      // Use the preset permissions
+      const presetPermissions = permissionPresets[presetKey as keyof typeof permissionPresets].permissions;
+      setCustomPermissions(presetPermissions);
+      setNewMember({
+        ...newMember,
+        systemPermissions: presetPermissions
+      });
+    }
+  };
+  
+  // Handle permission toggle
+  const handlePermissionToggle = (permission: Permission) => {
+    const updatedPermissions = customPermissions.includes(permission)
+      ? customPermissions.filter(p => p !== permission)
+      : [...customPermissions, permission];
+    
+    setCustomPermissions(updatedPermissions);
+    setNewMember({
+      ...newMember,
+      systemPermissions: updatedPermissions
+    });
+  };
+  
+  // Handle system role change
+  const handleSystemRoleChange = (role: Role) => {
+    setNewMember({
+      ...newMember,
+      systemRole: role
+    });
+    
+    // If using default permissions, update them based on the new role
+    if (selectedPermissionPreset === "default") {
+      const defaultPermissions = DEFAULT_ROLE_PERMISSIONS[role] || [];
+      setCustomPermissions(defaultPermissions);
+      setNewMember({
+        ...newMember,
+        systemRole: role,
+        systemPermissions: defaultPermissions
+      });
+    }
+  };
+
   // Handle add new member
   const handleAddMember = () => {
+    // If creating a user account, ensure we have username and password
+    if (newMember.createUserAccount && (!newMember.username || !newMember.password)) {
+      toast({
+        title: "Missing credentials",
+        description: "Username and password are required to create a user account",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     addMemberMutation.mutate(newMember);
   };
 
@@ -1243,6 +1394,130 @@ export default function SalesTeamPage() {
                 value={newMember.notes || ''}
                 onChange={(e) => setNewMember({ ...newMember, notes: e.target.value })}
               />
+            </div>
+            
+            <Separator className="my-4" />
+            
+            {/* User Account Creation Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <h3 className="text-base font-medium">User Account</h3>
+                  <p className="text-sm text-muted-foreground">Create a system account for this team member</p>
+                </div>
+                <Switch
+                  checked={!!newMember.createUserAccount}
+                  onCheckedChange={(checked) => setNewMember({ ...newMember, createUserAccount: checked })}
+                />
+              </div>
+              
+              {newMember.createUserAccount && (
+                <div className="space-y-4 border rounded-md p-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="username">Username</Label>
+                      <Input
+                        id="username"
+                        placeholder="Username for login"
+                        value={newMember.username || ''}
+                        onChange={(e) => setNewMember({ ...newMember, username: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="Temporary password"
+                        value={newMember.password || ''}
+                        onChange={(e) => setNewMember({ ...newMember, password: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="systemRole">System Role</Label>
+                    <Select
+                      value={newMember.systemRole as string}
+                      onValueChange={(value: Role) => handleSystemRoleChange(value)}
+                    >
+                      <SelectTrigger id="systemRole">
+                        <SelectValue placeholder="Select system role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={ROLES.AGENT}>{getRoleDisplayName(ROLES.AGENT)}</SelectItem>
+                        <SelectItem value={ROLES.DESIGNER}>{getRoleDisplayName(ROLES.DESIGNER)}</SelectItem>
+                        <SelectItem value={ROLES.MANUFACTURER}>{getRoleDisplayName(ROLES.MANUFACTURER)}</SelectItem>
+                        <SelectItem value={ROLES.MANAGER}>{getRoleDisplayName(ROLES.MANAGER)}</SelectItem>
+                        <SelectItem value={ROLES.ADMIN}>{getRoleDisplayName(ROLES.ADMIN)}</SelectItem>
+                        <SelectItem value={ROLES.VIEWER}>{getRoleDisplayName(ROLES.VIEWER)}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="mb-1">Permission Presets</Label>
+                    <Select
+                      value={selectedPermissionPreset}
+                      onValueChange={handlePermissionPresetChange}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select permission preset" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="default">Default Role Permissions</SelectItem>
+                        <SelectGroup>
+                          <SelectLabel>Sales Team</SelectLabel>
+                          <SelectItem value="salesBasic">Sales Basic</SelectItem>
+                          <SelectItem value="salesStandard">Sales Standard</SelectItem>
+                          <SelectItem value="salesAdvanced">Sales Advanced</SelectItem>
+                        </SelectGroup>
+                        <SelectGroup>
+                          <SelectLabel>Design Team</SelectLabel>
+                          <SelectItem value="designBasic">Design Basic</SelectItem>
+                          <SelectItem value="designStandard">Design Standard</SelectItem>
+                          <SelectItem value="designAdvanced">Design Advanced</SelectItem>
+                        </SelectGroup>
+                        <SelectGroup>
+                          <SelectLabel>Manufacturing</SelectLabel>
+                          <SelectItem value="manufacturingBasic">Manufacturing Basic</SelectItem>
+                          <SelectItem value="manufacturingStandard">Manufacturing Standard</SelectItem>
+                          <SelectItem value="manufacturingAdvanced">Manufacturing Advanced</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">Choose a preset or customize permissions below</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="mb-1">Custom Permissions</Label>
+                    <div className="border rounded-md p-3 max-h-[200px] overflow-auto">
+                      {getPermissionGroups().map((group) => (
+                        <div key={group.category} className="mb-3 last:mb-0">
+                          <h4 className="text-sm font-semibold mb-1">{group.category}</h4>
+                          <div className="grid grid-cols-1 gap-2">
+                            {group.permissions.map((permission) => (
+                              <div key={permission} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`perm-${permission}`}
+                                  checked={customPermissions.includes(permission)}
+                                  onCheckedChange={() => handlePermissionToggle(permission)}
+                                />
+                                <label
+                                  htmlFor={`perm-${permission}`}
+                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                  {getPermissionDisplayName(permission)}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>

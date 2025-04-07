@@ -39,7 +39,7 @@ import {
   AvatarImage,
 } from "@/components/ui/avatar";
 import {
-  PaintBucket,
+  Factory,
   Search,
   Plus,
   Filter,
@@ -55,11 +55,13 @@ import {
   User,
   Loader2,
   Palette,
-  FileImage
+  ClipboardList,
+  Package,
+  Truck
 } from "lucide-react";
 
 // Type definitions
-interface DesignTeamMember {
+interface ManufacturingTeamMember {
   id: number;
   name: string;
   email: string;
@@ -68,9 +70,9 @@ interface DesignTeamMember {
   status: "active" | "inactive" | "onboarding" | "on_leave";
   avatarUrl?: string;
   hireDate: string;
-  designCount: number;
-  approvedDesignCount: number;
-  rejectedDesignCount: number;
+  productionCount: number;
+  completedProductionCount: number;
+  delayedProductionCount: number;
   specialization: string[];
   lastActiveAt: string;
   notes?: string;
@@ -85,50 +87,50 @@ interface DesignTeamMember {
 interface TeamPerformance {
   totalMembers: number;
   activeMembers: number;
-  totalDesigns: number;
-  approvedDesigns: number;
-  rejectedDesigns: number;
-  pendingDesigns: number;
-  averageRevisionCount: number;
+  totalProductions: number;
+  completedProductions: number;
+  delayedProductions: number;
+  pendingProductions: number;
+  averageCompletionTime: number; // in days
   topPerformer: {
     name: string;
-    approvalRate: string;
+    completionRate: string;
     avatarUrl?: string;
   };
 }
 
-interface DesignAssignment {
+interface ProductionAssignment {
   id: number;
-  designId: number;
-  designName: string;
+  productionId: number;
+  productionName: string;
   orderId: number;
   orderName: string;
   assignedToId: number;
   assignedToName: string;
   assignedAt: string;
-  status: "pending" | "in_progress" | "review" | "approved" | "rejected" | "completed";
+  status: "pending" | "in_progress" | "quality_check" | "completed" | "delayed" | "cancelled";
   dueDate: string;
   notes?: string;
 }
 
-export default function DesignTeamPage() {
+export default function ManufacturingTeamPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedMember, setSelectedMember] = useState<DesignTeamMember | null>(null);
+  const [selectedMember, setSelectedMember] = useState<ManufacturingTeamMember | null>(null);
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
-  const [isAssignDesignDialogOpen, setIsAssignDesignDialogOpen] = useState(false);
+  const [isAssignProductionDialogOpen, setIsAssignProductionDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [editedMember, setEditedMember] = useState<Partial<DesignTeamMember>>({});
-  const [newMember, setNewMember] = useState<Partial<DesignTeamMember>>({
+  const [editedMember, setEditedMember] = useState<Partial<ManufacturingTeamMember>>({});
+  const [newMember, setNewMember] = useState<Partial<ManufacturingTeamMember>>({
     name: "",
     email: "",
     phone: "",
     status: "active",
-    role: "Junior Designer",
+    role: "Production Specialist",
     createUserAccount: false,
-    systemRole: ROLES.DESIGNER,
+    systemRole: ROLES.MANUFACTURER,
   });
   
   // Permission management states
@@ -188,64 +190,64 @@ export default function DesignTeamPage() {
 
   // Fetch team members
   const { data: teamMembers = [], isLoading: isLoadingTeamMembers } = useQuery({
-    queryKey: ["/api/admin/design-team"],
+    queryKey: ["/api/admin/manufacturing-team"],
     select: (data: any) => data.data || [],
   });
 
   // Fetch team performance
   const { data: performance, isLoading: isLoadingPerformance } = useQuery({
-    queryKey: ["/api/admin/design-team/performance"],
+    queryKey: ["/api/admin/manufacturing-team/performance"],
     select: (data: any) => data.data || {
       totalMembers: 0,
       activeMembers: 0,
-      totalDesigns: 0,
-      approvedDesigns: 0,
-      rejectedDesigns: 0,
-      pendingDesigns: 0,
-      averageRevisionCount: 0,
+      totalProductions: 0,
+      completedProductions: 0,
+      delayedProductions: 0,
+      pendingProductions: 0,
+      averageCompletionTime: 0,
       topPerformer: {
         name: "N/A",
-        approvalRate: "0%",
+        completionRate: "0%",
       },
     },
   });
 
-  // Fetch unassigned designs
-  const { data: unassignedDesigns = [], isLoading: isLoadingUnassignedDesigns } = useQuery({
-    queryKey: ["/api/admin/designs/unassigned"],
+  // Fetch unassigned productions
+  const { data: unassignedProductions = [], isLoading: isLoadingUnassignedProductions } = useQuery({
+    queryKey: ["/api/admin/productions/unassigned"],
     select: (data: any) => data.data || [],
   });
 
-  // Fetch design assignments
-  const { data: designAssignments = [], isLoading: isLoadingDesignAssignments } = useQuery({
-    queryKey: ["/api/admin/designs/assignments"],
+  // Fetch production assignments
+  const { data: productionAssignments = [], isLoading: isLoadingProductionAssignments } = useQuery({
+    queryKey: ["/api/admin/productions/assignments"],
     select: (data: any) => data.data || [],
   });
 
   // Add new team member mutation
   const addMemberMutation = useMutation({
-    mutationFn: async (memberData: Partial<DesignTeamMember>) => {
-      const res = await apiRequest("POST", "/api/admin/design-team", memberData);
+    mutationFn: async (memberData: Partial<ManufacturingTeamMember>) => {
+      const res = await apiRequest("POST", "/api/admin/manufacturing-team", memberData);
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/design-team"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/design-team/performance"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/manufacturing-team"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/manufacturing-team/performance"] });
       setIsAddMemberDialogOpen(false);
       setNewMember({
         name: "",
         email: "",
         phone: "",
         status: "active",
-        role: "Junior Designer",
+        role: "Production Specialist",
         createUserAccount: false,
-        systemRole: ROLES.DESIGNER
+        systemRole: ROLES.MANUFACTURER
       });
       setSelectedPermissionPreset("default");
       setCustomPermissions([]);
       toast({
         title: "Team member added",
-        description: "New design team member has been added successfully",
+        description: "New manufacturing team member has been added successfully",
       });
     },
     onError: (error: Error) => {
@@ -259,18 +261,18 @@ export default function DesignTeamPage() {
 
   // Update team member mutation
   const updateMemberMutation = useMutation({
-    mutationFn: async (memberData: Partial<DesignTeamMember>) => {
+    mutationFn: async (memberData: Partial<ManufacturingTeamMember>) => {
       if (!selectedMember) return;
-      const res = await apiRequest("PATCH", `/api/admin/design-team/${selectedMember.id}`, memberData);
+      const res = await apiRequest("PATCH", `/api/admin/manufacturing-team/${selectedMember.id}`, memberData);
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/design-team"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/design-team/performance"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/manufacturing-team"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/manufacturing-team/performance"] });
       setEditMode(false);
       toast({
         title: "Team member updated",
-        description: "Design team member has been updated successfully",
+        description: "Manufacturing team member has been updated successfully",
       });
     },
     onError: (error: Error) => {
@@ -285,16 +287,16 @@ export default function DesignTeamPage() {
   // Delete team member mutation
   const deleteMemberMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest("DELETE", `/api/admin/design-team/${id}`);
+      const res = await apiRequest("DELETE", `/api/admin/manufacturing-team/${id}`);
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/design-team"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/design-team/performance"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/manufacturing-team"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/manufacturing-team/performance"] });
       setSelectedMember(null);
       toast({
         title: "Team member deleted",
-        description: "Design team member has been deleted successfully",
+        description: "Manufacturing team member has been deleted successfully",
       });
     },
     onError: (error: Error) => {
@@ -306,24 +308,24 @@ export default function DesignTeamPage() {
     },
   });
 
-  // Assign design mutation
-  const assignDesignMutation = useMutation({
-    mutationFn: async (assignment: { designId: number; designerId: number }) => {
-      const res = await apiRequest("POST", "/api/admin/designs/assign", assignment);
+  // Assign production mutation
+  const assignProductionMutation = useMutation({
+    mutationFn: async (assignment: { productionId: number; manufacturerId: number }) => {
+      const res = await apiRequest("POST", "/api/admin/productions/assign", assignment);
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/designs/unassigned"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/designs/assignments"] });
-      setIsAssignDesignDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/productions/unassigned"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/productions/assignments"] });
+      setIsAssignProductionDialogOpen(false);
       toast({
-        title: "Design assigned",
-        description: "Design has been successfully assigned to designer",
+        title: "Production assigned",
+        description: "Production has been successfully assigned to manufacturing specialist",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to assign design",
+        title: "Failed to assign production",
         description: error.message,
         variant: "destructive",
       });
@@ -331,7 +333,7 @@ export default function DesignTeamPage() {
   });
 
   // Filter members by search term and status
-  const filteredMembers = teamMembers.filter((member: DesignTeamMember) => {
+  const filteredMembers = teamMembers.filter((member: ManufacturingTeamMember) => {
     const matchesSearch = 
       member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -343,7 +345,7 @@ export default function DesignTeamPage() {
   });
 
   // Handle member selection
-  const handleMemberSelect = (member: DesignTeamMember) => {
+  const handleMemberSelect = (member: ManufacturingTeamMember) => {
     setSelectedMember(member);
     setEditedMember({});
     setEditMode(false);
@@ -455,21 +457,21 @@ export default function DesignTeamPage() {
     }
   };
 
-  // Render design status badge with appropriate color
-  const getDesignStatusBadge = (status: string) => {
+  // Render production status badge with appropriate color
+  const getProductionStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
         return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Pending</Badge>;
       case "in_progress":
         return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">In Progress</Badge>;
-      case "review":
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">In Review</Badge>;
-      case "approved":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Approved</Badge>;
-      case "rejected":
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Rejected</Badge>;
+      case "quality_check":
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Quality Check</Badge>;
       case "completed":
-        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Completed</Badge>;
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Completed</Badge>;
+      case "delayed":
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Delayed</Badge>;
+      case "cancelled":
+        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Cancelled</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -479,8 +481,8 @@ export default function DesignTeamPage() {
     <div className="container mx-auto py-6 max-w-7xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Design Team Management</h1>
-          <p className="text-muted-foreground">Manage designers, track performance, and assign design projects</p>
+          <h1 className="text-3xl font-bold tracking-tight">Manufacturing Team Management</h1>
+          <p className="text-muted-foreground">Manage manufacturing specialists, track performance, and assign production tasks</p>
         </div>
         <Button onClick={() => setIsAddMemberDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
@@ -492,7 +494,7 @@ export default function DesignTeamPage() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="team-members">Team Members</TabsTrigger>
-          <TabsTrigger value="design-assignments">Design Assignments</TabsTrigger>
+          <TabsTrigger value="production-assignments">Production Assignments</TabsTrigger>
           <TabsTrigger value="performance">Performance</TabsTrigger>
         </TabsList>
 
@@ -508,7 +510,7 @@ export default function DesignTeamPage() {
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Design Team
+                      Manufacturing Team
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -521,26 +523,26 @@ export default function DesignTeamPage() {
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Design Projects
+                      Production Orders
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{performance?.totalDesigns}</div>
+                    <div className="text-2xl font-bold">{performance?.totalProductions}</div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {performance?.approvedDesigns} approved / {performance?.pendingDesigns} pending
+                      {performance?.completedProductions} completed / {performance?.pendingProductions} pending
                     </p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Average Revisions
+                      Average Completion Time
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{performance?.averageRevisionCount}</div>
+                    <div className="text-2xl font-bold">{performance?.averageCompletionTime} days</div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Revisions per design project
+                      From assignment to fulfillment
                     </p>
                   </CardContent>
                 </Card>
@@ -551,7 +553,7 @@ export default function DesignTeamPage() {
                   <CardHeader>
                     <CardTitle>Top Performer</CardTitle>
                     <CardDescription>
-                      Designer with highest design approval rate
+                      Manufacturing specialist with highest completion rate
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -563,7 +565,7 @@ export default function DesignTeamPage() {
                       <div>
                         <p className="font-medium">{performance?.topPerformer?.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          Approval Rate: {performance?.topPerformer?.approvalRate}
+                          Completion Rate: {performance?.topPerformer?.completionRate}
                         </p>
                       </div>
                     </div>
@@ -572,35 +574,35 @@ export default function DesignTeamPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Unassigned Designs</CardTitle>
+                    <CardTitle>Unassigned Productions</CardTitle>
                     <CardDescription>
-                      Design projects waiting to be assigned to a designer
+                      Production orders waiting to be assigned
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {isLoadingUnassignedDesigns ? (
+                    {isLoadingUnassignedProductions ? (
                       <div className="flex justify-center py-4">
                         <Loader2 className="h-6 w-6 animate-spin text-primary" />
                       </div>
-                    ) : unassignedDesigns.length === 0 ? (
-                      <p className="text-muted-foreground">No unassigned designs at the moment</p>
+                    ) : unassignedProductions.length === 0 ? (
+                      <p className="text-muted-foreground">No unassigned productions at the moment</p>
                     ) : (
                       <div className="space-y-2">
-                        {unassignedDesigns.slice(0, 3).map((design: any) => (
-                          <div key={design.id} className="flex items-center justify-between">
+                        {unassignedProductions.slice(0, 3).map((production: any) => (
+                          <div key={production.id} className="flex items-center justify-between">
                             <div>
-                              <p className="font-medium">{design.name}</p>
-                              <p className="text-sm text-muted-foreground">Order #{design.orderId}</p>
+                              <p className="font-medium">{production.name}</p>
+                              <p className="text-sm text-muted-foreground">Order #{production.orderId}</p>
                             </div>
-                            <Button size="sm" onClick={() => setIsAssignDesignDialogOpen(true)}>
+                            <Button size="sm" onClick={() => setIsAssignProductionDialogOpen(true)}>
                               Assign
                             </Button>
                           </div>
                         ))}
-                        {unassignedDesigns.length > 3 && (
+                        {unassignedProductions.length > 3 && (
                           <div className="text-center pt-2">
-                            <Button variant="link" onClick={() => setActiveTab("design-assignments")}>
-                              View all {unassignedDesigns.length} unassigned designs
+                            <Button variant="link" onClick={() => setActiveTab("production-assignments")}>
+                              View all {unassignedProductions.length} unassigned productions
                             </Button>
                           </div>
                         )}
@@ -612,21 +614,21 @@ export default function DesignTeamPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Recent Design Activities</CardTitle>
+                  <CardTitle>Recent Manufacturing Activities</CardTitle>
                   <CardDescription>
-                    Latest design-related activities
+                    Latest manufacturing-related activities
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <div className="flex items-start">
                       <div className="mr-4 mt-1">
-                        <FileImage className="h-5 w-5 text-green-500" />
+                        <Package className="h-5 w-5 text-green-500" />
                       </div>
                       <div>
-                        <p className="font-medium">Design approved</p>
+                        <p className="font-medium">Production completed</p>
                         <p className="text-sm text-muted-foreground">
-                          Sarah Johnson's logo design for Acme Corporation was approved
+                          John Smith completed production for Order #1234 - Acme Corporation
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                           Today at 9:42 AM
@@ -635,12 +637,12 @@ export default function DesignTeamPage() {
                     </div>
                     <div className="flex items-start">
                       <div className="mr-4 mt-1">
-                        <Palette className="h-5 w-5 text-blue-500" />
+                        <ClipboardList className="h-5 w-5 text-blue-500" />
                       </div>
                       <div>
-                        <p className="font-medium">Design assigned</p>
+                        <p className="font-medium">Production assigned</p>
                         <p className="text-sm text-muted-foreground">
-                          Michael Brown was assigned to XYZ Company brand identity project
+                          Michael Brown was assigned to XYZ Company custom merchandise production
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                           Yesterday at 3:15 PM
@@ -654,7 +656,7 @@ export default function DesignTeamPage() {
                       <div>
                         <p className="font-medium">New team member added</p>
                         <p className="text-sm text-muted-foreground">
-                          Emily Parker joined the design team as Senior Graphic Designer
+                          Emily Parker joined the manufacturing team as Production Manager
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                           2 days ago
@@ -715,7 +717,7 @@ export default function DesignTeamPage() {
                 <Card>
                   <CardContent className="p-0">
                     <div className="divide-y">
-                      {filteredMembers.map((member: DesignTeamMember) => (
+                      {filteredMembers.map((member: ManufacturingTeamMember) => (
                         <div
                           key={member.id}
                           className={`p-4 cursor-pointer hover:bg-muted transition-colors ${
@@ -820,7 +822,7 @@ export default function DesignTeamPage() {
                                 <span>Joined: {formatDate(selectedMember.hireDate)}</span>
                               </div>
                               <div className="flex items-center text-sm">
-                                <Palette className="mr-2 h-4 w-4 text-muted-foreground" />
+                                <Factory className="mr-2 h-4 w-4 text-muted-foreground" />
                                 <span>Specializations: {selectedMember.specialization?.join(", ") || "None specified"}</span>
                               </div>
                             </div>
@@ -828,19 +830,19 @@ export default function DesignTeamPage() {
                         </div>
 
                         <div>
-                          <h4 className="text-sm font-semibold mb-2">Design Statistics</h4>
+                          <h4 className="text-sm font-semibold mb-2">Production Statistics</h4>
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="bg-muted rounded-lg p-3">
-                              <p className="text-sm text-muted-foreground">Total Designs</p>
-                              <p className="text-2xl font-bold">{selectedMember.designCount}</p>
+                              <p className="text-sm text-muted-foreground">Total Productions</p>
+                              <p className="text-2xl font-bold">{selectedMember.productionCount}</p>
                             </div>
                             <div className="bg-muted rounded-lg p-3">
-                              <p className="text-sm text-muted-foreground">Approved</p>
-                              <p className="text-2xl font-bold">{selectedMember.approvedDesignCount}</p>
+                              <p className="text-sm text-muted-foreground">Completed</p>
+                              <p className="text-2xl font-bold">{selectedMember.completedProductionCount}</p>
                             </div>
                             <div className="bg-muted rounded-lg p-3">
-                              <p className="text-sm text-muted-foreground">Rejected</p>
-                              <p className="text-2xl font-bold">{selectedMember.rejectedDesignCount}</p>
+                              <p className="text-sm text-muted-foreground">Delayed</p>
+                              <p className="text-2xl font-bold">{selectedMember.delayedProductionCount}</p>
                             </div>
                           </div>
                         </div>
@@ -868,9 +870,9 @@ export default function DesignTeamPage() {
                 ) : (
                   <Card>
                     <CardContent className="flex flex-col items-center justify-center py-12">
-                      <PaintBucket className="h-12 w-12 text-muted-foreground mb-4" />
+                      <Factory className="h-12 w-12 text-muted-foreground mb-4" />
                       <p className="text-muted-foreground text-center">
-                        Select a designer from the list to view their details
+                        Select a manufacturing specialist from the list to view their details
                       </p>
                     </CardContent>
                   </Card>
@@ -880,39 +882,39 @@ export default function DesignTeamPage() {
           )}
         </TabsContent>
 
-        {/* Design Assignments Tab */}
-        <TabsContent value="design-assignments" className="space-y-4">
+        {/* Production Assignments Tab */}
+        <TabsContent value="production-assignments" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Design Assignments</CardTitle>
-              <CardDescription>Manage design projects and assignments to team members</CardDescription>
+              <CardTitle>Production Assignments</CardTitle>
+              <CardDescription>Manage production orders and assignments to manufacturing specialists</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between mb-4">
                 <p className="text-sm text-muted-foreground">
-                  Showing {designAssignments.length} active design assignments
+                  Showing {productionAssignments.length} active production assignments
                 </p>
-                <Button onClick={() => setIsAssignDesignDialogOpen(true)}>
+                <Button onClick={() => setIsAssignProductionDialogOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Assign Design
+                  Assign Production
                 </Button>
               </div>
 
-              {isLoadingDesignAssignments ? (
+              {isLoadingProductionAssignments ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-              ) : designAssignments.length === 0 ? (
+              ) : productionAssignments.length === 0 ? (
                 <div className="text-center py-12">
-                  <FileImage className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No design assignments found</p>
+                  <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No production assignments found</p>
                 </div>
               ) : (
                 <div className="overflow-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="text-sm text-muted-foreground border-b">
-                        <th className="text-left font-medium py-3 px-2">Design Project</th>
+                        <th className="text-left font-medium py-3 px-2">Production Order</th>
                         <th className="text-left font-medium py-3 px-2">Order</th>
                         <th className="text-left font-medium py-3 px-2">Assigned To</th>
                         <th className="text-left font-medium py-3 px-2">Status</th>
@@ -921,12 +923,12 @@ export default function DesignTeamPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {designAssignments.map((assignment: DesignAssignment) => (
+                      {productionAssignments.map((assignment: ProductionAssignment) => (
                         <tr key={assignment.id} className="text-sm">
-                          <td className="py-3 px-2">{assignment.designName}</td>
+                          <td className="py-3 px-2">{assignment.productionName}</td>
                           <td className="py-3 px-2">#{assignment.orderId}</td>
                           <td className="py-3 px-2">{assignment.assignedToName}</td>
-                          <td className="py-3 px-2">{getDesignStatusBadge(assignment.status)}</td>
+                          <td className="py-3 px-2">{getProductionStatusBadge(assignment.status)}</td>
                           <td className="py-3 px-2">{formatDate(assignment.dueDate)}</td>
                           <td className="py-3 px-2">
                             <Button variant="ghost" size="sm">
@@ -947,13 +949,13 @@ export default function DesignTeamPage() {
         <TabsContent value="performance" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Design Team Performance</CardTitle>
-              <CardDescription>Analyze design team productivity and quality metrics</CardDescription>
+              <CardTitle>Manufacturing Team Performance</CardTitle>
+              <CardDescription>Analyze manufacturing team productivity and efficiency metrics</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Design Approvals by Designer</h3>
+                  <h3 className="text-lg font-semibold mb-4">Completion Rate by Specialist</h3>
                   {isLoadingTeamMembers ? (
                     <div className="flex justify-center py-8">
                       <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -961,14 +963,14 @@ export default function DesignTeamPage() {
                   ) : (
                     <div className="space-y-4">
                       {teamMembers
-                        .filter((member: DesignTeamMember) => member.status === "active")
-                        .sort((a: DesignTeamMember, b: DesignTeamMember) => 
-                          (b.approvedDesignCount / Math.max(b.designCount, 1)) - 
-                          (a.approvedDesignCount / Math.max(a.designCount, 1))
+                        .filter((member: ManufacturingTeamMember) => member.status === "active")
+                        .sort((a: ManufacturingTeamMember, b: ManufacturingTeamMember) => 
+                          (b.completedProductionCount / Math.max(b.productionCount, 1)) - 
+                          (a.completedProductionCount / Math.max(a.productionCount, 1))
                         )
-                        .map((member: DesignTeamMember, index: number) => {
-                          const approvalRate = member.designCount 
-                            ? ((member.approvedDesignCount / member.designCount) * 100).toFixed(1) 
+                        .map((member: ManufacturingTeamMember, index: number) => {
+                          const completionRate = member.productionCount 
+                            ? ((member.completedProductionCount / member.productionCount) * 100).toFixed(1) 
                             : "0.0";
                           
                           return (
@@ -983,14 +985,14 @@ export default function DesignTeamPage() {
                                 <div className="w-full bg-muted h-2 rounded-full mt-1">
                                   <div 
                                     className="bg-primary h-2 rounded-full" 
-                                    style={{ width: `${approvalRate}%` }}
+                                    style={{ width: `${completionRate}%` }}
                                   />
                                 </div>
                               </div>
                               <div className="text-right">
-                                <p className="font-medium">{approvalRate}%</p>
+                                <p className="font-medium">{completionRate}%</p>
                                 <p className="text-xs text-muted-foreground">
-                                  {member.approvedDesignCount} / {member.designCount}
+                                  {member.completedProductionCount} / {member.productionCount}
                                 </p>
                               </div>
                             </div>
@@ -1001,46 +1003,46 @@ export default function DesignTeamPage() {
                 </div>
                 
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Design Status Distribution</h3>
+                  <h3 className="text-lg font-semibold mb-4">Production Status Distribution</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-muted rounded-lg p-4">
-                      <p className="text-sm font-medium">Approved Designs</p>
+                      <p className="text-sm font-medium">Completed Productions</p>
                       <div className="flex items-end justify-between mt-2">
-                        <p className="text-3xl font-bold">{performance?.approvedDesigns}</p>
+                        <p className="text-3xl font-bold">{performance?.completedProductions}</p>
                         <p className="text-sm text-muted-foreground">
-                          {performance?.totalDesigns 
-                            ? ((performance.approvedDesigns / performance.totalDesigns) * 100).toFixed(1) 
+                          {performance?.totalProductions 
+                            ? ((performance.completedProductions / performance.totalProductions) * 100).toFixed(1) 
                             : "0.0"}%
                         </p>
                       </div>
                     </div>
                     <div className="bg-muted rounded-lg p-4">
-                      <p className="text-sm font-medium">Rejected Designs</p>
+                      <p className="text-sm font-medium">Delayed Productions</p>
                       <div className="flex items-end justify-between mt-2">
-                        <p className="text-3xl font-bold">{performance?.rejectedDesigns}</p>
+                        <p className="text-3xl font-bold">{performance?.delayedProductions}</p>
                         <p className="text-sm text-muted-foreground">
-                          {performance?.totalDesigns 
-                            ? ((performance.rejectedDesigns / performance.totalDesigns) * 100).toFixed(1) 
+                          {performance?.totalProductions 
+                            ? ((performance.delayedProductions / performance.totalProductions) * 100).toFixed(1) 
                             : "0.0"}%
                         </p>
                       </div>
                     </div>
                     <div className="bg-muted rounded-lg p-4">
-                      <p className="text-sm font-medium">Pending Review</p>
+                      <p className="text-sm font-medium">Pending Productions</p>
                       <div className="flex items-end justify-between mt-2">
-                        <p className="text-3xl font-bold">{performance?.pendingDesigns}</p>
+                        <p className="text-3xl font-bold">{performance?.pendingProductions}</p>
                         <p className="text-sm text-muted-foreground">
-                          {performance?.totalDesigns 
-                            ? ((performance.pendingDesigns / performance.totalDesigns) * 100).toFixed(1) 
+                          {performance?.totalProductions 
+                            ? ((performance.pendingProductions / performance.totalProductions) * 100).toFixed(1) 
                             : "0.0"}%
                         </p>
                       </div>
                     </div>
                     <div className="bg-muted rounded-lg p-4">
-                      <p className="text-sm font-medium">Average Revisions</p>
+                      <p className="text-sm font-medium">Average Completion Time</p>
                       <div className="flex items-end justify-between mt-2">
-                        <p className="text-3xl font-bold">{performance?.averageRevisionCount}</p>
-                        <p className="text-sm text-muted-foreground">per design</p>
+                        <p className="text-3xl font-bold">{performance?.averageCompletionTime}</p>
+                        <p className="text-sm text-muted-foreground">days</p>
                       </div>
                     </div>
                   </div>
@@ -1057,7 +1059,7 @@ export default function DesignTeamPage() {
           <DialogHeader>
             <DialogTitle>Add Team Member</DialogTitle>
             <DialogDescription>
-              Add a new designer to the design team. Fill in all required information.
+              Add a new manufacturing specialist to the team. Fill in all required information.
             </DialogDescription>
           </DialogHeader>
           <div>
@@ -1076,7 +1078,7 @@ export default function DesignTeamPage() {
                   <Label htmlFor="role">Job Title</Label>
                   <Input
                     id="role"
-                    placeholder="e.g. Senior Graphic Designer"
+                    placeholder="e.g. Production Specialist"
                     value={newMember.role}
                     onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
                   />
@@ -1121,7 +1123,7 @@ export default function DesignTeamPage() {
                   <Label htmlFor="specialization">Specialization</Label>
                   <Input
                     id="specialization"
-                    placeholder="e.g. Brand Identity, Packaging"
+                    placeholder="e.g. Printing, Embroidery"
                     value={newMember.specialization}
                     onChange={(e) => setNewMember({ 
                       ...newMember, 
@@ -1292,41 +1294,41 @@ export default function DesignTeamPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Assign Design Dialog */}
-      <Dialog open={isAssignDesignDialogOpen} onOpenChange={setIsAssignDesignDialogOpen}>
+      {/* Assign Production Dialog */}
+      <Dialog open={isAssignProductionDialogOpen} onOpenChange={setIsAssignProductionDialogOpen}>
         <DialogContent className="sm:max-w-[525px]">
           <DialogHeader>
-            <DialogTitle>Assign Design</DialogTitle>
+            <DialogTitle>Assign Production</DialogTitle>
             <DialogDescription>
-              Assign an unassigned design project to a designer.
+              Assign a production order to a manufacturing specialist.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="design">Select Design Project</Label>
+              <Label htmlFor="production">Select Production Order</Label>
               <Select>
-                <SelectTrigger id="design">
-                  <SelectValue placeholder="Select a design project" />
+                <SelectTrigger id="production">
+                  <SelectValue placeholder="Select a production order" />
                 </SelectTrigger>
                 <SelectContent>
-                  {unassignedDesigns.map((design: any) => (
-                    <SelectItem key={design.id} value={design.id.toString()}>
-                      {design.name} - Order #{design.orderId}
+                  {unassignedProductions.map((production: any) => (
+                    <SelectItem key={production.id} value={production.id.toString()}>
+                      {production.name} - Order #{production.orderId}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="designer">Assign To</Label>
+              <Label htmlFor="manufacturer">Assign To</Label>
               <Select>
-                <SelectTrigger id="designer">
-                  <SelectValue placeholder="Select a designer" />
+                <SelectTrigger id="manufacturer">
+                  <SelectValue placeholder="Select a manufacturing specialist" />
                 </SelectTrigger>
                 <SelectContent>
                   {teamMembers
-                    .filter((member: DesignTeamMember) => member.status === "active")
-                    .map((member: DesignTeamMember) => (
+                    .filter((member: ManufacturingTeamMember) => member.status === "active")
+                    .map((member: ManufacturingTeamMember) => (
                       <SelectItem key={member.id} value={member.id.toString()}>
                         {member.name} - {member.specialization?.join(", ")}
                       </SelectItem>
@@ -1345,19 +1347,19 @@ export default function DesignTeamPage() {
               <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"
-                placeholder="Any additional instructions for the designer"
+                placeholder="Any additional instructions for the manufacturing specialist"
               />
             </div>
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setIsAssignDesignDialogOpen(false)}
+              onClick={() => setIsAssignProductionDialogOpen(false)}
             >
               Cancel
             </Button>
-            <Button onClick={() => setIsAssignDesignDialogOpen(false)}>
-              Assign Design
+            <Button onClick={() => setIsAssignProductionDialogOpen(false)}>
+              Assign Production
             </Button>
           </DialogFooter>
         </DialogContent>

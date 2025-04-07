@@ -91,6 +91,8 @@ import {
 interface SalesTeamMember {
   id: number;
   name: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   phone: string;
   role: string;
@@ -154,6 +156,8 @@ export default function SalesTeamPage() {
   const [editedMember, setEditedMember] = useState<Partial<SalesTeamMember>>({});
   const [newMember, setNewMember] = useState<Partial<SalesTeamMember>>({
     name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     phone: "",
     status: "active",
@@ -266,6 +270,8 @@ export default function SalesTeamPage() {
       setIsAddMemberDialogOpen(false);
       setNewMember({
         name: "",
+        firstName: "",
+        lastName: "",
         email: "",
         phone: "",
         status: "active",
@@ -1302,11 +1308,37 @@ export default function SalesTeamPage() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="firstName">First Name</Label>
                 <Input
-                  id="name"
-                  value={newMember.name}
-                  onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                  id="firstName"
+                  placeholder="Enter first name"
+                  value={newMember.firstName || ""}
+                  onChange={(e) => {
+                    const firstName = e.target.value;
+                    const lastName = newMember.lastName || '';
+                    setNewMember({ 
+                      ...newMember, 
+                      firstName,
+                      name: `${firstName} ${lastName}`.trim() 
+                    });
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  placeholder="Enter last name"
+                  value={newMember.lastName || ""}
+                  onChange={(e) => {
+                    const lastName = e.target.value;
+                    const firstName = newMember.firstName || '';
+                    setNewMember({ 
+                      ...newMember, 
+                      lastName,
+                      name: `${firstName} ${lastName}`.trim() 
+                    });
+                  }}
                 />
               </div>
               <div className="space-y-2">

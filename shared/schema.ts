@@ -73,6 +73,7 @@ export const users = pgTable("users", {
   avatarUrl: text("avatar_url"),
   role: text("role").default(ROLES.VIEWER).notNull(),
   permissions: json("permissions").$type<Permission[]>(),
+  visiblePages: json("visible_pages").$type<string[]>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

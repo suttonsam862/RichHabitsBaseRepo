@@ -4,7 +4,8 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { ROLES, Permission, type Role } from "@shared/schema";
 import { getPermissionDisplayName, getRoleDisplayName, getPermissionGroups, getPermissionsForRole } from "@shared/permissions";
-import { Loader2, Shield, ShieldAlert, ShieldCheck, User, Settings, UserPlus } from "lucide-react";
+import { Loader2, Shield, ShieldAlert, ShieldCheck, User, Settings, UserPlus, Layers } from "lucide-react";
+import { PageVisibilitySettings, getDefaultVisiblePages } from "@/components/ui/page-visibility-settings";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,7 @@ type UserListItem = {
   fullName: string;
   role: string;
   permissions: string[];
+  visiblePages: string[];
   createdAt: string;
 };
 
@@ -61,9 +63,11 @@ export default function UserManagement() {
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [permissionDialogOpen, setPermissionDialogOpen] = useState(false);
   const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
+  const [visibilityDialogOpen, setVisibilityDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserListItem | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [selectedVisiblePages, setSelectedVisiblePages] = useState<string[]>([]);
   
   // Form state for user creation
   const [newUser, setNewUser] = useState({
@@ -126,6 +130,28 @@ export default function UserManagement() {
     },
   });
   
+  // Mutation to update user page visibility
+  const updateVisiblePagesMutation = useMutation({
+    mutationFn: async ({ userId, visiblePages }: { userId: number; visiblePages: string[] }) => {
+      await apiRequest('PATCH', `/api/users/${userId}/visible-pages`, { visiblePages });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: "Page access updated",
+        description: "User's page access settings have been updated.",
+      });
+      setVisibilityDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update page access",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
   // Mutation to create new user
   const createUserMutation = useMutation({
     mutationFn: async (userData: typeof newUser) => {
@@ -168,6 +194,13 @@ export default function UserManagement() {
     setPermissionDialogOpen(true);
   };
   
+  // When a user is selected for page visibility editing
+  const handleVisibilityEdit = (user: UserListItem) => {
+    setSelectedUser(user);
+    setSelectedVisiblePages(user.visiblePages || []);
+    setVisibilityDialogOpen(true);
+  };
+  
   // Handle role update submission
   const handleRoleSubmit = () => {
     if (selectedUser && selectedRole) {
@@ -184,6 +217,16 @@ export default function UserManagement() {
       updatePermissionsMutation.mutate({
         userId: selectedUser.id,
         permissions: selectedPermissions,
+      });
+    }
+  };
+  
+  // Handle visible pages update submission
+  const handleVisiblePagesSubmit = () => {
+    if (selectedUser) {
+      updateVisiblePagesMutation.mutate({
+        userId: selectedUser.id,
+        visiblePages: selectedVisiblePages,
       });
     }
   };
@@ -308,6 +351,14 @@ export default function UserManagement() {
                       onClick={() => handlePermissionEdit(user)}
                     >
                       Permissions
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleVisibilityEdit(user)}
+                    >
+                      <Layers className="h-4 w-4 mr-1" />
+                      Page Access
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -437,6 +488,44 @@ export default function UserManagement() {
             <Button onClick={handlePermissionsSubmit} disabled={updatePermissionsMutation.isPending}>
               {updatePermissionsMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Permissions
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Page Visibility Dialog */}
+      <Dialog open={visibilityDialogOpen} onOpenChange={setVisibilityDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Page Access Settings</DialogTitle>
+            <DialogDescription>
+              Configure which pages {selectedUser?.fullName} can access.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <p className="text-sm text-gray-500 mb-2">
+              User has role: <strong>{selectedUser && getRoleDisplayName(selectedUser.role as Role)}</strong>
+            </p>
+            <p className="text-sm text-gray-500 mb-2">
+              Select which pages this user should have access to:
+            </p>
+            
+            <div className="mt-4 max-h-[50vh] overflow-y-auto pr-2">
+              <PageVisibilitySettings 
+                visiblePages={selectedVisiblePages}
+                onChange={setSelectedVisiblePages}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVisibilityDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleVisiblePagesSubmit} disabled={updateVisiblePagesMutation.isPending}>
+              {updateVisiblePagesMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Page Access
             </Button>
           </DialogFooter>
         </DialogContent>

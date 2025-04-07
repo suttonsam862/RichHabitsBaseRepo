@@ -449,6 +449,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
+  
+  // Update user visible pages - Admin only
+  app.patch("/api/users/:id/visible-pages", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { visiblePages } = req.body;
+      
+      if (!Array.isArray(visiblePages)) {
+        return res.status(400).json({ error: "visiblePages must be an array" });
+      }
+      
+      const updatedUser = await storage.updateUserVisiblePages(userId, visiblePages);
+      
+      // Create activity for visible pages change
+      if (req.user) {
+        const currentUser = req.user as any;
+        await storage.createActivity({
+          userId: currentUser.id,
+          type: "user",
+          content: `Updated user ${updatedUser.username} visible pages`,
+          relatedId: userId,
+          relatedType: "user"
+        });
+      }
+      
+      res.json(updatedUser);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   // Data management endpoints - Admin only
   app.post("/api/data/clear-example-data", isAdmin, async (req, res) => {

@@ -49,6 +49,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   updateUserRole(userId: number, role: string): Promise<User>;
   updateUserPermissions(userId: number, permissions: Permission[]): Promise<User>;
+  updateUserVisiblePages(userId: number, visiblePages: string[]): Promise<User>;
   
   // Lead methods
   getLeads(): Promise<Lead[]>;
@@ -173,6 +174,15 @@ export class DatabaseStorage implements IStorage {
     const [updatedUser] = await db
       .update(users)
       .set({ permissions: permissions as any })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
+  }
+  
+  async updateUserVisiblePages(userId: number, visiblePages: string[]): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ visiblePages: visiblePages as any })
       .where(eq(users.id, userId))
       .returning();
     return updatedUser;

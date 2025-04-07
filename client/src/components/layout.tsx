@@ -20,12 +20,12 @@ export default function Layout({ user, children }: LayoutProps) {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar user={user} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
       <MobileMenu onMenuToggle={toggleSidebar} />
       
-      <main className="flex-1 relative md:ml-64 lg:ml-72 pt-14 md:pt-0 overflow-y-auto">
+      <main className="flex-1 relative md:ml-64 lg:ml-72 pt-14 md:pt-0 overflow-y-auto bg-white">
         {children}
       </main>
     </div>

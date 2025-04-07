@@ -41,13 +41,8 @@ export default function LoginForm() {
         password: values.password
       });
       
-      // Force reload user data after login to ensure we have the latest state
-      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      
-      // Add a small delay to ensure the query has time to resolve
-      setTimeout(() => {
-        setLocation("/");
-      }, 300);
+      // The auth page useEffect will detect logged in user and redirect
+      setLocation('/');
       
       console.log("Login successful, redirecting to dashboard...");
     } catch (error) {

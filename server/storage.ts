@@ -42,11 +42,15 @@ export interface IStorage {
   getLeads(): Promise<Lead[]>;
   getRecentLeads(limit?: number): Promise<Lead[]>;
   createLead(lead: InsertLead): Promise<Lead>;
+  getLeadById(id: number): Promise<Lead | undefined>;
+  deleteLead(id: number): Promise<void>;
   
   // Order methods
   getOrders(): Promise<Order[]>;
   getRecentOrders(limit?: number): Promise<Order[]>;
   createOrder(order: InsertOrder): Promise<Order>;
+  getOrderById(id: number): Promise<Order | undefined>;
+  deleteOrder(id: number): Promise<void>;
   
   // Message methods
   getConversations(): Promise<any[]>;
@@ -154,6 +158,15 @@ export class DatabaseStorage implements IStorage {
     return newLead;
   }
   
+  async getLeadById(id: number): Promise<Lead | undefined> {
+    const [lead] = await db.select().from(leads).where(eq(leads.id, id));
+    return lead || undefined;
+  }
+  
+  async deleteLead(id: number): Promise<void> {
+    await db.delete(leads).where(eq(leads.id, id));
+  }
+  
   // Order methods
   async getOrders(): Promise<Order[]> {
     return db.select().from(orders).orderBy(desc(orders.createdAt));
@@ -169,6 +182,15 @@ export class DatabaseStorage implements IStorage {
       .values(order)
       .returning();
     return newOrder;
+  }
+  
+  async getOrderById(id: number): Promise<Order | undefined> {
+    const [order] = await db.select().from(orders).where(eq(orders.id, id));
+    return order || undefined;
+  }
+  
+  async deleteOrder(id: number): Promise<void> {
+    await db.delete(orders).where(eq(orders.id, id));
   }
   
   // Message methods

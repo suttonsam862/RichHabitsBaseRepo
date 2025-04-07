@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { PlusCircle, Search, Filter, Download } from "lucide-react";
+import { PlusCircle, Search, Filter, Download, Trash2, AlertTriangle } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -19,6 +19,7 @@ import { Order, OrderStatus } from "@/types";
 import { generateOrderId } from "@/lib/utils";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const formSchema = insertOrderSchema.extend({
   status: z.enum(["pending", "processing", "paid", "shipped", "delivered", "cancelled", "refunded"]),
@@ -29,11 +30,10 @@ export default function Orders() {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
   const [openViewDialog, setOpenViewDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [openAddDialog, setOpenAddDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -104,9 +104,12 @@ export default function Orders() {
     defaultValues: {
       orderId: generateOrderId(),
       customerName: "",
-      amount: "",
+      customerEmail: "",
+      totalAmount: "",
       status: "pending",
       notes: "",
+      items: "",
+      shippingAddress: "",
     },
   });
 
@@ -124,15 +127,44 @@ export default function Orders() {
       form.reset({
         orderId: generateOrderId(),
         customerName: "",
-        amount: "",
+        customerEmail: "",
+        totalAmount: "",
         status: "pending",
         notes: "",
+        items: "",
+        shippingAddress: "",
       });
     },
     onError: (error) => {
       toast({
         title: "Error",
         description: error.message || "Failed to add order",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const deleteOrderMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/orders/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/activities/recent'] });
+      // Force refetch to ensure we have the latest data
+      queryClient.refetchQueries({ queryKey: ['/api/orders'] });
+      toast({
+        title: "Order deleted",
+        description: "Order has been deleted successfully",
+      });
+      setOpenDeleteDialog(false);
+      setSelectedOrderId(null);
+      setSelectedOrder(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete order",
         variant: "destructive",
       });
     },
@@ -186,7 +218,7 @@ export default function Orders() {
     const tableRows = filteredOrders.map(order => [
       order.orderId,
       order.customerName,
-      order.amount,
+      order.totalAmount,
       order.status.charAt(0).toUpperCase() + order.status.slice(1),
       order.notes || ""
     ]);
@@ -217,6 +249,46 @@ export default function Orders() {
 
   return (
     <>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={openDeleteDialog} onOpenChange={setOpenDeleteDialog}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-gray-900">Delete Order</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-600">
+              Are you sure you want to delete this order? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="text-gray-500">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-red-500 hover:bg-red-600 text-white"
+              onClick={() => {
+                if (selectedOrderId) {
+                  deleteOrderMutation.mutate(selectedOrderId);
+                }
+              }}
+            >
+              {deleteOrderMutation.isPending ? (
+                <>
+                  <span className="animate-spin mr-2">
+                    <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </span>
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="mr-2 h-4 w-4" />
+                  Delete
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-800 py-4 px-6">
         <div className="flex items-center justify-between">
@@ -275,7 +347,7 @@ export default function Orders() {
                     
                     <FormField
                       control={form.control}
-                      name="amount"
+                      name="totalAmount"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Amount</FormLabel>
@@ -425,6 +497,7 @@ export default function Orders() {
                           <Button 
                             variant="outline" 
                             size="sm"
+                            className="mr-2"
                             onClick={() => {
                               setSelectedOrder(order);
                               setSelectedOrderId(order.id);
@@ -441,6 +514,18 @@ export default function Orders() {
                             }}
                           >
                             Edit
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setSelectedOrderId(order.id);
+                              setOpenDeleteDialog(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </td>
                       </tr>

@@ -219,6 +219,9 @@ export default function Leads() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/activities/recent'] });
+      // Force refetch to ensure we have the latest data
+      queryClient.refetchQueries({ queryKey: ['/api/leads'] });
       toast({
         title: "Lead deleted",
         description: "Lead has been successfully deleted",

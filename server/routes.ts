@@ -112,6 +112,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   });
+  
+  app.delete("/api/leads/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid lead ID" });
+      }
+      
+      const lead = await storage.getLeadById(id);
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      
+      // Delete the lead
+      await storage.deleteLead(id);
+      
+      // Fetch updated leads list to verify deletion
+      const updatedLeads = await storage.getLeads();
+      console.log(`Lead deleted. Current leads count: ${updatedLeads.length}`);
+      
+      // Create activity for the deleted lead
+      await storage.createActivity({
+        userId: req.user?.id || 1, // Use authenticated user or default to admin
+        type: "lead",
+        content: `Lead ${lead.name} was deleted`,
+        relatedId: id,
+        relatedType: "lead"
+      });
+      
+      res.status(200).json({ 
+        success: true,
+        remainingCount: updatedLeads.length
+      });
+    } catch (error: any) {
+      console.error("Error deleting lead:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   // Orders endpoints
   app.get("/api/orders", async (req, res) => {
@@ -153,6 +191,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ error: error.message });
       }
+    }
+  });
+  
+  app.delete("/api/orders/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid order ID" });
+      }
+      
+      const order = await storage.getOrderById(id);
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      // Delete the order
+      await storage.deleteOrder(id);
+      
+      // Fetch updated orders list to verify deletion
+      const updatedOrders = await storage.getOrders();
+      console.log(`Order deleted. Current orders count: ${updatedOrders.length}`);
+      
+      // Create activity for the deleted order
+      await storage.createActivity({
+        userId: req.user?.id || 1, // Use authenticated user or default to admin
+        type: "order",
+        content: `Order ${order.orderId} was deleted`,
+        relatedId: id,
+        relatedType: "order"
+      });
+      
+      res.status(200).json({ 
+        success: true,
+        remainingCount: updatedOrders.length
+      });
+    } catch (error: any) {
+      console.error("Error deleting order:", error);
+      res.status(500).json({ error: error.message });
     }
   });
 

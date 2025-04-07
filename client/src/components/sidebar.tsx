@@ -24,7 +24,9 @@ import {
   PenTool,
   HardHat,
   BadgeDollarSign,
-  CalendarClock
+  CalendarClock,
+  Shirt,
+  PackageOpen
 } from "lucide-react";
 
 interface SidebarProps {
@@ -99,11 +101,21 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               href: "/order-tracking",
               icon: <ShoppingBag className="mr-2" size={16} />,
             },
+            {
+              name: "Product Catalog",
+              href: "/catalog",
+              icon: <Shirt className="mr-2" size={16} />,
+            },
           ],
         },
         {
           title: "Admin",
           items: [
+            {
+              name: "Product Management",
+              href: "/admin/product-management",
+              icon: <PackageOpen className="mr-2" size={16} />,
+            },
             {
               name: "Sales Team",
               href: "/admin/sales-team",
@@ -219,6 +231,11 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               name: "Order Tracking",
               href: "/order-tracking",
               icon: <ShoppingBag className="mr-2" size={16} />,
+            },
+            {
+              name: "Product Catalog",
+              href: "/catalog",
+              icon: <Shirt className="mr-2" size={16} />,
             },
             {
               name: "Messages",
@@ -427,6 +444,11 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               name: "Request Design",
               href: "/request-design",
               icon: <Palette className="mr-2" size={16} />,
+            },
+            {
+              name: "Product Catalog",
+              href: "/catalog",
+              icon: <Shirt className="mr-2" size={16} />,
             },
             {
               name: "Messages",

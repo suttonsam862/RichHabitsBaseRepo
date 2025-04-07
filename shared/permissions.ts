@@ -14,6 +14,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     PERMISSIONS.EDIT_ORDERS,
     PERMISSIONS.VIEW_ORDERS,
     
+    PERMISSIONS.VIEW_CATALOG,
+    PERMISSIONS.MANAGE_CATALOG,
+    
     PERMISSIONS.SEND_MESSAGES,
     PERMISSIONS.VIEW_MESSAGES,
     
@@ -29,6 +32,31 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     PERMISSIONS.EDIT_ORDERS,
     PERMISSIONS.VIEW_ORDERS,
     
+    PERMISSIONS.VIEW_CATALOG,
+    
+    PERMISSIONS.SEND_MESSAGES,
+    PERMISSIONS.VIEW_MESSAGES,
+  ],
+  [ROLES.DESIGNER]: [
+    PERMISSIONS.CREATE_DESIGNS,
+    PERMISSIONS.EDIT_DESIGNS,
+    PERMISSIONS.VIEW_DESIGNS,
+    
+    PERMISSIONS.VIEW_CATALOG,
+    
+    PERMISSIONS.SEND_MESSAGES,
+    PERMISSIONS.VIEW_MESSAGES,
+  ],
+  [ROLES.MANUFACTURER]: [
+    PERMISSIONS.VIEW_ORDERS,
+    PERMISSIONS.EDIT_PRODUCTION,
+    PERMISSIONS.VIEW_PRODUCTION,
+    PERMISSIONS.COMPLETE_PRODUCTION,
+    
+    PERMISSIONS.VIEW_DESIGNS,
+    
+    PERMISSIONS.VIEW_CATALOG,
+    
     PERMISSIONS.SEND_MESSAGES,
     PERMISSIONS.VIEW_MESSAGES,
   ],
@@ -36,6 +64,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     PERMISSIONS.VIEW_LEADS,
     PERMISSIONS.VIEW_ORDERS,
     PERMISSIONS.VIEW_MESSAGES,
+    PERMISSIONS.VIEW_CATALOG,
   ],
 };
 
@@ -84,6 +113,10 @@ export function getRoleDisplayName(role: Role): string {
       return "Manager";
     case ROLES.AGENT:
       return "Sales Agent";
+    case ROLES.DESIGNER:
+      return "Designer";
+    case ROLES.MANUFACTURER:
+      return "Manufacturer";
     case ROLES.VIEWER:
       return "Viewer";
     default:
@@ -125,6 +158,13 @@ export function getPermissionGroups(): { category: string; permissions: Permissi
         PERMISSIONS.EDIT_ORDERS,
         PERMISSIONS.DELETE_ORDERS,
         PERMISSIONS.VIEW_ORDERS,
+      ],
+    },
+    {
+      category: 'Catalog Management',
+      permissions: [
+        PERMISSIONS.VIEW_CATALOG,
+        PERMISSIONS.MANAGE_CATALOG,
       ],
     },
     {

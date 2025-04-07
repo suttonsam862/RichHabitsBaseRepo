@@ -3,7 +3,11 @@ import {
   leads, 
   orders, 
   messages, 
-  activities, 
+  activities,
+  products,
+  fabricOptions,
+  fabricCuts,
+  customizationOptions,
   type User, 
   type InsertUser, 
   type Lead, 
@@ -14,6 +18,14 @@ import {
   type InsertMessage, 
   type Activity, 
   type InsertActivity,
+  type Product,
+  type InsertProduct,
+  type FabricOption,
+  type InsertFabricOption,
+  type FabricCut,
+  type InsertFabricCut,
+  type CustomizationOption,
+  type InsertCustomizationOption,
   type Permission
 } from "@shared/schema";
 import { db } from "./db";
@@ -60,6 +72,37 @@ export interface IStorage {
   // Activity methods
   getRecentActivities(limit?: number): Promise<Activity[]>;
   createActivity(activity: InsertActivity): Promise<Activity>;
+  
+  // Product methods
+  getProducts(): Promise<Product[]>;
+  getProductsBySport(sport: string): Promise<Product[]>;
+  getProductsByCategory(category: string): Promise<Product[]>;
+  getProductById(id: number): Promise<Product | undefined>;
+  getProductBySku(sku: string): Promise<Product | undefined>;
+  createProduct(product: InsertProduct): Promise<Product>;
+  updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product>;
+  deleteProduct(id: number): Promise<void>;
+  
+  // Fabric Options methods
+  getFabricOptions(): Promise<FabricOption[]>;
+  getFabricOptionById(id: number): Promise<FabricOption | undefined>;
+  createFabricOption(option: InsertFabricOption): Promise<FabricOption>;
+  updateFabricOption(id: number, option: Partial<InsertFabricOption>): Promise<FabricOption>;
+  deleteFabricOption(id: number): Promise<void>;
+  
+  // Fabric Cuts methods
+  getFabricCuts(): Promise<FabricCut[]>;
+  getFabricCutById(id: number): Promise<FabricCut | undefined>;
+  createFabricCut(cut: InsertFabricCut): Promise<FabricCut>;
+  updateFabricCut(id: number, cut: Partial<InsertFabricCut>): Promise<FabricCut>;
+  deleteFabricCut(id: number): Promise<void>;
+  
+  // Customization Options methods
+  getCustomizationOptions(productId: number): Promise<CustomizationOption[]>;
+  getCustomizationOptionById(id: number): Promise<CustomizationOption | undefined>;
+  createCustomizationOption(option: InsertCustomizationOption): Promise<CustomizationOption>;
+  updateCustomizationOption(id: number, option: Partial<InsertCustomizationOption>): Promise<CustomizationOption>;
+  deleteCustomizationOption(id: number): Promise<void>;
   
   // Analytics methods
   getRevenueData(period: string): Promise<any[]>;
@@ -297,6 +340,146 @@ export class DatabaseStorage implements IStorage {
     return [];
   }
   
+  // Product methods
+  async getProducts(): Promise<Product[]> {
+    return db.select().from(products).orderBy(asc(products.name));
+  }
+  
+  async getProductsBySport(sport: string): Promise<Product[]> {
+    return db.select().from(products).where(eq(products.sport, sport)).orderBy(asc(products.name));
+  }
+  
+  async getProductsByCategory(category: string): Promise<Product[]> {
+    return db.select().from(products).where(eq(products.category, category)).orderBy(asc(products.name));
+  }
+  
+  async getProductById(id: number): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.id, id));
+    return product || undefined;
+  }
+  
+  async getProductBySku(sku: string): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.sku, sku));
+    return product || undefined;
+  }
+  
+  async createProduct(product: InsertProduct): Promise<Product> {
+    const [newProduct] = await db
+      .insert(products)
+      .values(product)
+      .returning();
+    return newProduct;
+  }
+  
+  async updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product> {
+    const [updatedProduct] = await db
+      .update(products)
+      .set({ ...product, updatedAt: new Date() })
+      .where(eq(products.id, id))
+      .returning();
+    return updatedProduct;
+  }
+  
+  async deleteProduct(id: number): Promise<void> {
+    await db.delete(products).where(eq(products.id, id));
+  }
+  
+  // Fabric Options methods
+  async getFabricOptions(): Promise<FabricOption[]> {
+    return db.select().from(fabricOptions).orderBy(asc(fabricOptions.name));
+  }
+  
+  async getFabricOptionById(id: number): Promise<FabricOption | undefined> {
+    const [option] = await db.select().from(fabricOptions).where(eq(fabricOptions.id, id));
+    return option || undefined;
+  }
+  
+  async createFabricOption(option: InsertFabricOption): Promise<FabricOption> {
+    const [newOption] = await db
+      .insert(fabricOptions)
+      .values(option)
+      .returning();
+    return newOption;
+  }
+  
+  async updateFabricOption(id: number, option: Partial<InsertFabricOption>): Promise<FabricOption> {
+    const [updatedOption] = await db
+      .update(fabricOptions)
+      .set({ ...option, updatedAt: new Date() })
+      .where(eq(fabricOptions.id, id))
+      .returning();
+    return updatedOption;
+  }
+  
+  async deleteFabricOption(id: number): Promise<void> {
+    await db.delete(fabricOptions).where(eq(fabricOptions.id, id));
+  }
+  
+  // Fabric Cuts methods
+  async getFabricCuts(): Promise<FabricCut[]> {
+    return db.select().from(fabricCuts).orderBy(asc(fabricCuts.name));
+  }
+  
+  async getFabricCutById(id: number): Promise<FabricCut | undefined> {
+    const [cut] = await db.select().from(fabricCuts).where(eq(fabricCuts.id, id));
+    return cut || undefined;
+  }
+  
+  async createFabricCut(cut: InsertFabricCut): Promise<FabricCut> {
+    const [newCut] = await db
+      .insert(fabricCuts)
+      .values(cut)
+      .returning();
+    return newCut;
+  }
+  
+  async updateFabricCut(id: number, cut: Partial<InsertFabricCut>): Promise<FabricCut> {
+    const [updatedCut] = await db
+      .update(fabricCuts)
+      .set({ ...cut, updatedAt: new Date() })
+      .where(eq(fabricCuts.id, id))
+      .returning();
+    return updatedCut;
+  }
+  
+  async deleteFabricCut(id: number): Promise<void> {
+    await db.delete(fabricCuts).where(eq(fabricCuts.id, id));
+  }
+  
+  // Customization Options methods
+  async getCustomizationOptions(productId: number): Promise<CustomizationOption[]> {
+    return db.select()
+      .from(customizationOptions)
+      .where(eq(customizationOptions.productId, productId))
+      .orderBy(asc(customizationOptions.optionName));
+  }
+  
+  async getCustomizationOptionById(id: number): Promise<CustomizationOption | undefined> {
+    const [option] = await db.select().from(customizationOptions).where(eq(customizationOptions.id, id));
+    return option || undefined;
+  }
+  
+  async createCustomizationOption(option: InsertCustomizationOption): Promise<CustomizationOption> {
+    const [newOption] = await db
+      .insert(customizationOptions)
+      .values(option)
+      .returning();
+    return newOption;
+  }
+  
+  async updateCustomizationOption(id: number, option: Partial<InsertCustomizationOption>): Promise<CustomizationOption> {
+    const [updatedOption] = await db
+      .update(customizationOptions)
+      .set({ ...option, updatedAt: new Date() })
+      .where(eq(customizationOptions.id, id))
+      .returning();
+    return updatedOption;
+  }
+  
+  async deleteCustomizationOption(id: number): Promise<void> {
+    await db.delete(customizationOptions).where(eq(customizationOptions.id, id));
+  }
+  
   // Data management
   async clearExampleData(): Promise<void> {
     // We'll preserve the admin user only (id=1), but clear all other data
@@ -309,6 +492,10 @@ export class DatabaseStorage implements IStorage {
       await db.delete(orders);
       await db.delete(messages);
       await db.delete(activities);
+      await db.delete(products);
+      await db.delete(fabricOptions);
+      await db.delete(fabricCuts);
+      await db.delete(customizationOptions);
       
       console.log("Example data cleared successfully");
     } catch (error) {

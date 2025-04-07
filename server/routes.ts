@@ -10,10 +10,18 @@ import {
   orders,
   messages,
   users,
+  products,
+  fabricOptions,
+  fabricCuts,
+  customizationOptions,
   insertLeadSchema, 
   insertOrderSchema, 
   insertMessageSchema,
   insertActivitySchema,
+  insertProductSchema,
+  insertFabricOptionSchema,
+  insertFabricCutSchema,
+  insertCustomizationOptionSchema,
   ROLES,
   PERMISSIONS,
   type Permission
@@ -449,6 +457,442 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, message: "Example data cleared successfully" });
     } catch (error: any) {
       console.error("Error clearing example data:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Products API endpoints
+  app.get("/api/products", async (req, res) => {
+    try {
+      const productList = await storage.getProducts();
+      res.json({ data: productList });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/products/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid product ID" });
+      }
+      
+      const product = await storage.getProductById(id);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      
+      res.json({ data: product });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/products/sku/:sku", async (req, res) => {
+    try {
+      const sku = req.params.sku;
+      const product = await storage.getProductBySku(sku);
+      
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      
+      res.json({ data: product });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/products/sport/:sport", async (req, res) => {
+    try {
+      const sport = req.params.sport;
+      const products = await storage.getProductsBySport(sport);
+      res.json({ data: products });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/products/category/:category", async (req, res) => {
+    try {
+      const category = req.params.category;
+      const products = await storage.getProductsByCategory(category);
+      res.json({ data: products });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/products", hasRequiredPermission(PERMISSIONS.MANAGE_CATALOG), async (req, res) => {
+    try {
+      const validatedData = insertProductSchema.parse(req.body);
+      const newProduct = await storage.createProduct(validatedData);
+      
+      // Create activity for the new product
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "product",
+        content: `New product ${newProduct.name} added`,
+        relatedId: newProduct.id,
+        relatedType: "product"
+      });
+      
+      res.status(201).json({ data: newProduct });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  app.put("/api/products/:id", hasRequiredPermission(PERMISSIONS.MANAGE_CATALOG), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid product ID" });
+      }
+      
+      const product = await storage.getProductById(id);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      
+      const validatedData = insertProductSchema.partial().parse(req.body);
+      const updatedProduct = await storage.updateProduct(id, validatedData);
+      
+      // Create activity for the updated product
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "product",
+        content: `Product ${updatedProduct.name} was updated`,
+        relatedId: id,
+        relatedType: "product"
+      });
+      
+      res.json({ data: updatedProduct });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  app.delete("/api/products/:id", hasRequiredPermission(PERMISSIONS.MANAGE_CATALOG), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid product ID" });
+      }
+      
+      const product = await storage.getProductById(id);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      
+      // Delete the product
+      await storage.deleteProduct(id);
+      
+      // Create activity for the deleted product
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "product",
+        content: `Product ${product.name} was deleted`,
+        relatedId: id,
+        relatedType: "product"
+      });
+      
+      res.status(200).json({ 
+        success: true,
+        message: "Product deleted successfully"
+      });
+    } catch (error: any) {
+      console.error("Error deleting product:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Fabric Options API endpoints
+  app.get("/api/fabric-options", async (req, res) => {
+    try {
+      const options = await storage.getFabricOptions();
+      res.json({ data: options });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/fabric-options/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid fabric option ID" });
+      }
+      
+      const option = await storage.getFabricOptionById(id);
+      if (!option) {
+        return res.status(404).json({ error: "Fabric option not found" });
+      }
+      
+      res.json({ data: option });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/fabric-options", hasRequiredPermission(PERMISSIONS.MANAGE_CATALOG), async (req, res) => {
+    try {
+      const validatedData = insertFabricOptionSchema.parse(req.body);
+      const newOption = await storage.createFabricOption(validatedData);
+      
+      res.status(201).json({ data: newOption });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  app.put("/api/fabric-options/:id", hasRequiredPermission(PERMISSIONS.MANAGE_CATALOG), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid fabric option ID" });
+      }
+      
+      const option = await storage.getFabricOptionById(id);
+      if (!option) {
+        return res.status(404).json({ error: "Fabric option not found" });
+      }
+      
+      const validatedData = insertFabricOptionSchema.partial().parse(req.body);
+      const updatedOption = await storage.updateFabricOption(id, validatedData);
+      
+      res.json({ data: updatedOption });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  app.delete("/api/fabric-options/:id", hasRequiredPermission(PERMISSIONS.MANAGE_CATALOG), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid fabric option ID" });
+      }
+      
+      const option = await storage.getFabricOptionById(id);
+      if (!option) {
+        return res.status(404).json({ error: "Fabric option not found" });
+      }
+      
+      await storage.deleteFabricOption(id);
+      
+      res.status(200).json({ 
+        success: true,
+        message: "Fabric option deleted successfully"
+      });
+    } catch (error: any) {
+      console.error("Error deleting fabric option:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Fabric Cuts API endpoints
+  app.get("/api/fabric-cuts", async (req, res) => {
+    try {
+      const cuts = await storage.getFabricCuts();
+      res.json({ data: cuts });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/fabric-cuts/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid fabric cut ID" });
+      }
+      
+      const cut = await storage.getFabricCutById(id);
+      if (!cut) {
+        return res.status(404).json({ error: "Fabric cut not found" });
+      }
+      
+      res.json({ data: cut });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/fabric-cuts", hasRequiredPermission(PERMISSIONS.MANAGE_CATALOG), async (req, res) => {
+    try {
+      const validatedData = insertFabricCutSchema.parse(req.body);
+      const newCut = await storage.createFabricCut(validatedData);
+      
+      res.status(201).json({ data: newCut });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  app.put("/api/fabric-cuts/:id", hasRequiredPermission(PERMISSIONS.MANAGE_CATALOG), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid fabric cut ID" });
+      }
+      
+      const cut = await storage.getFabricCutById(id);
+      if (!cut) {
+        return res.status(404).json({ error: "Fabric cut not found" });
+      }
+      
+      const validatedData = insertFabricCutSchema.partial().parse(req.body);
+      const updatedCut = await storage.updateFabricCut(id, validatedData);
+      
+      res.json({ data: updatedCut });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  app.delete("/api/fabric-cuts/:id", hasRequiredPermission(PERMISSIONS.MANAGE_CATALOG), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid fabric cut ID" });
+      }
+      
+      const cut = await storage.getFabricCutById(id);
+      if (!cut) {
+        return res.status(404).json({ error: "Fabric cut not found" });
+      }
+      
+      await storage.deleteFabricCut(id);
+      
+      res.status(200).json({ 
+        success: true,
+        message: "Fabric cut deleted successfully"
+      });
+    } catch (error: any) {
+      console.error("Error deleting fabric cut:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Customization Options API endpoints
+  app.get("/api/products/:productId/customization-options", async (req, res) => {
+    try {
+      const productId = parseInt(req.params.productId);
+      if (isNaN(productId)) {
+        return res.status(400).json({ error: "Invalid product ID" });
+      }
+      
+      const options = await storage.getCustomizationOptions(productId);
+      res.json({ data: options });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/customization-options/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid customization option ID" });
+      }
+      
+      const option = await storage.getCustomizationOptionById(id);
+      if (!option) {
+        return res.status(404).json({ error: "Customization option not found" });
+      }
+      
+      res.json({ data: option });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/customization-options", hasRequiredPermission(PERMISSIONS.MANAGE_CATALOG), async (req, res) => {
+    try {
+      const validatedData = insertCustomizationOptionSchema.parse(req.body);
+      const newOption = await storage.createCustomizationOption(validatedData);
+      
+      res.status(201).json({ data: newOption });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  app.put("/api/customization-options/:id", hasRequiredPermission(PERMISSIONS.MANAGE_CATALOG), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid customization option ID" });
+      }
+      
+      const option = await storage.getCustomizationOptionById(id);
+      if (!option) {
+        return res.status(404).json({ error: "Customization option not found" });
+      }
+      
+      const validatedData = insertCustomizationOptionSchema.partial().parse(req.body);
+      const updatedOption = await storage.updateCustomizationOption(id, validatedData);
+      
+      res.json({ data: updatedOption });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  app.delete("/api/customization-options/:id", hasRequiredPermission(PERMISSIONS.MANAGE_CATALOG), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid customization option ID" });
+      }
+      
+      const option = await storage.getCustomizationOptionById(id);
+      if (!option) {
+        return res.status(404).json({ error: "Customization option not found" });
+      }
+      
+      await storage.deleteCustomizationOption(id);
+      
+      res.status(200).json({ 
+        success: true,
+        message: "Customization option deleted successfully"
+      });
+    } catch (error: any) {
+      console.error("Error deleting customization option:", error);
       res.status(500).json({ error: error.message });
     }
   });

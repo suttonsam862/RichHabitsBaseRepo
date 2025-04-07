@@ -49,6 +49,10 @@ export const PERMISSIONS = {
   SEND_MESSAGES: 'send_messages',
   VIEW_MESSAGES: 'view_messages',
   
+  // Catalog management
+  VIEW_CATALOG: 'view_catalog',
+  MANAGE_CATALOG: 'manage_catalog',
+  
   // Reports & Analytics
   VIEW_REPORTS: 'view_reports',
   VIEW_ANALYTICS: 'view_analytics',
@@ -129,14 +133,74 @@ export const insertMessageSchema = createInsertSchema(messages).omit({ id: true,
 export const insertActivitySchema = createInsertSchema(activities).omit({ id: true, createdAt: true });
 
 // Types
+// Products schema
+export const products = pgTable('products', {
+  id: serial('id').primaryKey(),
+  sku: text('sku').notNull().unique(),
+  name: text('name').notNull(),
+  sport: text('sport').notNull(),
+  category: text('category').notNull(),
+  item: text('item').notNull(),
+  fabricOptions: text('fabric_options').notNull(),
+  cogs: text('cogs').notNull(),
+  wholesalePrice: text('wholesale_price').notNull(),
+  imageUrl: text('image_url'),
+  lineItemManagement: text('line_item_management'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Fabric Options schema
+export const fabricOptions = pgTable('fabric_options', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Fabric Cuts schema 
+export const fabricCuts = pgTable('fabric_cuts', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Product Customization Options schema
+export const customizationOptions = pgTable('customization_options', {
+  id: serial('id').primaryKey(),
+  productId: integer('product_id').references(() => products.id, { onDelete: 'cascade' }),
+  optionName: text('option_name').notNull(),
+  optionType: text('option_type').notNull(), // 'fabric', 'cut', 'size', 'color', etc.
+  optionValues: text('option_values').notNull(), // JSON array of possible values
+  isRequired: boolean('is_required').default(false),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertFabricOptionSchema = createInsertSchema(fabricOptions).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertFabricCutSchema = createInsertSchema(fabricCuts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCustomizationOptionSchema = createInsertSchema(customizationOptions).omit({ id: true, createdAt: true, updatedAt: true });
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertLead = z.infer<typeof insertLeadSchema>;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
+export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type InsertFabricOption = z.infer<typeof insertFabricOptionSchema>;
+export type InsertFabricCut = z.infer<typeof insertFabricCutSchema>;
+export type InsertCustomizationOption = z.infer<typeof insertCustomizationOptionSchema>;
 
 export type User = typeof users.$inferSelect;
 export type Lead = typeof leads.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
+export type Product = typeof products.$inferSelect;
+export type FabricOption = typeof fabricOptions.$inferSelect;
+export type FabricCut = typeof fabricCuts.$inferSelect;
+export type CustomizationOption = typeof customizationOptions.$inferSelect;

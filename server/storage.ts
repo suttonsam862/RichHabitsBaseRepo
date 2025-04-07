@@ -8,6 +8,8 @@ import {
   fabricOptions,
   fabricCuts,
   customizationOptions,
+  salesTeamMembers,
+  ROLES,
   type User, 
   type InsertUser, 
   type Lead, 
@@ -26,6 +28,8 @@ import {
   type InsertFabricCut,
   type CustomizationOption,
   type InsertCustomizationOption,
+  type SalesTeamMember,
+  type InsertSalesTeamMember,
   type Permission
 } from "@shared/schema";
 import { db } from "./db";
@@ -51,12 +55,23 @@ export interface IStorage {
   updateUserPermissions(userId: number, permissions: Permission[]): Promise<User>;
   updateUserVisiblePages(userId: number, visiblePages: string[]): Promise<User>;
   
+  // Sales Team methods
+  getSalesTeamMembers(): Promise<SalesTeamMember[]>;
+  getSalesTeamMemberById(id: number): Promise<SalesTeamMember | undefined>;
+  createSalesTeamMember(member: InsertSalesTeamMember): Promise<SalesTeamMember>;
+  updateSalesTeamMember(id: number, member: Partial<InsertSalesTeamMember>): Promise<SalesTeamMember>;
+  deleteSalesTeamMember(id: number): Promise<void>;
+  getSalesTeamPerformance(): Promise<any>;
+  
   // Lead methods
   getLeads(): Promise<Lead[]>;
   getRecentLeads(limit?: number): Promise<Lead[]>;
   createLead(lead: InsertLead): Promise<Lead>;
   getLeadById(id: number): Promise<Lead | undefined>;
   deleteLead(id: number): Promise<void>;
+  getUnassignedLeads(): Promise<Lead[]>;
+  getLeadAssignments(): Promise<any[]>;
+  assignLeadToSalesRep(leadId: number, salesRepId: number): Promise<any>;
   
   // Order methods
   getOrders(): Promise<Order[]>;
@@ -348,6 +363,140 @@ export class DatabaseStorage implements IStorage {
   async getLeadConversionData(period: string): Promise<any[]> {
     // For demo purposes - in a real app we would query the database
     return [];
+  }
+  
+  // Sales Team methods
+  async getSalesTeamMembers(): Promise<SalesTeamMember[]> {
+    return db.select().from(salesTeamMembers).orderBy(asc(salesTeamMembers.name));
+  }
+  
+  async getSalesTeamMemberById(id: number): Promise<SalesTeamMember | undefined> {
+    const [member] = await db.select().from(salesTeamMembers).where(eq(salesTeamMembers.id, id));
+    return member || undefined;
+  }
+  
+  async createSalesTeamMember(member: InsertSalesTeamMember): Promise<SalesTeamMember> {
+    // If createUserAccount is true, we'll create a user account too
+    if (member.createUserAccount) {
+      if (!member.username || !member.password) {
+        throw new Error("Username and password are required when creating a user account");
+      }
+      
+      // Check if username already exists
+      const existingUser = await this.getUserByUsername(member.username);
+      if (existingUser) {
+        throw new Error("Username already exists");
+      }
+      
+      // Create user account
+      const newUser = await this.createUser({
+        username: member.username,
+        password: member.password,
+        email: member.email,
+        fullName: member.name,
+        role: member.systemRole || ROLES.AGENT,
+        permissions: member.systemPermissions,
+      });
+      
+      // Add user ID to sales team member
+      member.userId = newUser.id;
+    }
+    
+    const [newMember] = await db
+      .insert(salesTeamMembers)
+      .values(member)
+      .returning();
+    return newMember;
+  }
+  
+  async updateSalesTeamMember(id: number, member: Partial<InsertSalesTeamMember>): Promise<SalesTeamMember> {
+    const [updatedMember] = await db
+      .update(salesTeamMembers)
+      .set({ ...member, updatedAt: new Date() })
+      .where(eq(salesTeamMembers.id, id))
+      .returning();
+    return updatedMember;
+  }
+  
+  async deleteSalesTeamMember(id: number): Promise<void> {
+    const member = await this.getSalesTeamMemberById(id);
+    if (member && member.userId) {
+      // Delete associated user account if it exists
+      await db.delete(users).where(eq(users.id, member.userId));
+    }
+    await db.delete(salesTeamMembers).where(eq(salesTeamMembers.id, id));
+  }
+  
+  async getSalesTeamPerformance(): Promise<any> {
+    // Get some basic stats
+    const allMembers = await this.getSalesTeamMembers();
+    const activeMembers = allMembers.filter(m => m.status === 'active');
+    
+    // Calculate total revenue
+    let totalRevenue = 0;
+    let totalLeads = 0;
+    let totalOrders = 0;
+    
+    // In real implementation, this would be calculated from actual orders data
+    // For now, we'll just return some mock data for demonstration purposes
+    
+    return {
+      totalMembers: allMembers.length,
+      activeMembers: activeMembers.length,
+      totalRevenue: "$0",
+      totalLeads: 0,
+      totalOrders: 0,
+      conversionRate: "0%",
+      avgDealSize: "$0",
+      topPerformer: {
+        name: allMembers.length > 0 ? allMembers[0].name : "N/A",
+        revenue: "$0"
+      }
+    };
+  }
+  
+  // Lead assignment methods
+  async getUnassignedLeads(): Promise<Lead[]> {
+    return db.select()
+      .from(leads)
+      .where(eq(leads.status, 'new'))
+      .orderBy(desc(leads.createdAt));
+  }
+  
+  async getLeadAssignments(): Promise<any[]> {
+    // In a real implementation, we would have a lead_assignments table
+    // For now, we'll just return leads with salesRepId populated
+    const assignedLeads = await db.select()
+      .from(leads)
+      .where(sql`sales_rep_id IS NOT NULL`)
+      .orderBy(desc(leads.createdAt));
+    
+    return assignedLeads;
+  }
+  
+  async assignLeadToSalesRep(leadId: number, salesRepId: number): Promise<any> {
+    // Update the lead with the sales rep id
+    const [updatedLead] = await db.update(leads)
+      .set({ 
+        salesRepId: salesRepId,
+        status: 'assigned'
+      })
+      .where(eq(leads.id, leadId))
+      .returning();
+    
+    // Update the sales rep's lead count
+    // In a real application, we would use a transaction here
+    const [salesRep] = await db.select().from(salesTeamMembers).where(eq(salesTeamMembers.id, salesRepId));
+    if (salesRep) {
+      await db.update(salesTeamMembers)
+        .set({ 
+          leadCount: Number(salesRep.leadCount) + 1,
+          lastActiveAt: new Date()
+        })
+        .where(eq(salesTeamMembers.id, salesRepId));
+    }
+    
+    return updatedLead;
   }
   
   // Product methods

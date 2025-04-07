@@ -491,6 +491,176 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Sales team management endpoints
+  // Get all sales team members - Admin only
+  app.get("/api/admin/sales-team", hasRequiredPermission(PERMISSIONS.MANAGE_USERS), async (req, res) => {
+    try {
+      const members = await storage.getSalesTeamMembers();
+      res.json({ data: members });
+    } catch (error: any) {
+      console.error("Error fetching sales team members:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Get sales team performance metrics - Admin only
+  app.get("/api/admin/sales-team/performance", hasRequiredPermission(PERMISSIONS.MANAGE_USERS), async (req, res) => {
+    try {
+      const performance = await storage.getSalesTeamPerformance();
+      res.json({ data: performance });
+    } catch (error: any) {
+      console.error("Error fetching sales team performance:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Create new sales team member - Admin only
+  app.post("/api/admin/sales-team", hasRequiredPermission(PERMISSIONS.MANAGE_USERS), async (req, res) => {
+    try {
+      const validatedData = insertSalesTeamMemberSchema.parse(req.body);
+      const newMember = await storage.createSalesTeamMember(validatedData);
+      
+      // Create activity for the new team member
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "team",
+        content: `New sales team member ${newMember.name} added`,
+        relatedId: newMember.id,
+        relatedType: "sales_team"
+      });
+      
+      res.status(201).json({ data: newMember });
+    } catch (error: any) {
+      console.error("Error creating sales team member:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  // Update sales team member - Admin only
+  app.patch("/api/admin/sales-team/:id", hasRequiredPermission(PERMISSIONS.MANAGE_USERS), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid team member ID" });
+      }
+      
+      const member = await storage.getSalesTeamMemberById(id);
+      if (!member) {
+        return res.status(404).json({ error: "Team member not found" });
+      }
+      
+      const updatedMember = await storage.updateSalesTeamMember(id, req.body);
+      
+      // Create activity for the updated team member
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "team",
+        content: `Sales team member ${updatedMember.name} updated`,
+        relatedId: updatedMember.id,
+        relatedType: "sales_team"
+      });
+      
+      res.json({ data: updatedMember });
+    } catch (error: any) {
+      console.error("Error updating sales team member:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Delete sales team member - Admin only
+  app.delete("/api/admin/sales-team/:id", hasRequiredPermission(PERMISSIONS.MANAGE_USERS), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid team member ID" });
+      }
+      
+      const member = await storage.getSalesTeamMemberById(id);
+      if (!member) {
+        return res.status(404).json({ error: "Team member not found" });
+      }
+      
+      await storage.deleteSalesTeamMember(id);
+      
+      // Create activity for deleted team member
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "team",
+        content: `Sales team member ${member.name} deleted`,
+        relatedId: id,
+        relatedType: "sales_team"
+      });
+      
+      res.status(200).json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting sales team member:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Get unassigned leads - Admin only
+  app.get("/api/admin/leads/unassigned", hasRequiredPermission(PERMISSIONS.MANAGE_USERS), async (req, res) => {
+    try {
+      const unassignedLeads = await storage.getUnassignedLeads();
+      res.json({ data: unassignedLeads });
+    } catch (error: any) {
+      console.error("Error fetching unassigned leads:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Get lead assignments - Admin only
+  app.get("/api/admin/leads/assignments", hasRequiredPermission(PERMISSIONS.MANAGE_USERS), async (req, res) => {
+    try {
+      const assignments = await storage.getLeadAssignments();
+      res.json({ data: assignments });
+    } catch (error: any) {
+      console.error("Error fetching lead assignments:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Assign lead to sales rep - Admin only
+  app.post("/api/admin/leads/assign", hasRequiredPermission(PERMISSIONS.MANAGE_USERS), async (req, res) => {
+    try {
+      const { leadId, salesRepId } = req.body;
+      
+      if (!leadId || !salesRepId) {
+        return res.status(400).json({ error: "Lead ID and Sales Rep ID are required" });
+      }
+      
+      const lead = await storage.getLeadById(leadId);
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      
+      const salesRep = await storage.getSalesTeamMemberById(salesRepId);
+      if (!salesRep) {
+        return res.status(404).json({ error: "Sales rep not found" });
+      }
+      
+      const updatedLead = await storage.assignLeadToSalesRep(leadId, salesRepId);
+      
+      // Create activity for lead assignment
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "lead",
+        content: `Lead ${lead.name} assigned to ${salesRep.name}`,
+        relatedId: leadId,
+        relatedType: "lead"
+      });
+      
+      res.json({ data: updatedLead });
+    } catch (error: any) {
+      console.error("Error assigning lead:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
   // Products API endpoints
   app.get("/api/products", async (req, res) => {
     try {

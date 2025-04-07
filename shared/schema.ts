@@ -1,4 +1,5 @@
 import { pgTable, text, serial, integer, boolean, timestamp, numeric, json } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -88,6 +89,7 @@ export const leads = pgTable("leads", {
   status: text("status").default("new").notNull(),
   notes: text("notes"),
   value: numeric("value"),
+  salesRepId: integer("sales_rep_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -199,6 +201,45 @@ export type InsertFabricOption = z.infer<typeof insertFabricOptionSchema>;
 export type InsertFabricCut = z.infer<typeof insertFabricCutSchema>;
 export type InsertCustomizationOption = z.infer<typeof insertCustomizationOptionSchema>;
 
+// Sales team table
+export const salesTeamMembers = pgTable('sales_team_members', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  email: text('email').notNull(),
+  phone: text('phone').notNull(),
+  role: text('role').notNull().default('Junior Sales Rep'),
+  status: text('status').notNull().default('active'),
+  avatarUrl: text('avatar_url'),
+  hireDate: text('hire_date').default(sql`CURRENT_DATE`),
+  leadCount: integer('lead_count').default(0),
+  orderCount: integer('order_count').default(0),
+  totalRevenue: text('total_revenue').default('$0'),
+  commissionRate: text('commission_rate').notNull().default('5.00'),
+  earnedCommission: text('earned_commission').default('$0'),
+  lastActiveAt: timestamp('last_active_at').defaultNow(),
+  assignedRegions: text('assigned_regions').array(),
+  assignedIndustries: text('assigned_industries').array(),
+  specialization: text('specialization').default('General'),
+  notes: text('notes'),
+  // User account fields
+  username: text('username'),
+  password: text('password'),
+  systemRole: text('system_role'),
+  systemPermissions: text('system_permissions').array(),
+  userId: integer('user_id').references(() => users.id),
+  createUserAccount: boolean('create_user_account').default(false),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Create insert schemas
+export const insertSalesTeamMemberSchema = createInsertSchema(salesTeamMembers).omit({ id: true, createdAt: true, updatedAt: true });
+
+// Create types from insert schemas
+export type InsertSalesTeamMember = z.infer<typeof insertSalesTeamMemberSchema>;
+
 export type User = typeof users.$inferSelect;
 export type Lead = typeof leads.$inferSelect;
 export type Order = typeof orders.$inferSelect;
@@ -208,3 +249,4 @@ export type Product = typeof products.$inferSelect;
 export type FabricOption = typeof fabricOptions.$inferSelect;
 export type FabricCut = typeof fabricCuts.$inferSelect;
 export type CustomizationOption = typeof customizationOptions.$inferSelect;
+export type SalesTeamMember = typeof salesTeamMembers.$inferSelect;

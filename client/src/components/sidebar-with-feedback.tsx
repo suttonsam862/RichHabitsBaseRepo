@@ -761,14 +761,16 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       {/* Sidebar for both mobile and desktop */}
       <div
         className={cn(
-          "fixed top-0 z-50 h-screen w-72 bg-card shadow-lg transition-transform duration-300 ease-in-out md:sticky md:z-0 md:block overflow-y-auto",
+          "fixed top-0 z-50 h-screen w-72 bg-white shadow-lg transition-transform duration-300 ease-in-out md:sticky md:z-0 md:block overflow-hidden",
           isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
         <div className="flex h-16 items-center px-6 py-4 border-b">
           <h1 className="text-lg font-bold">Rich Habits</h1>
         </div>
-        {user && groupedMenuItems}
+        <div className="overflow-y-auto h-[calc(100vh-4rem)]">
+          {user && groupedMenuItems}
+        </div>
       </div>
     </>
   );

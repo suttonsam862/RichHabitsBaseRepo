@@ -20,14 +20,16 @@ export default function Layout({ user, children }: LayoutProps) {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen h-screen bg-gray-50">
       <Sidebar user={user} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
       <MobileMenu onMenuToggle={toggleSidebar} />
       
-      <main className="flex-1 relative md:ml-64 lg:ml-72 pt-14 md:pt-0 overflow-y-auto bg-white">
-        {children}
-      </main>
+      <div className="flex-1 flex flex-col w-full relative md:pl-0 pt-16 md:pt-0 bg-white overflow-hidden">
+        <main className="flex-1 w-full overflow-y-auto">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

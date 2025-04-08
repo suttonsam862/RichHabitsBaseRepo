@@ -65,10 +65,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Directly set the user object as returned by server
       queryClient.setQueryData(["/api/user"], response);
       
-      // Ensure the query is marked as fresh
+      // Force a refetch to ensure we have the latest state including all user data
       queryClient.invalidateQueries({ 
-        queryKey: ["/api/user"],
-        refetchType: "none" // Don't refetch immediately, just invalidate
+        queryKey: ["/api/user"]
       });
       
       const userName = response.fullName || response.username || response.email;
@@ -76,6 +75,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Login successful",
         description: `Welcome back, ${userName}!`,
       });
+      
+      // Force a window location refresh to ensure the entire app state is reset with the new user
+      // This helps solve the issue with login requiring manual refresh
+      window.location.href = '/dashboard';
     },
     onError: (error: Error) => {
       console.error("Login error:", error);
@@ -93,16 +96,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (response: any) => {
+      console.log("Registration success, setting user data:", response);
+      
       // Store the response directly in the cache
       queryClient.setQueryData(["/api/user"], response);
-      // Invalidate the query to ensure we have the latest state
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
+      // Force a refetch to ensure we have the latest state including all user data
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/user"] 
+      });
       
       const userName = response.fullName || response.username || response.email;
       toast({
         title: "Registration successful",
         description: `Welcome, ${userName}!`,
       });
+      
+      // Force a window location refresh to ensure the entire app state is reset with the new user
+      // This helps solve the issue with registration requiring manual refresh
+      window.location.href = '/dashboard';
     },
     onError: (error: Error) => {
       toast({
@@ -123,6 +135,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Logged out",
         description: "You have been successfully logged out",
       });
+      
+      // Redirect to auth page after logout
+      window.location.href = '/auth';
     },
     onError: (error: Error) => {
       toast({

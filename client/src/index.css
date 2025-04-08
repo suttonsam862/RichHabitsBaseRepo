@@ -33,6 +33,9 @@
     --sidebar-accent-foreground: 222.2 47.4% 11.2%;
     --sidebar-border: 214.3 31.8% 91.4%;
     --sidebar-ring: 199 89% 48%;
+    
+    --tooltip-highlight: 199 89% 95%;
+    --tooltip-highlight-border: 199 89% 80%;
   }
 
   .dark {
@@ -64,6 +67,9 @@
     --sidebar-accent-foreground: 222.2 47.4% 11.2%;
     --sidebar-border: 214.3 31.8% 91.4%;
     --sidebar-ring: 199 89% 48%;
+    
+    --tooltip-highlight: 199 89% 95%;
+    --tooltip-highlight-border: 199 89% 80%;
   }
 
   * {
@@ -72,5 +78,34 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Tooltip Highlight Effect */
+  .tooltip-highlight-effect {
+    @apply relative z-10;
+  }
+  
+  .tooltip-highlight-effect::before {
+    content: "";
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border-radius: 0.25rem;
+    background-color: hsl(var(--tooltip-highlight));
+    border: 1px solid hsl(var(--tooltip-highlight-border));
+    z-index: -1;
+    opacity: 0;
+    transform: scale(0.95);
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .tooltip-highlight-effect:hover::before,
+  .tooltip-highlight-effect:focus-within::before {
+    opacity: 1;
+    transform: scale(1);
   }
 }

@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
 import { insertLeadSchema } from "@shared/schema";
 import { Lead, LeadStatus } from "@/types";
+import { HelpIconOnly } from "@/components/ui/help-tooltip";
 
 const formSchema = insertLeadSchema.extend({
   status: z.enum(["new", "contacted", "qualified", "proposal", "negotiation", "closed", "lost"]),
@@ -457,6 +458,24 @@ export default function Leads() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
+                <div className="absolute right-2 top-2.5">
+                  <HelpIconOnly 
+                    content={
+                      <div>
+                        <p className="font-semibold mb-1">Lead Search Tips</p>
+                        <p>Search through all leads by name, email, phone, or company.</p>
+                        <ul className="list-disc pl-4 mt-2 space-y-1">
+                          <li>Enter a client name like "John Smith"</li>
+                          <li>Search by email domain (e.g., "@company.com")</li>
+                          <li>Enter a phone number with or without formatting</li>
+                          <li>Type a company name to find all leads from that organization</li>
+                        </ul>
+                      </div>
+                    }
+                    side="top"
+                    iconSize={14}
+                  />
+                </div>
               </div>
               
               <div className="flex items-center gap-2">
@@ -479,6 +498,25 @@ export default function Leads() {
                     <SelectItem value="lost">Lost</SelectItem>
                   </SelectContent>
                 </Select>
+                <HelpIconOnly 
+                  content={
+                    <div>
+                      <p className="font-semibold mb-1">Understanding Lead Status</p>
+                      <p>Filter leads by their current status in your sales pipeline:</p>
+                      <ul className="list-disc pl-4 mt-2 space-y-1">
+                        <li><span className="font-semibold">New:</span> Recently added, not yet contacted</li>
+                        <li><span className="font-semibold">Contacted:</span> Initial outreach has been made</li>
+                        <li><span className="font-semibold">Qualified:</span> Confirmed interest and fit for your products</li>
+                        <li><span className="font-semibold">Proposal:</span> Formal quote/proposal has been sent</li>
+                        <li><span className="font-semibold">Negotiation:</span> Discussing terms and finalizing details</li>
+                        <li><span className="font-semibold">Closed:</span> Lead has converted to a customer</li>
+                        <li><span className="font-semibold">Lost:</span> Opportunity is no longer viable</li>
+                      </ul>
+                    </div>
+                  }
+                  side="left"
+                  iconSize={14}
+                />
               </div>
             </div>
           </CardHeader>

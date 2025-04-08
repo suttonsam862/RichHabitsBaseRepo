@@ -114,10 +114,21 @@ export function CSVImportDialog({ open, onOpenChange }: CSVImportDialogProps) {
         
         {stage === 'upload' && (
           <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-100 rounded-md p-4 mb-2">
+              <h3 className="text-sm font-semibold text-blue-700 mb-1">CSV Import Guide</h3>
+              <p className="text-xs text-blue-700">
+                You can either upload a CSV file or paste data directly in the text area below.
+                Make sure to follow the required format with all columns in the correct order.
+              </p>
+            </div>
+          
             <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-md">
-              <Upload className="h-10 w-10 text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground mb-4">
-                Upload a CSV file or paste CSV data below
+              <Upload className="h-10 w-10 text-primary mb-2" />
+              <p className="text-sm font-medium mb-1">
+                Upload a CSV file
+              </p>
+              <p className="text-xs text-muted-foreground mb-4">
+                Select a properly formatted CSV file from your computer
               </p>
               <div className="flex items-center justify-center">
                 <input 
@@ -129,29 +140,37 @@ export function CSVImportDialog({ open, onOpenChange }: CSVImportDialogProps) {
                 />
                 <Button 
                   type="button" 
-                  variant="outline" 
+                  variant="secondary" 
                   className="cursor-pointer"
                   onClick={() => document.getElementById('csv-upload')?.click()}
                 >
+                  <Upload className="h-4 w-4 mr-2" />
                   Select CSV File
                 </Button>
               </div>
             </div>
             
-            <div>
-              <p className="text-sm font-medium mb-2">Or paste CSV data:</p>
+            <div className="bg-gray-50 rounded-md p-4">
+              <p className="text-sm font-medium mb-2">Or paste CSV data directly:</p>
               <Textarea
-                placeholder="Paste CSV data here..."
-                rows={10}
+                placeholder="Item SKU,Item Name,Sport,Category,Item,Fabric Options,COGS,Wholesale Price"
+                rows={8}
                 onChange={handlePasteCSV}
                 value={csvData}
+                className="font-mono text-xs"
               />
             </div>
             
             <Alert>
               <AlertTitle>CSV Format</AlertTitle>
               <AlertDescription>
-                CSV should include the following columns: Item SKU, Item Name, Sport, Category, Item, Fabric Options, COGS, Wholesale Price.
+                <p className="mb-2">Your CSV file should have the following format:</p>
+                <p className="text-xs font-mono bg-gray-100 p-2 rounded">
+                  Item SKU,Item Name,Sport,Category,Item,Fabric Options,COGS,Wholesale Price
+                </p>
+                <p className="mt-2 text-xs">
+                  For example: <span className="font-mono">FOO-B744,Football - Game Jersey,Football,Uniforms,Game Jersey,Polyester,45.00,90.00</span>
+                </p>
               </AlertDescription>
             </Alert>
           </div>
@@ -164,11 +183,28 @@ export function CSVImportDialog({ open, onOpenChange }: CSVImportDialogProps) {
               <span className="text-sm text-muted-foreground">{file?.name || 'Pasted CSV data'}</span>
             </div>
             
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+              <h3 className="text-sm font-medium flex items-center mb-1">
+                <span className="mr-2">🔍</span> Data Review
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Please review your CSV data below to ensure it matches the required format before importing. 
+                Each line should contain all required fields in the correct order.
+              </p>
+            </div>
+            
             <ScrollableDialogContent className="max-h-[400px]">
               <pre className="text-xs p-4 bg-secondary/50 rounded-md overflow-auto whitespace-pre">
                 {csvData}
               </pre>
             </ScrollableDialogContent>
+            
+            <div className="text-sm bg-gray-50 p-3 rounded-md">
+              <p className="font-medium mb-1">Ready to import?</p>
+              <p className="text-muted-foreground">
+                Click "Import Products" below to add these items to your catalog, or go back to make changes.
+              </p>
+            </div>
           </div>
         )}
         

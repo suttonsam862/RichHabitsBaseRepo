@@ -93,6 +93,12 @@ export const AVAILABLE_PAGES = [
     description: "Organization management",
     category: "Administration",
   },
+  {
+    id: "feedback",
+    name: "Feedback",
+    description: "User feedback and feature requests",
+    category: "System",
+  },
   // Admin pages
   {
     id: "user-management",
@@ -135,28 +141,29 @@ export const PAGE_ACCESS_TEMPLATES = {
     "dashboard", "messages", "profile", "settings",
     "leads", "orders", "design", "manufacturing",
     "catalog", "analytics", "reports", "user-management",
-    "design-communication", "production-communication"
+    "design-communication", "production-communication", "feedback"
   ],
   SALES: [
     "dashboard", "messages", "profile", 
-    "leads", "orders", "catalog", "analytics",
+    "leads", "orders", "catalog", "analytics", 
+    "feedback"
   ],
   DESIGNER: [
     "dashboard", "messages", "profile",
     "design", "design-communication", "catalog", 
-    "orders"
+    "orders", "feedback"
   ],
   MANUFACTURER: [
     "dashboard", "messages", "profile",
     "manufacturing", "production-communication", 
-    "catalog", "orders"
+    "catalog", "orders", "feedback"
   ],
   CUSTOMER: [
     "dashboard", "messages", "profile", 
-    "orders", "catalog"
+    "orders", "catalog", "feedback"
   ],
   MINIMAL: [
-    "dashboard", "messages", "profile"
+    "dashboard", "messages", "profile", "feedback"
   ]
 };
 

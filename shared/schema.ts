@@ -250,3 +250,51 @@ export type FabricOption = typeof fabricOptions.$inferSelect;
 export type FabricCut = typeof fabricCuts.$inferSelect;
 export type CustomizationOption = typeof customizationOptions.$inferSelect;
 export type SalesTeamMember = typeof salesTeamMembers.$inferSelect;
+
+// Define feedback table
+export const feedback = pgTable('feedback', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id),
+  type: text('type').notNull().default('feedback'), // 'feedback', 'bug', 'feature'
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  status: text('status').notNull().default('new'), // 'new', 'in_review', 'in_progress', 'completed', 'rejected'
+  priority: text('priority').notNull().default('medium'), // 'low', 'medium', 'high', 'critical'
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at'),
+  assignedTo: integer('assigned_to').references(() => users.id),
+  category: text('category'),
+  screenshotUrl: text('screenshot_url'),
+  voteCount: integer('vote_count').default(0),
+});
+
+// Define feedback comments table
+export const feedbackComments = pgTable('feedback_comments', {
+  id: serial('id').primaryKey(),
+  feedbackId: integer('feedback_id').notNull().references(() => feedback.id),
+  userId: integer('user_id').notNull().references(() => users.id),
+  comment: text('comment').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Define feedback votes table
+export const feedbackVotes = pgTable('feedback_votes', {
+  id: serial('id').primaryKey(),
+  feedbackId: integer('feedback_id').notNull().references(() => feedback.id),
+  userId: integer('user_id').notNull().references(() => users.id),
+  voteType: text('vote_type').notNull().default('upvote'), // 'upvote' or 'downvote'
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Create insert schemas
+export const insertFeedbackSchema = createInsertSchema(feedback).omit({ id: true, createdAt: true, updatedAt: true, voteCount: true });
+export const insertFeedbackCommentSchema = createInsertSchema(feedbackComments).omit({ id: true, createdAt: true });
+export const insertFeedbackVoteSchema = createInsertSchema(feedbackVotes).omit({ id: true, createdAt: true });
+
+// Define types
+export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
+export type InsertFeedbackComment = z.infer<typeof insertFeedbackCommentSchema>;
+export type InsertFeedbackVote = z.infer<typeof insertFeedbackVoteSchema>;
+export type Feedback = typeof feedback.$inferSelect;
+export type FeedbackComment = typeof feedbackComments.$inferSelect;
+export type FeedbackVote = typeof feedbackVotes.$inferSelect;

@@ -142,13 +142,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     if (!userFromDb) return null;
     
+    console.log("Raw user data for mapping:", userFromDb);
+    
     return {
       id: userFromDb.id.toString(),
       email: userFromDb.email || userFromDb.username,
       username: userFromDb.username,
       fullName: userFromDb.fullName === null ? undefined : userFromDb.fullName,
       avatarUrl: userFromDb.avatarUrl === null ? undefined : userFromDb.avatarUrl,
-      role: userFromDb.role || 'user'
+      role: userFromDb.role || 'user',
+      permissions: userFromDb.permissions || [],
+      visiblePages: userFromDb.visiblePages || []
     };
   };
 

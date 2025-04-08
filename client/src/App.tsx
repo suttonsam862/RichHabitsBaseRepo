@@ -18,6 +18,7 @@ import Catalog from "./pages/catalog";
 import Corporate from "./pages/corporate";
 import DesignCommunication from "./pages/design-communication";
 import ProductionCommunication from "./pages/production-communication";
+import Feedback from "./pages/feedback";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 import { useAuth, AuthProvider } from "@/hooks/use-auth";
@@ -45,13 +46,14 @@ function DashboardLayout() {
         <Route path="/messages" component={Messages} />
         <Route path="/reports" component={Reports} />
         <Route path="/analytics" component={Analytics} />
-        <Route path="/users" component={UserManagement} />
+        <Route path="/user-management" component={UserManagement} />
         <Route path="/profile" component={Profile} />
         <Route path="/settings" component={Settings} />
         <Route path="/catalog" component={Catalog} />
         <Route path="/corporate" component={Corporate} />
         <Route path="/design-communication" component={DesignCommunication} />
         <Route path="/production-communication" component={ProductionCommunication} />
+        <Route path="/feedback" component={Feedback} />
         
         {/* Admin Routes */}
         <Route path="/admin/sales-team" component={SalesTeam} />

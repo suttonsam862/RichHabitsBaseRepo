@@ -14,6 +14,9 @@ import {
   fabricOptions,
   fabricCuts,
   customizationOptions,
+  feedback,
+  feedbackComments,
+  feedbackVotes,
   insertLeadSchema, 
   insertOrderSchema, 
   insertMessageSchema,
@@ -23,6 +26,9 @@ import {
   insertFabricCutSchema,
   insertCustomizationOptionSchema,
   insertSalesTeamMemberSchema,
+  insertFeedbackSchema,
+  insertFeedbackCommentSchema,
+  insertFeedbackVoteSchema,
   ROLES,
   PERMISSIONS,
   type Permission
@@ -1306,6 +1312,330 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("Error deleting customization option:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Feedback system endpoints
+  // Get all feedback with optional filters
+  app.get("/api/feedback", async (req, res) => {
+    try {
+      const options: { status?: string; type?: string; limit?: number } = {};
+      
+      if (req.query.status) {
+        options.status = req.query.status as string;
+      }
+      
+      if (req.query.type) {
+        options.type = req.query.type as string;
+      }
+      
+      if (req.query.limit) {
+        options.limit = parseInt(req.query.limit as string);
+      }
+      
+      const feedbackItems = await storage.getFeedback(options);
+      res.json({ data: feedbackItems });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Get feedback by ID
+  app.get("/api/feedback/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid feedback ID" });
+      }
+      
+      const feedbackItem = await storage.getFeedbackById(id);
+      
+      if (!feedbackItem) {
+        return res.status(404).json({ error: "Feedback not found" });
+      }
+      
+      res.json({ data: feedbackItem });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Create new feedback
+  app.post("/api/feedback", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Set the user ID from the authenticated user
+      req.body.userId = req.user.id;
+      
+      const validatedData = insertFeedbackSchema.parse(req.body);
+      const newFeedback = await storage.createFeedback(validatedData);
+      
+      // Create activity for the new feedback
+      await storage.createActivity({
+        userId: req.user.id,
+        type: "feedback",
+        content: `New ${validatedData.type}: ${validatedData.title}`,
+        relatedId: newFeedback.id,
+        relatedType: "feedback"
+      });
+      
+      res.status(201).json({ data: newFeedback });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  // Update feedback
+  app.patch("/api/feedback/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid feedback ID" });
+      }
+      
+      const feedbackItem = await storage.getFeedbackById(id);
+      
+      if (!feedbackItem) {
+        return res.status(404).json({ error: "Feedback not found" });
+      }
+      
+      // Check if user is authorized (admin or the creator)
+      if (req.user?.id !== feedbackItem.userId && req.user?.role !== ROLES.ADMIN) {
+        return res.status(403).json({ error: "Not authorized to update this feedback" });
+      }
+      
+      const updatedFeedback = await storage.updateFeedback(id, req.body);
+      
+      // Create activity for the updated feedback
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "feedback",
+        content: `Updated feedback: ${updatedFeedback.title}`,
+        relatedId: updatedFeedback.id,
+        relatedType: "feedback"
+      });
+      
+      res.json({ data: updatedFeedback });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Delete feedback
+  app.delete("/api/feedback/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid feedback ID" });
+      }
+      
+      const feedbackItem = await storage.getFeedbackById(id);
+      
+      if (!feedbackItem) {
+        return res.status(404).json({ error: "Feedback not found" });
+      }
+      
+      // Check if user is authorized (admin or the creator)
+      if (req.user?.id !== feedbackItem.userId && req.user?.role !== ROLES.ADMIN) {
+        return res.status(403).json({ error: "Not authorized to delete this feedback" });
+      }
+      
+      await storage.deleteFeedback(id);
+      
+      // Create activity for the deleted feedback
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "feedback",
+        content: `Deleted feedback: ${feedbackItem.title}`,
+        relatedId: id,
+        relatedType: "feedback"
+      });
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Get feedback by user
+  app.get("/api/users/:userId/feedback", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      // Check if user is authorized (admin or the user themselves)
+      if (req.user?.id !== userId && req.user?.role !== ROLES.ADMIN) {
+        return res.status(403).json({ error: "Not authorized to view this user's feedback" });
+      }
+      
+      const feedbackItems = await storage.getFeedbackByUser(userId);
+      res.json({ data: feedbackItems });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Get feedback comments
+  app.get("/api/feedback/:id/comments", async (req, res) => {
+    try {
+      const feedbackId = parseInt(req.params.id);
+      
+      if (isNaN(feedbackId)) {
+        return res.status(400).json({ error: "Invalid feedback ID" });
+      }
+      
+      const comments = await storage.getFeedbackComments(feedbackId);
+      res.json({ data: comments });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Add comment to feedback
+  app.post("/api/feedback/:id/comments", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const feedbackId = parseInt(req.params.id);
+      
+      if (isNaN(feedbackId)) {
+        return res.status(400).json({ error: "Invalid feedback ID" });
+      }
+      
+      const feedbackItem = await storage.getFeedbackById(feedbackId);
+      
+      if (!feedbackItem) {
+        return res.status(404).json({ error: "Feedback not found" });
+      }
+      
+      // Set the user ID from the authenticated user
+      req.body.userId = req.user.id;
+      req.body.feedbackId = feedbackId;
+      
+      const validatedData = insertFeedbackCommentSchema.parse(req.body);
+      const newComment = await storage.addFeedbackComment(validatedData);
+      
+      // Create activity for the new comment
+      await storage.createActivity({
+        userId: req.user.id,
+        type: "feedback",
+        content: `Commented on feedback: ${feedbackItem.title}`,
+        relatedId: feedbackId,
+        relatedType: "feedback"
+      });
+      
+      res.status(201).json({ data: newComment });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  // Delete comment
+  app.delete("/api/feedback/comments/:id", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const commentId = parseInt(req.params.id);
+      
+      if (isNaN(commentId)) {
+        return res.status(400).json({ error: "Invalid comment ID" });
+      }
+      
+      await storage.deleteFeedbackComment(commentId);
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Vote on feedback
+  app.post("/api/feedback/:id/vote", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const feedbackId = parseInt(req.params.id);
+      
+      if (isNaN(feedbackId)) {
+        return res.status(400).json({ error: "Invalid feedback ID" });
+      }
+      
+      const feedbackItem = await storage.getFeedbackById(feedbackId);
+      
+      if (!feedbackItem) {
+        return res.status(404).json({ error: "Feedback not found" });
+      }
+      
+      // Set the user ID from the authenticated user
+      req.body.userId = req.user.id;
+      req.body.feedbackId = feedbackId;
+      
+      const validatedData = insertFeedbackVoteSchema.parse(req.body);
+      const vote = await storage.addFeedbackVote(validatedData);
+      
+      // Get updated feedback with new vote count
+      const updatedFeedback = await storage.getFeedbackById(feedbackId);
+      
+      res.status(201).json({ 
+        data: vote,
+        feedback: updatedFeedback
+      });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  // Remove vote from feedback
+  app.delete("/api/feedback/:id/vote", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const feedbackId = parseInt(req.params.id);
+      
+      if (isNaN(feedbackId)) {
+        return res.status(400).json({ error: "Invalid feedback ID" });
+      }
+      
+      await storage.removeFeedbackVote(req.user.id, feedbackId);
+      
+      // Get updated feedback with new vote count
+      const updatedFeedback = await storage.getFeedbackById(feedbackId);
+      
+      res.json({ 
+        success: true,
+        feedback: updatedFeedback
+      });
+    } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });

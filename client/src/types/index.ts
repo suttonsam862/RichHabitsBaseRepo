@@ -7,7 +7,8 @@ export interface AuthUser {
   fullName?: string;
   avatarUrl?: string;
   role?: string;
-  visiblePages?: string[]; // Add the visible pages property
+  permissions?: string[];
+  visiblePages?: string[];
 }
 
 export interface StatCard {

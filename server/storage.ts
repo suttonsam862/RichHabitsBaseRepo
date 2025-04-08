@@ -9,6 +9,9 @@ import {
   fabricCuts,
   customizationOptions,
   salesTeamMembers,
+  feedback,
+  feedbackComments,
+  feedbackVotes,
   ROLES,
   type User, 
   type InsertUser, 
@@ -30,6 +33,12 @@ import {
   type InsertCustomizationOption,
   type SalesTeamMember,
   type InsertSalesTeamMember,
+  type Feedback,
+  type FeedbackComment,
+  type FeedbackVote,
+  type InsertFeedback,
+  type InsertFeedbackComment,
+  type InsertFeedbackVote,
   type Permission
 } from "@shared/schema";
 import { db } from "./db";
@@ -130,6 +139,25 @@ export interface IStorage {
   
   // Data management
   clearExampleData(): Promise<void>;
+  
+  // Feedback system
+  getFeedback(options?: { status?: string; type?: string; limit?: number }): Promise<Feedback[]>;
+  getFeedbackById(id: number): Promise<Feedback | undefined>;
+  createFeedback(feedback: InsertFeedback): Promise<Feedback>;
+  updateFeedback(id: number, feedback: Partial<InsertFeedback>): Promise<Feedback>;
+  deleteFeedback(id: number): Promise<void>;
+  getFeedbackByUser(userId: number): Promise<Feedback[]>;
+  
+  // Feedback comments
+  getFeedbackComments(feedbackId: number): Promise<FeedbackComment[]>;
+  addFeedbackComment(comment: InsertFeedbackComment): Promise<FeedbackComment>;
+  deleteFeedbackComment(id: number): Promise<void>;
+  
+  // Feedback votes
+  getFeedbackVotes(feedbackId: number): Promise<FeedbackVote[]>;
+  addFeedbackVote(vote: InsertFeedbackVote): Promise<FeedbackVote>;
+  removeFeedbackVote(userId: number, feedbackId: number): Promise<void>;
+  updateFeedbackVoteCount(feedbackId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -661,6 +689,160 @@ export class DatabaseStorage implements IStorage {
       console.error("Error clearing example data:", error);
       throw error;
     }
+  }
+  
+  // Feedback system methods
+  async getFeedback(options?: { status?: string; type?: string; limit?: number }): Promise<Feedback[]> {
+    let query = db.select().from(feedback);
+    
+    if (options?.status) {
+      query = query.where(eq(feedback.status, options.status));
+    }
+    
+    if (options?.type) {
+      query = query.where(eq(feedback.type, options.type));
+    }
+    
+    const results = await query.orderBy(desc(feedback.createdAt));
+    
+    if (options?.limit) {
+      return results.slice(0, options.limit);
+    }
+    
+    return results;
+  }
+  
+  async getFeedbackById(id: number): Promise<Feedback | undefined> {
+    const [result] = await db.select().from(feedback).where(eq(feedback.id, id));
+    return result || undefined;
+  }
+  
+  async createFeedback(feedbackItem: InsertFeedback): Promise<Feedback> {
+    const [result] = await db
+      .insert(feedback)
+      .values(feedbackItem)
+      .returning();
+    return result;
+  }
+  
+  async updateFeedback(id: number, feedbackUpdate: Partial<InsertFeedback>): Promise<Feedback> {
+    const [result] = await db
+      .update(feedback)
+      .set({ ...feedbackUpdate, updatedAt: new Date() })
+      .where(eq(feedback.id, id))
+      .returning();
+    return result;
+  }
+  
+  async deleteFeedback(id: number): Promise<void> {
+    // First delete all comments and votes for this feedback
+    await db.delete(feedbackComments).where(eq(feedbackComments.feedbackId, id));
+    await db.delete(feedbackVotes).where(eq(feedbackVotes.feedbackId, id));
+    
+    // Then delete the feedback itself
+    await db.delete(feedback).where(eq(feedback.id, id));
+  }
+  
+  async getFeedbackByUser(userId: number): Promise<Feedback[]> {
+    return db.select().from(feedback).where(eq(feedback.userId, userId)).orderBy(desc(feedback.createdAt));
+  }
+  
+  // Feedback comments methods
+  async getFeedbackComments(feedbackId: number): Promise<FeedbackComment[]> {
+    return db.select()
+      .from(feedbackComments)
+      .where(eq(feedbackComments.feedbackId, feedbackId))
+      .orderBy(asc(feedbackComments.createdAt));
+  }
+  
+  async addFeedbackComment(comment: InsertFeedbackComment): Promise<FeedbackComment> {
+    const [result] = await db
+      .insert(feedbackComments)
+      .values(comment)
+      .returning();
+    return result;
+  }
+  
+  async deleteFeedbackComment(id: number): Promise<void> {
+    await db.delete(feedbackComments).where(eq(feedbackComments.id, id));
+  }
+  
+  // Feedback votes methods
+  async getFeedbackVotes(feedbackId: number): Promise<FeedbackVote[]> {
+    return db.select()
+      .from(feedbackVotes)
+      .where(eq(feedbackVotes.feedbackId, feedbackId));
+  }
+  
+  async addFeedbackVote(vote: InsertFeedbackVote): Promise<FeedbackVote> {
+    // Check if the user already voted on this feedback
+    const existingVote = await db.select()
+      .from(feedbackVotes)
+      .where(and(
+        eq(feedbackVotes.feedbackId, vote.feedbackId),
+        eq(feedbackVotes.userId, vote.userId)
+      ));
+    
+    if (existingVote.length > 0) {
+      // If the vote type is the same, do nothing
+      if (existingVote[0].voteType === vote.voteType) {
+        return existingVote[0];
+      }
+      
+      // If the vote type is different, update it
+      const [result] = await db
+        .update(feedbackVotes)
+        .set({ voteType: vote.voteType })
+        .where(eq(feedbackVotes.id, existingVote[0].id))
+        .returning();
+      
+      await this.updateFeedbackVoteCount(vote.feedbackId);
+      return result;
+    }
+    
+    // Otherwise, add the new vote
+    const [result] = await db
+      .insert(feedbackVotes)
+      .values(vote)
+      .returning();
+    
+    await this.updateFeedbackVoteCount(vote.feedbackId);
+    return result;
+  }
+  
+  async removeFeedbackVote(userId: number, feedbackId: number): Promise<void> {
+    await db.delete(feedbackVotes)
+      .where(and(
+        eq(feedbackVotes.userId, userId),
+        eq(feedbackVotes.feedbackId, feedbackId)
+      ));
+    
+    await this.updateFeedbackVoteCount(feedbackId);
+  }
+  
+  async updateFeedbackVoteCount(feedbackId: number): Promise<void> {
+    // Count upvotes and downvotes
+    const upvotesResult = await db.select({ count: sql`count(*)` })
+      .from(feedbackVotes)
+      .where(and(
+        eq(feedbackVotes.feedbackId, feedbackId),
+        eq(feedbackVotes.voteType, 'upvote')
+      ));
+    
+    const downvotesResult = await db.select({ count: sql`count(*)` })
+      .from(feedbackVotes)
+      .where(and(
+        eq(feedbackVotes.feedbackId, feedbackId),
+        eq(feedbackVotes.voteType, 'downvote')
+      ));
+    
+    const upvotes = Number(upvotesResult[0].count);
+    const downvotes = Number(downvotesResult[0].count);
+    
+    // Update the feedback vote count (upvotes - downvotes)
+    await db.update(feedback)
+      .set({ voteCount: upvotes - downvotes })
+      .where(eq(feedback.id, feedbackId));
   }
 }
 

@@ -183,8 +183,8 @@ const CatalogPage: FC = () => {
 
   return (
     <Layout user={user}>
-      <div className="container px-4 py-6 mx-auto max-w-7xl">
-        <div className="flex flex-col">
+      <div className="w-full px-4 py-6">
+        <div className="flex flex-col max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold tracking-tight">Product Catalog</h1>
             <div className="flex items-center space-x-2">
@@ -211,8 +211,8 @@ const CatalogPage: FC = () => {
             Browse our catalog of customizable performance apparel and sportswear.
           </p>
           
-          <div className="flex flex-col gap-4 mt-6 md:flex-row">
-            <div className="w-full md:w-64 shrink-0">
+          <div className="flex flex-col gap-4 mt-6 lg:flex-row">
+            <div className="w-full lg:w-64 shrink-0">
               <div className="p-4 border rounded-lg">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold">Filters</h2>
@@ -291,7 +291,7 @@ const CatalogPage: FC = () => {
               </div>
               
               {isLoading ? (
-                <div className="grid gap-6 mt-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 mt-4 sm:grid-cols-2 lg:grid-cols-3">
                   {[...Array(6)].map((_, i) => (
                     <Card key={i} className="h-80 animate-pulse">
                       <div className="w-full h-48 bg-gray-200"></div>
@@ -308,9 +308,9 @@ const CatalogPage: FC = () => {
                 </div>
               ) : filteredProducts.length > 0 ? (
                 <div className={cn(
-                  "mt-6",
+                  "mt-4",
                   viewMode === 'grid' 
-                    ? "grid gap-6 sm:grid-cols-2 lg:grid-cols-3" 
+                    ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3" 
                     : "flex flex-col gap-4"
                 )}>
                   {filteredProducts.map((product) => (

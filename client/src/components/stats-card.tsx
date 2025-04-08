@@ -7,10 +7,10 @@ interface StatsCardProps {
 
 export default function StatsCard({ card }: StatsCardProps) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex justify-between items-center">
         <div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{card.title}</p>
+          <p className="text-sm font-medium text-gray-500">{card.title}</p>
           <h3 className="text-2xl font-bold mt-1">{card.value}</h3>
           <p className="text-xs font-medium text-green-500 mt-1 flex items-center">
             <svg 

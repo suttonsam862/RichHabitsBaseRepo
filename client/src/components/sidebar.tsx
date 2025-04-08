@@ -35,6 +35,18 @@ interface SidebarProps {
   onClose: () => void;
 }
 
+interface MenuItem {
+  name: string;
+  href: string;
+  icon: React.ReactNode;
+  id?: string; // Optional id for filtering
+}
+
+interface MenuGroup {
+  title: string;
+  items: MenuItem[];
+}
+
 export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   const [location] = useLocation();
   const { toast } = useToast();
@@ -53,11 +65,41 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
     }
   };
 
+  // Filter menu items based on user's visible pages
+  const filterMenuItemsByVisibility = (menuGroups: MenuGroup[]): MenuGroup[] => {
+    // If visiblePages is not defined or empty, return all menu items
+    if (!user?.visiblePages || user.visiblePages.length === 0) {
+      console.log("No visible pages filter applied");
+      return menuGroups;
+    }
+
+    console.log("Filtering pages by visibility", user.visiblePages);
+    
+    return menuGroups.map(group => ({
+      ...group,
+      items: group.items.filter(item => {
+        // Always show profile and settings (essential pages)
+        if (item.href === '/profile' || item.href === '/settings') {
+          return true;
+        }
+        
+        // If the item has an id, check if it's in the user's visiblePages
+        if (item.id) {
+          return user.visiblePages?.includes(item.id) ?? true;
+        }
+        
+        // For items without an id, extract the id from the href (remove leading slash)
+        const pageId = item.href.replace(/^\//, '');
+        return user.visiblePages?.includes(pageId) ?? true;
+      })
+    })).filter(group => group.items.length > 0); // Remove empty groups
+  };
+
   // Get menu items based on user role
   const getMenuItems = () => {
     // Admin dashboard
     if (user?.role === 'admin') {
-      return [
+      return filterMenuItemsByVisibility([
         {
           title: "Main",
           items: [
@@ -198,12 +240,12 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             },
           ],
         },
-      ];
+      ]);
     }
     
     // Sales team dashboard
     if (user?.role === 'sales') {
-      return [
+      return filterMenuItemsByVisibility([
         {
           title: "Main",
           items: [
@@ -294,12 +336,12 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             },
           ],
         },
-      ];
+      ]);
     }
     
     // Designer dashboard
     if (user?.role === 'designer') {
-      return [
+      return filterMenuItemsByVisibility([
         {
           title: "Main",
           items: [
@@ -375,12 +417,12 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             },
           ],
         },
-      ];
+      ]);
     }
     
     // Manufacturing team dashboard
     if (user?.role === 'manufacturing') {
-      return [
+      return filterMenuItemsByVisibility([
         {
           title: "Main",
           items: [
@@ -446,12 +488,12 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             },
           ],
         },
-      ];
+      ]);
     }
     
     // Customer dashboard
     if (user?.role === 'customer') {
-      return [
+      return filterMenuItemsByVisibility([
         {
           title: "Main",
           items: [
@@ -517,11 +559,11 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             },
           ],
         },
-      ];
+      ]);
     }
     
     // Default menu items (fallback)
-    return [
+    return filterMenuItemsByVisibility([
       {
         title: "Main",
         items: [
@@ -552,7 +594,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           },
         ],
       },
-    ];
+    ]);
   };
   
   const menuItems = getMenuItems();

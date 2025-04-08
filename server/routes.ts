@@ -884,6 +884,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Import products from CSV
+  app.post("/api/products/import-csv", hasRequiredPermission(PERMISSIONS.MANAGE_CATALOG), async (req, res) => {
+    try {
+      const { csvData } = req.body;
+      
+      if (!csvData) {
+        return res.status(400).json({ error: "CSV data is required" });
+      }
+
+      // Parse CSV data
+      const lines = csvData.trim().split('\n');
+      const headers = lines[0].split(',').map((header: string) => header.trim());
+      
+      // Validate required headers
+      const requiredFields = ['Item SKU', 'Item Name', 'Sport', 'Category', 'Item', 'Fabric Options', 'COGS', 'Wholesale Price'];
+      const missingFields = requiredFields.filter(field => !headers.includes(field));
+      
+      if (missingFields.length > 0) {
+        return res.status(400).json({ 
+          error: `CSV missing required fields: ${missingFields.join(', ')}` 
+        });
+      }
+      
+      // Process each product line
+      const products = [];
+      const errors = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        try {
+          // Handle cases where a field might contain commas within quotes
+          const regex = /(".*?"|[^",\s]+)(?=\s*,|\s*$)/g;
+          const matches = lines[i].match(regex);
+          
+          if (!matches) continue;
+          
+          const values = matches.map((val: string) => {
+            // Remove quotes if present
+            return val.startsWith('"') && val.endsWith('"') 
+              ? val.slice(1, -1) 
+              : val;
+          });
+          
+          // Create a product object from CSV line
+          const productData = {
+            sku: values[headers.indexOf('Item SKU')] || '',
+            name: values[headers.indexOf('Item Name')] || '',
+            sport: values[headers.indexOf('Sport')] || '',
+            category: values[headers.indexOf('Category')] || '',
+            item: values[headers.indexOf('Item')] || '',
+            fabricOptions: values[headers.indexOf('Fabric Options')] || '',
+            cogs: values[headers.indexOf('COGS')] || '$0.00',
+            wholesalePrice: values[headers.indexOf('Wholesale Price')] || '$0.00',
+            imageUrl: values[headers.indexOf('Image Attachments')] || null,
+            lineItemManagement: values[headers.indexOf('Line Item Management')] || null
+          };
+          
+          // Validate SKU and Name are present
+          if (!productData.sku || !productData.name) {
+            errors.push(`Line ${i + 1}: Missing SKU or Name`);
+            continue;
+          }
+          
+          // Check if product already exists by SKU
+          const existingProduct = await storage.getProductBySku(productData.sku);
+          
+          if (existingProduct) {
+            // Update existing product
+            await storage.updateProduct(existingProduct.id, productData);
+            products.push({ ...productData, id: existingProduct.id, updated: true });
+          } else {
+            // Create new product
+            const parsedProduct = insertProductSchema.parse(productData);
+            const newProduct = await storage.createProduct(parsedProduct);
+            products.push({ ...newProduct, created: true });
+          }
+        } catch (error: any) {
+          errors.push(`Line ${i + 1}: ${error.message}`);
+        }
+      }
+      
+      // Create activity for the import
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "product",
+        content: `Imported ${products.length} products from CSV`,
+        relatedType: "product"
+      });
+      
+      res.status(200).json({
+        success: true,
+        message: `Processed ${lines.length - 1} products`,
+        imported: products.length,
+        products,
+        errors: errors.length > 0 ? errors : null
+      });
+    } catch (error: any) {
+      console.error("Error importing products from CSV:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
   // Fabric Options API endpoints
   app.get("/api/fabric-options", async (req, res) => {
     try {

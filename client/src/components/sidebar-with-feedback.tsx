@@ -598,6 +598,68 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       ]);
     }
     
+    // Agent dashboard menu
+    if (user?.role === 'agent') {
+      return filterMenuItemsByVisibility([
+        {
+          title: "Main",
+          items: [
+            {
+              name: "Dashboard",
+              href: "/dashboard",
+              icon: <LayoutDashboard className="mr-2" size={16} />,
+            },
+            {
+              name: "Leads",
+              href: "/leads",
+              icon: <Users className="mr-2" size={16} />,
+            },
+            {
+              name: "Orders",
+              href: "/orders",
+              icon: <ShoppingBag className="mr-2" size={16} />,
+            },
+            {
+              name: "Product Catalog",
+              href: "/catalog",
+              icon: <Shirt className="mr-2" size={16} />,
+            },
+            {
+              name: "Messages",
+              href: "/messages",
+              icon: <MessageSquare className="mr-2" size={16} />,
+            },
+            {
+              name: "Analytics",
+              href: "/analytics",
+              icon: <BarChart3 className="mr-2" size={16} />,
+            },
+          ],
+        },
+        {
+          title: "Settings",
+          items: [
+            {
+              name: "Profile",
+              href: "/profile",
+              icon: <User className="mr-2" size={16} />,
+            },
+            {
+              name: "Settings",
+              href: "/settings",
+              icon: <Settings className="mr-2" size={16} />,
+            },
+            {
+              name: "Feedback",
+              href: "/feedback",
+              icon: <MessageCircle className="mr-2" size={16} />,
+              id: "feedback",
+            },
+          ],
+        },
+      ]);
+    }
+    
     // Default menu items for other roles
     return filterMenuItemsByVisibility([
       {
@@ -699,7 +761,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       {/* Sidebar for both mobile and desktop */}
       <div
         className={cn(
-          "fixed top-0 z-50 h-full w-72 bg-card shadow-lg transition-transform duration-300 ease-in-out md:sticky md:z-0 md:block",
+          "fixed top-0 z-50 h-screen w-72 bg-card shadow-lg transition-transform duration-300 ease-in-out md:sticky md:z-0 md:block overflow-y-auto",
           isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >

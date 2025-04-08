@@ -20,7 +20,7 @@ export default function Layout({ user, children }: LayoutProps) {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar user={user} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
       <MobileMenu onMenuToggle={toggleSidebar} />

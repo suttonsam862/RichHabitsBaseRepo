@@ -31,6 +31,21 @@ export function CSVImportDialog({ open, onOpenChange }: CSVImportDialogProps) {
   
   const importMutation = useMutation({
     mutationFn: async (data: { csvData: string }) => {
+      // Extra validation on client side
+      const lines = data.csvData.trim().split('\n');
+      if (lines.length < 2) {
+        throw new Error("CSV data must have at least a header row and one data row");
+      }
+      
+      const headers = lines[0].split(',').map(h => h.trim());
+      const requiredFields = ['Item SKU', 'Item Name', 'Sport', 'Category', 'Item', 'Fabric Options', 'COGS', 'Wholesale Price'];
+      const missingFields = requiredFields.filter(field => !headers.includes(field));
+      
+      if (missingFields.length > 0) {
+        throw new Error(`CSV is missing required fields: ${missingFields.join(', ')}`);
+      }
+      
+      // If validation passes, send to server
       const response = await apiRequest('POST', '/api/products/import-csv', data);
       return await response.json();
     },

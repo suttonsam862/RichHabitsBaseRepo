@@ -49,6 +49,25 @@ interface ProductCardProps {
 }
 
 const ProductCard: FC<ProductCardProps> = ({ product, viewMode }) => {
+  // Format price for display, handling edge cases
+  const formatPrice = (priceStr?: string) => {
+    if (!priceStr) return "$0.00";
+    // If it already starts with $, return as is
+    if (priceStr.startsWith('$')) return priceStr;
+    // Otherwise add $ prefix
+    return `$${priceStr}`;
+  };
+  
+  // Get clean values with fallbacks for all fields
+  const name = product.name || "Unnamed Product";
+  const sku = product.sku || "N/A";
+  const sport = product.sport || "General";
+  const category = product.category || "Uncategorized";
+  const item = product.item || "N/A";
+  const fabricOptions = product.fabricOptions || "N/A";
+  const wholesalePrice = formatPrice(product.wholesalePrice);
+  const cogs = formatPrice(product.cogs);
+  
   return (
     <Card className={cn(
       "overflow-hidden transition-all duration-200 group h-full",
@@ -61,7 +80,7 @@ const ProductCard: FC<ProductCardProps> = ({ product, viewMode }) => {
         {product.imageUrl ? (
           <img 
             src={product.imageUrl} 
-            alt={product.name} 
+            alt={name} 
             className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105" 
           />
         ) : (
@@ -69,18 +88,18 @@ const ProductCard: FC<ProductCardProps> = ({ product, viewMode }) => {
             <Shirt className="w-12 h-12 text-gray-400" />
           </div>
         )}
-        <Badge className="absolute top-2 right-2 bg-primary">${product.wholesalePrice}</Badge>
+        <Badge className="absolute top-2 right-2 bg-primary">{wholesalePrice}</Badge>
       </div>
       
       <div className="flex flex-col flex-1">
         <CardHeader className={viewMode === 'list' ? "py-3" : ""}>
           <div className="flex items-start justify-between">
             <div>
-              <CardTitle className="text-lg">{product.name}</CardTitle>
-              <CardDescription className="mt-1">SKU: {product.sku}</CardDescription>
+              <CardTitle className="text-lg">{name}</CardTitle>
+              <CardDescription className="mt-1">SKU: {sku}</CardDescription>
             </div>
             <Badge variant="outline" className="ml-2">
-              {product.sport}
+              {sport}
             </Badge>
           </div>
         </CardHeader>
@@ -88,14 +107,14 @@ const ProductCard: FC<ProductCardProps> = ({ product, viewMode }) => {
         <CardContent className={viewMode === 'list' ? "py-2" : ""}>
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground line-clamp-2">
-              {product.item}
+              {item}
             </p>
             <div className="flex flex-wrap gap-1 mt-2">
               <Badge variant="secondary" className="text-xs">
-                {product.category}
+                {category}
               </Badge>
               <Badge variant="secondary" className="text-xs">
-                {product.fabricOptions}
+                {fabricOptions}
               </Badge>
             </div>
           </div>
@@ -106,7 +125,7 @@ const ProductCard: FC<ProductCardProps> = ({ product, viewMode }) => {
           viewMode === 'list' ? "py-3" : ""
         )}>
           <div className="text-xs text-muted-foreground">
-            COGS: ${product.cogs}
+            COGS: {cogs}
           </div>
           <Button size="sm" variant="outline" className="gap-1">
             <ShoppingBag className="w-4 h-4" /> 
@@ -131,19 +150,26 @@ const CatalogPage: FC = () => {
   });
   
   // Get unique sports and categories for filters
-  const sportsSet = new Set(products.map(p => p.sport));
+  const sportsSet = new Set(products.map(p => p.sport).filter(Boolean));
   const uniqueSports = Array.from(sportsSet).sort();
-  const categoriesSet = new Set(products.map(p => p.category));
+  const categoriesSet = new Set(products.map(p => p.category).filter(Boolean));
   const uniqueCategories = Array.from(categoriesSet).sort();
   
   // Filter products based on selected filters and search term
   const filteredProducts = products.filter(product => {
-    const matchesSport = selectedSport === "all_sports" || product.sport === selectedSport;
-    const matchesCategory = selectedCategory === "all_categories" || product.category === selectedCategory;
+    // Skip malformed products that might have fields in the wrong order
+    if (!product.name || !product.item || typeof product.name !== 'string' || typeof product.item !== 'string') {
+      return false;
+    }
+    
+    const matchesSport = selectedSport === "all_sports" || 
+      (product.sport && product.sport === selectedSport);
+    const matchesCategory = selectedCategory === "all_categories" || 
+      (product.category && product.category === selectedCategory);
     const matchesSearch = searchTerm 
-      ? product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        product.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.sku.toLowerCase().includes(searchTerm.toLowerCase())
+      ? (product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+         product.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
+         (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase())))
       : true;
     
     return matchesSport && matchesCategory && matchesSearch;

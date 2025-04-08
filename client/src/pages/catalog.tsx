@@ -121,8 +121,8 @@ const ProductCard: FC<ProductCardProps> = ({ product, viewMode }) => {
 const CatalogPage: FC = () => {
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [selectedSport, setSelectedSport] = useState<string>("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedSport, setSelectedSport] = useState<string>("all_sports");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all_categories");
   const [searchTerm, setSearchTerm] = useState<string>("");
   
   const { data: products = [], isLoading } = useQuery<Product[]>({
@@ -138,8 +138,8 @@ const CatalogPage: FC = () => {
   
   // Filter products based on selected filters and search term
   const filteredProducts = products.filter(product => {
-    const matchesSport = selectedSport ? product.sport === selectedSport : true;
-    const matchesCategory = selectedCategory ? product.category === selectedCategory : true;
+    const matchesSport = selectedSport === "all_sports" || product.sport === selectedSport;
+    const matchesCategory = selectedCategory === "all_categories" || product.category === selectedCategory;
     const matchesSearch = searchTerm 
       ? product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
         product.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -150,8 +150,8 @@ const CatalogPage: FC = () => {
   });
   
   const clearFilters = () => {
-    setSelectedSport("");
-    setSelectedCategory("");
+    setSelectedSport("all_sports");
+    setSelectedCategory("all_categories");
     setSearchTerm("");
   };
 
@@ -211,7 +211,7 @@ const CatalogPage: FC = () => {
                         <SelectValue placeholder="All sports" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All sports</SelectItem>
+                        <SelectItem value="all_sports">All sports</SelectItem>
                         {uniqueSports.map(sport => (
                           <SelectItem key={sport} value={sport}>
                             {sport}
@@ -231,7 +231,7 @@ const CatalogPage: FC = () => {
                         <SelectValue placeholder="All categories" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All categories</SelectItem>
+                        <SelectItem value="all_categories">All categories</SelectItem>
                         {uniqueCategories.map(category => (
                           <SelectItem key={category} value={category}>
                             {category}

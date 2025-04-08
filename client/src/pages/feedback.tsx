@@ -95,8 +95,8 @@ export default function FeedbackPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<number | null>(null);
-  const [filterType, setFilterType] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [filterType, setFilterType] = useState<string>("all_types");
+  const [filterStatus, setFilterStatus] = useState<string>("all_statuses");
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
   
   // Define feedback form
@@ -207,11 +207,11 @@ export default function FeedbackPage() {
       let url = "/api/feedback";
       const params = new URLSearchParams();
       
-      if (filterType) {
+      if (filterType && filterType !== "all_types") {
         params.append("type", filterType);
       }
       
-      if (filterStatus) {
+      if (filterStatus && filterStatus !== "all_statuses") {
         params.append("status", filterStatus);
       }
       
@@ -564,14 +564,14 @@ export default function FeedbackPage() {
         <div className="md:col-span-1">
           <div className="mb-4 flex items-center gap-2">
             <Select
-              value={filterType || ""}
-              onValueChange={(value) => setFilterType(value || null)}
+              value={filterType}
+              onValueChange={setFilterType}
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Types</SelectItem>
+                <SelectItem value="all_types">All Types</SelectItem>
                 <SelectItem value="feedback">Feedback</SelectItem>
                 <SelectItem value="bug">Bug Report</SelectItem>
                 <SelectItem value="feature">Feature Request</SelectItem>
@@ -579,14 +579,14 @@ export default function FeedbackPage() {
             </Select>
             
             <Select
-              value={filterStatus || ""}
-              onValueChange={(value) => setFilterStatus(value || null)}
+              value={filterStatus}
+              onValueChange={setFilterStatus}
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="all_statuses">All Statuses</SelectItem>
                 <SelectItem value="new">New</SelectItem>
                 <SelectItem value="in_review">In Review</SelectItem>
                 <SelectItem value="in_progress">In Progress</SelectItem>
@@ -599,8 +599,8 @@ export default function FeedbackPage() {
               variant="outline" 
               size="icon"
               onClick={() => {
-                setFilterType(null);
-                setFilterStatus(null);
+                setFilterType("all_types");
+                setFilterStatus("all_statuses");
               }}
               title="Clear filters"
             >

@@ -761,7 +761,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       {/* Sidebar for both mobile and desktop */}
       <div
         className={cn(
-          "fixed top-0 z-50 h-screen w-72 bg-white shadow-lg transition-transform duration-300 ease-in-out md:sticky md:z-0 md:block overflow-hidden",
+          "fixed top-0 left-0 z-50 h-screen w-72 bg-white shadow-lg transition-transform duration-300 ease-in-out md:z-0 overflow-hidden",
           isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >

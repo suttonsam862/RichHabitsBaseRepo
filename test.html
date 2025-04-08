@@ -1,25 +1,79 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Test Page</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rich Habits Test Page</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f8f9fa;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+    }
+    h1 {
+      color: #2563eb;
+      margin-bottom: 20px;
+    }
+    p {
+      margin-bottom: 30px;
+      max-width: 600px;
+      line-height: 1.5;
+    }
+    .button {
+      background-color: #2563eb;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 4px;
+      text-decoration: none;
+      display: inline-block;
+      margin: 10px;
+      cursor: pointer;
+    }
+    .button:hover {
+      background-color: #1d4ed8;
+    }
+  </style>
 </head>
 <body>
-  <h1>Test Connection</h1>
-  <button id="testBtn">Test API</button>
-  <div id="result"></div>
+  <h1>Rich Habits Dashboard</h1>
+  <p>This is a simple test page to verify that basic HTML content can be served correctly.</p>
+  
+  <div>
+    <a href="/" class="button">Go to Dashboard</a>
+    <button class="button" onclick="testFetch()">Test API Connection</button>
+  </div>
+
+  <div id="result" style="margin-top: 20px; padding: 10px; border: 1px solid #ddd; display: none;"></div>
 
   <script>
-    document.getElementById('testBtn').addEventListener('click', async () => {
-      try {
-        const response = await fetch('/api/user', {
-          credentials: 'include'
+    function testFetch() {
+      const resultDiv = document.getElementById('result');
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = 'Testing API connection...';
+      
+      fetch('/api/user')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          resultDiv.innerHTML = 'API connection successful:<br>' + JSON.stringify(data);
+        })
+        .catch(error => {
+          resultDiv.innerHTML = 'API connection error:<br>' + error.message + 
+            '<br><br>This is expected if you are not logged in.';
         });
-        const data = await response.json();
-        document.getElementById('result').textContent = JSON.stringify(data);
-      } catch (error) {
-        document.getElementById('result').textContent = 'Error: ' + error.message;
-      }
-    });
+    }
   </script>
 </body>
 </html>

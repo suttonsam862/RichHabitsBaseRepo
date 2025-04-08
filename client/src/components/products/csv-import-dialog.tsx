@@ -64,8 +64,10 @@ export function CSVImportDialog({ open, onOpenChange }: CSVImportDialogProps) {
       const reader = new FileReader();
       reader.onload = (e) => {
         const content = e.target?.result as string;
-        setCsvData(content);
-        setStage('preview');
+        if (content) {
+          setCsvData(content);
+          setStage('preview'); // Immediately go to preview when file is loaded
+        }
       };
       reader.readAsText(selectedFile);
     }
@@ -102,9 +104,34 @@ export function CSVImportDialog({ open, onOpenChange }: CSVImportDialogProps) {
     setStage('upload');
   };
 
+  // Override the default dialog close behavior to use our handleClose function
+  const handleDialogOpenChange = (value: boolean) => {
+    if (!value) {
+      handleClose();
+    } else {
+      onOpenChange(true);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="max-w-3xl">
+        <div className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+          {stage === 'preview' ? (
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={handleImport} 
+                disabled={importMutation.isPending}
+                variant="default"
+                size="sm"
+                className="h-8"
+              >
+                Import Now
+              </Button>
+            </div>
+          ) : null}
+        </div>
+        
         <DialogHeader>
           <DialogTitle>Import Products from CSV</DialogTitle>
           <DialogDescription>

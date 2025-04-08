@@ -19,7 +19,7 @@ type AuthContextType = {
 };
 
 type LoginData = {
-  username: string; // Changed from email to username to match our backend expectations
+  username: string;
   password: string;
 };
 
@@ -42,49 +42,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useQuery<any, Error>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
-    staleTime: 0, // Always fetch fresh data
+    staleTime: 0,
+    retry: false,
   });
   
-  // Log user data for debugging
-  if (user) {
-    console.log("User data fetched:", user);
-  }
-  if (error) {
-    console.error("Error fetching user data:", error);
-  }
-
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       const res = await apiRequest("POST", "/api/login", credentials);
       const data = await res.json();
       return data;
     },
-    onSuccess: (response: any) => {
-      console.log("Login mutation success, setting user data:", response);
+    onSuccess: (userData) => {
+      queryClient.setQueryData(["/api/user"], userData);
       
-      // Directly set the user object as returned by server
-      queryClient.setQueryData(["/api/user"], response);
-      
-      // Force a refetch to ensure we have the latest state including all user data
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/user"]
-      });
-      
-      const userName = response.fullName || response.username || response.email;
       toast({
         title: "Login successful",
-        description: `Welcome back, ${userName}!`,
+        description: `Welcome back!`,
       });
       
-      // Force a window location refresh to ensure the entire app state is reset with the new user
-      // This helps solve the issue with login requiring manual refresh
-      window.location.href = '/dashboard';
+      window.location.href = '/';
     },
     onError: (error: Error) => {
-      console.error("Login error:", error);
       toast({
         title: "Login failed",
-        description: error.message || "Invalid credentials",
+        description: "Invalid username or password",
         variant: "destructive",
       });
     },
@@ -95,31 +76,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/register", userData);
       return await res.json();
     },
-    onSuccess: (response: any) => {
-      console.log("Registration success, setting user data:", response);
+    onSuccess: (userData) => {
+      queryClient.setQueryData(["/api/user"], userData);
       
-      // Store the response directly in the cache
-      queryClient.setQueryData(["/api/user"], response);
-      
-      // Force a refetch to ensure we have the latest state including all user data
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/user"] 
-      });
-      
-      const userName = response.fullName || response.username || response.email;
       toast({
         title: "Registration successful",
-        description: `Welcome, ${userName}!`,
+        description: "Your account has been created",
       });
       
-      // Force a window location refresh to ensure the entire app state is reset with the new user
-      // This helps solve the issue with registration requiring manual refresh
-      window.location.href = '/dashboard';
+      window.location.href = '/';
     },
     onError: (error: Error) => {
       toast({
         title: "Registration failed",
-        description: error.message || "Could not create account",
+        description: "Could not create account",
         variant: "destructive",
       });
     },
@@ -136,54 +106,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: "You have been successfully logged out",
       });
       
-      // Redirect to auth page after logout
-      window.location.href = '/auth';
+      window.location.href = '/';
     },
-    onError: (error: Error) => {
+    onError: () => {
       toast({
         title: "Logout failed",
-        description: error.message,
+        description: "An error occurred during logout",
         variant: "destructive",
       });
     },
   });
 
-  // Map the User from backend to AuthUser for frontend
-  const mapUserToAuthUser = (response: any): AuthUser | null => {
-    if (!response) return null;
-    
-    // Check if we have a nested user object (from API response)
-    const userFromDb = response.user || response;
-    
-    if (!userFromDb) return null;
-    
-    console.log("Raw user data for mapping:", userFromDb);
-    
-    // Split fullName into firstName and lastName if available
-    let firstName = undefined;
-    let lastName = undefined;
-    
-    if (userFromDb.firstName) {
-      firstName = userFromDb.firstName;
-    } else if (userFromDb.fullName) {
-      const nameParts = userFromDb.fullName.split(' ');
-      firstName = nameParts[0];
-      if (nameParts.length > 1) {
-        lastName = nameParts.slice(1).join(' ');
-      }
-    }
+  // Simplify the user mapping
+  const mapUserToAuthUser = (userData: any): AuthUser | null => {
+    if (!userData) return null;
     
     return {
-      id: userFromDb.id.toString(),
-      email: userFromDb.email || userFromDb.username,
-      username: userFromDb.username,
-      fullName: userFromDb.fullName === null ? undefined : userFromDb.fullName,
-      firstName: userFromDb.firstName || firstName,
-      lastName: userFromDb.lastName || lastName,
-      avatarUrl: userFromDb.avatarUrl === null ? undefined : userFromDb.avatarUrl,
-      role: userFromDb.role || 'user',
-      permissions: userFromDb.permissions || [],
-      visiblePages: userFromDb.visiblePages || []
+      id: userData.id?.toString() || "0",
+      email: userData.email || "",
+      username: userData.username || "",
+      fullName: userData.fullName || "",
+      firstName: userData.firstName || userData.fullName?.split(' ')[0] || "",
+      lastName: userData.lastName || "",
+      role: userData.role || 'user',
+      permissions: userData.permissions || [],
+      visiblePages: userData.visiblePages || []
     };
   };
 

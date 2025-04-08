@@ -46,13 +46,16 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Edit,
+  FileSpreadsheet,
   Loader2,
   Plus,
   PlusCircle,
   Search,
   ShoppingBag,
   Trash,
+  Upload,
 } from "lucide-react";
+import { CSVImportDialog } from "@/components/products/csv-import-dialog";
 import {
   Product,
   FabricOption,
@@ -666,6 +669,7 @@ const ProductManagementPage: FC = () => {
   const [addCutOpen, setAddCutOpen] = useState(false);
   const [editCutOpen, setEditCutOpen] = useState(false);
   const [selectedCut, setSelectedCut] = useState<FabricCut | null>(null);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("products");
   
   // Products Query
@@ -959,26 +963,41 @@ const ProductManagementPage: FC = () => {
             <TabsContent value="products" className="mt-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">Product Catalog</h2>
-                <Dialog open={addProductOpen} onOpenChange={setAddProductOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="gap-1">
-                      <Plus className="w-4 h-4" /> Add Product
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-3xl max-h-[calc(100vh-64px)] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Add New Product</DialogTitle>
-                      <DialogDescription>
-                        Add a new product to your catalog. Fill out the details below.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <ProductForm
-                      onSubmit={(values) => createProductMutation.mutate(values as any)}
-                      isSubmitting={createProductMutation.isPending}
-                    />
-                  </DialogContent>
-                </Dialog>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    className="gap-1"
+                    onClick={() => setCsvImportOpen(true)}
+                  >
+                    <FileSpreadsheet className="w-4 h-4" /> Import CSV
+                  </Button>
+                  <Dialog open={addProductOpen} onOpenChange={setAddProductOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="gap-1">
+                        <Plus className="w-4 h-4" /> Add Product
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-3xl max-h-[calc(100vh-64px)] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Add New Product</DialogTitle>
+                        <DialogDescription>
+                          Add a new product to your catalog. Fill out the details below.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <ProductForm
+                        onSubmit={(values) => createProductMutation.mutate(values as any)}
+                        isSubmitting={createProductMutation.isPending}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
+              
+              {/* CSV Import Dialog */}
+              <CSVImportDialog 
+                open={csvImportOpen} 
+                onOpenChange={setCsvImportOpen} 
+              />
 
               {isLoadingProducts ? (
                 <div className="p-12 text-center">

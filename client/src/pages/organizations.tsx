@@ -16,26 +16,24 @@ import { Switch } from "@/components/ui/switch";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Loader2, Users, User, Building, Search, Phone, Mail, MapPin, PlusCircle, Edit, Trash, FileText, ShoppingBag, DollarSign, Save, Plus } from "lucide-react";
+import { Loader2, Users, User, Building, Search, Phone, Mail, MapPin, PlusCircle, Edit, Trash, FileText, ShoppingBag, DollarSign, Save, Plus, Globe as GlobeIcon } from "lucide-react";
 
 interface Organization {
   id: number;
   name: string;
-  type: 'client' | 'vendor' | 'partner';
-  industry: string;
-  website: string;
-  phone: string;
-  email: string;
-  address: string;
-  city: string;
-  state: string;
-  zip: string;
-  country: string;
-  logoUrl: string | null;
+  type: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zipCode: string | null;
+  country: string | null;
+  contactName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
   notes: string | null;
-  status: 'active' | 'inactive';
-  primaryContactId: number | null;
-  totalRevenue: string;
+  status: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -204,20 +202,18 @@ export default function OrganizationsPage() {
       id: 1,
       name: "Acme Corporation",
       type: "client",
-      industry: "Technology",
-      website: "www.acmecorp.com",
-      phone: "(555) 123-4567",
       email: "contact@acmecorp.com",
+      phone: "(555) 123-4567",
       address: "123 Main St",
       city: "San Francisco",
       state: "CA",
-      zip: "94105",
+      zipCode: "94105",
       country: "USA",
-      logoUrl: null,
+      contactName: "John Smith",
+      contactEmail: "john.smith@acmecorp.com",
+      contactPhone: "(555) 123-4567",
       notes: "Key client with multiple ongoing projects",
       status: "active",
-      primaryContactId: 1,
-      totalRevenue: "125000.00",
       createdAt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(),
       updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
     },
@@ -225,20 +221,18 @@ export default function OrganizationsPage() {
       id: 2,
       name: "Globex Industries",
       type: "client",
-      industry: "Manufacturing",
-      website: "www.globexindustries.com",
-      phone: "(555) 987-6543",
       email: "info@globexindustries.com",
+      phone: "(555) 987-6543",
       address: "456 Industrial Way",
       city: "Chicago",
       state: "IL",
-      zip: "60607",
+      zipCode: "60607",
       country: "USA",
-      logoUrl: null,
+      contactName: "Michael Brown",
+      contactEmail: "michael.brown@globexindustries.com",
+      contactPhone: "(555) 987-6543",
       notes: "Large enterprise client with regular orders",
       status: "active",
-      primaryContactId: 3,
-      totalRevenue: "78500.00",
       createdAt: new Date(Date.now() - 290 * 24 * 60 * 60 * 1000).toISOString(),
       updatedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
     },
@@ -246,20 +240,18 @@ export default function OrganizationsPage() {
       id: 3,
       name: "Eco Materials",
       type: "vendor",
-      industry: "Sustainable Materials",
-      website: "www.ecomaterials.com",
-      phone: "(555) 321-7890",
       email: "supply@ecomaterials.com",
+      phone: "(555) 321-7890",
       address: "789 Green Ave",
       city: "Portland",
       state: "OR",
-      zip: "97204",
+      zipCode: "97204",
       country: "USA",
-      logoUrl: null,
+      contactName: "Lisa Green",
+      contactEmail: "lisa@ecomaterials.com",
+      contactPhone: "(555) 321-7899",
       notes: "Primary supplier for eco-friendly packaging materials",
       status: "active",
-      primaryContactId: 5,
-      totalRevenue: "0.00",
       createdAt: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
       updatedAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
     },
@@ -267,20 +259,18 @@ export default function OrganizationsPage() {
       id: 4,
       name: "TechPartners Inc",
       type: "partner",
-      industry: "Technology",
-      website: "www.techpartners.com",
-      phone: "(555) 456-7890",
       email: "partners@techpartners.com",
+      phone: "(555) 456-7890",
       address: "101 Tech Park",
       city: "Austin",
       state: "TX",
-      zip: "78701",
+      zipCode: "78701",
       country: "USA",
-      logoUrl: null,
+      contactName: "David Tech",
+      contactEmail: "david@techpartners.com",
+      contactPhone: "(555) 456-7890",
       notes: "Strategic technology partner for software integration",
       status: "active",
-      primaryContactId: 7,
-      totalRevenue: "45000.00",
       createdAt: new Date(Date.now() - 220 * 24 * 60 * 60 * 1000).toISOString(),
       updatedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
     },
@@ -288,20 +278,18 @@ export default function OrganizationsPage() {
       id: 5,
       name: "Old Client LLC",
       type: "client",
-      industry: "Retail",
-      website: "www.oldclient.com",
-      phone: "(555) 111-2222",
       email: "info@oldclient.com",
+      phone: "(555) 111-2222",
       address: "222 Market St",
       city: "Denver",
       state: "CO",
-      zip: "80202",
+      zipCode: "80202",
       country: "USA",
-      logoUrl: null,
+      contactName: "Rebecca Old",
+      contactEmail: "rebecca@oldclient.com",
+      contactPhone: "(555) 111-2233",
       notes: "Inactive client, last order over a year ago",
       status: "inactive",
-      primaryContactId: 9,
-      totalRevenue: "12000.00",
       createdAt: new Date(Date.now() - 500 * 24 * 60 * 60 * 1000).toISOString(),
       updatedAt: new Date(Date.now() - 380 * 24 * 60 * 60 * 1000).toISOString(),
     },
@@ -405,10 +393,10 @@ export default function OrganizationsPage() {
       const query = searchQuery.toLowerCase();
       return (
         org.name.toLowerCase().includes(query) ||
-        org.email.toLowerCase().includes(query) ||
-        org.industry.toLowerCase().includes(query) ||
-        org.city.toLowerCase().includes(query) ||
-        org.state.toLowerCase().includes(query)
+        (org.email && org.email.toLowerCase().includes(query)) ||
+        (org.city && org.city.toLowerCase().includes(query)) ||
+        (org.state && org.state.toLowerCase().includes(query)) ||
+        (org.contactName && org.contactName.toLowerCase().includes(query))
       );
     }
     
@@ -557,21 +545,14 @@ export default function OrganizationsPage() {
                     <TableRow>
                       <TableHead>Organization</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Industry</TableHead>
                       <TableHead>Contact</TableHead>
                       <TableHead>Location</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Revenue</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredOrganizations.map((org) => {
-                      // Find primary contact for this organization
-                      const primaryContact = sampleContacts.find(
-                        c => c.organizationId === org.id && c.isPrimary
-                      );
-                      
                       return (
                         <TableRow 
                           key={org.id} 
@@ -580,27 +561,23 @@ export default function OrganizationsPage() {
                         >
                           <TableCell>
                             <div className="font-medium">{org.name}</div>
-                            <div className="text-sm text-gray-500">{org.website}</div>
+                            <div className="text-sm text-gray-500">{org.email}</div>
                           </TableCell>
                           <TableCell>{getOrgTypeBadge(org.type)}</TableCell>
-                          <TableCell>{org.industry}</TableCell>
                           <TableCell>
-                            {primaryContact ? (
+                            {org.contactName ? (
                               <div>
-                                <div className="font-medium">
-                                  {primaryContact.firstName} {primaryContact.lastName}
-                                </div>
-                                <div className="text-sm text-gray-500">{primaryContact.email}</div>
+                                <div className="font-medium">{org.contactName}</div>
+                                <div className="text-sm text-gray-500">{org.contactEmail}</div>
                               </div>
                             ) : (
-                              <span className="text-gray-500">No primary contact</span>
+                              <span className="text-gray-500">No contact</span>
                             )}
                           </TableCell>
                           <TableCell>
-                            {org.city}, {org.state}
+                            {org.city && org.state ? `${org.city}, ${org.state}` : 'N/A'}
                           </TableCell>
                           <TableCell>{getStatusBadge(org.status)}</TableCell>
-                          <TableCell>{formatCurrency(Number(org.totalRevenue))}</TableCell>
                           <TableCell>
                             <Button
                               variant="ghost"
@@ -637,7 +614,7 @@ export default function OrganizationsPage() {
                     {getStatusBadge(selectedOrg.status)}
                   </div>
                 </div>
-                <DialogDescription>{selectedOrg.industry}</DialogDescription>
+                <DialogDescription>{selectedOrg.notes}</DialogDescription>
               </DialogHeader>
 
               <div className="flex justify-end mb-4">
@@ -674,15 +651,6 @@ export default function OrganizationsPage() {
                           <>
                             <div className="grid grid-cols-1 gap-4 mt-3">
                               <div className="space-y-2">
-                                <Label htmlFor="website">Website</Label>
-                                <Input
-                                  id="website"
-                                  value={editedOrg.website ?? selectedOrg.website}
-                                  onChange={(e) => setEditedOrg({...editedOrg, website: e.target.value})}
-                                />
-                              </div>
-                              
-                              <div className="space-y-2">
                                 <Label htmlFor="email">Email</Label>
                                 <Input
                                   id="email"
@@ -706,7 +674,11 @@ export default function OrganizationsPage() {
                             <div className="flex items-center">
                               <MapPin className="h-4 w-4 mr-2 text-gray-500" />
                               <span>
-                                {selectedOrg.address}, {selectedOrg.city}, {selectedOrg.state} {selectedOrg.zip}, {selectedOrg.country}
+                                {selectedOrg.address && `${selectedOrg.address}, `}
+                                {selectedOrg.city && `${selectedOrg.city}, `}
+                                {selectedOrg.state && selectedOrg.state} 
+                                {selectedOrg.zip && selectedOrg.zip}
+                                {selectedOrg.country && `, ${selectedOrg.country}`}
                               </span>
                             </div>
                             <div className="flex items-center">
@@ -721,12 +693,7 @@ export default function OrganizationsPage() {
                                 {selectedOrg.phone}
                               </a>
                             </div>
-                            <div className="flex items-center">
-                              <Globe className="h-4 w-4 mr-2 text-gray-500" />
-                              <a href={`https://${selectedOrg.website}`} target="_blank" className="text-blue-600 hover:underline">
-                                {selectedOrg.website}
-                              </a>
-                            </div>
+
                           </div>
                         )}
                       </div>
@@ -1208,14 +1175,7 @@ export default function OrganizationsPage() {
               />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="website">Website</Label>
-              <Input
-                id="website"
-                value={editedOrg.website || ''}
-                onChange={(e) => setEditedOrg({...editedOrg, website: e.target.value})}
-              />
-            </div>
+
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -1316,23 +1276,3 @@ export default function OrganizationsPage() {
   );
 }
 
-function Globe(props: React.ComponentProps<"svg">) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <line x1="2" y1="12" x2="22" y2="12" />
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-    </svg>
-  );
-}

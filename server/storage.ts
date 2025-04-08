@@ -12,6 +12,8 @@ import {
   feedback,
   feedbackComments,
   feedbackVotes,
+  organizations,
+  orderItems,
   ROLES,
   type User, 
   type InsertUser, 
@@ -39,6 +41,10 @@ import {
   type InsertFeedback,
   type InsertFeedbackComment,
   type InsertFeedbackVote,
+  type Organization,
+  type InsertOrganization,
+  type OrderItem,
+  type InsertOrderItem,
   type Permission
 } from "@shared/schema";
 import { db } from "./db";
@@ -158,6 +164,22 @@ export interface IStorage {
   addFeedbackVote(vote: InsertFeedbackVote): Promise<FeedbackVote>;
   removeFeedbackVote(userId: number, feedbackId: number): Promise<void>;
   updateFeedbackVoteCount(feedbackId: number): Promise<void>;
+  
+  // Organization methods
+  getOrganizations(): Promise<Organization[]>;
+  getOrganizationById(id: number): Promise<Organization | undefined>;
+  createOrganization(organization: InsertOrganization): Promise<Organization>;
+  updateOrganization(id: number, updates: Partial<InsertOrganization>): Promise<Organization>;
+  deleteOrganization(id: number): Promise<void>;
+  getOrganizationsByType(type: string): Promise<Organization[]>;
+  
+  // Order Items methods
+  getOrderItems(orderId: number): Promise<OrderItem[]>;
+  getOrderItemById(id: number): Promise<OrderItem | undefined>;
+  createOrderItem(item: InsertOrderItem): Promise<OrderItem>;
+  updateOrderItem(id: number, updates: Partial<InsertOrderItem>): Promise<OrderItem>;
+  deleteOrderItem(id: number): Promise<void>;
+  getOrdersByOrganization(organizationId: number): Promise<Order[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -843,6 +865,112 @@ export class DatabaseStorage implements IStorage {
     await db.update(feedback)
       .set({ voteCount: upvotes - downvotes })
       .where(eq(feedback.id, feedbackId));
+  }
+
+  // Organization methods
+  async getOrganizations(): Promise<Organization[]> {
+    return db.select().from(organizations).orderBy(asc(organizations.name));
+  }
+  
+  async getOrganizationById(id: number): Promise<Organization | undefined> {
+    const [organization] = await db.select().from(organizations).where(eq(organizations.id, id));
+    return organization || undefined;
+  }
+  
+  async createOrganization(organization: InsertOrganization): Promise<Organization> {
+    const [newOrganization] = await db
+      .insert(organizations)
+      .values({
+        ...organization,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return newOrganization;
+  }
+  
+  async updateOrganization(id: number, updates: Partial<InsertOrganization>): Promise<Organization> {
+    const [updatedOrganization] = await db
+      .update(organizations)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(organizations.id, id))
+      .returning();
+    return updatedOrganization;
+  }
+  
+  async deleteOrganization(id: number): Promise<void> {
+    // Check if there are orders for this organization before deleting
+    const ordersForOrg = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.organizationId, id));
+      
+    if (ordersForOrg.length > 0) {
+      throw new Error("Cannot delete organization with associated orders");
+    }
+    
+    await db.delete(organizations).where(eq(organizations.id, id));
+  }
+  
+  async getOrganizationsByType(type: string): Promise<Organization[]> {
+    return db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.type, type))
+      .orderBy(asc(organizations.name));
+  }
+  
+  // Order Items methods
+  async getOrderItems(orderId: number): Promise<OrderItem[]> {
+    return db
+      .select()
+      .from(orderItems)
+      .where(eq(orderItems.orderId, orderId))
+      .orderBy(asc(orderItems.id));
+  }
+  
+  async getOrderItemById(id: number): Promise<OrderItem | undefined> {
+    const [item] = await db.select().from(orderItems).where(eq(orderItems.id, id));
+    return item || undefined;
+  }
+  
+  async createOrderItem(item: InsertOrderItem): Promise<OrderItem> {
+    const [newItem] = await db
+      .insert(orderItems)
+      .values({
+        ...item,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return newItem;
+  }
+  
+  async updateOrderItem(id: number, updates: Partial<InsertOrderItem>): Promise<OrderItem> {
+    const [updatedItem] = await db
+      .update(orderItems)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(orderItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+  
+  async deleteOrderItem(id: number): Promise<void> {
+    await db.delete(orderItems).where(eq(orderItems.id, id));
+  }
+  
+  async getOrdersByOrganization(organizationId: number): Promise<Order[]> {
+    return db
+      .select()
+      .from(orders)
+      .where(eq(orders.organizationId, organizationId))
+      .orderBy(desc(orders.createdAt));
   }
 }
 

@@ -17,6 +17,8 @@ import {
   feedback,
   feedbackComments,
   feedbackVotes,
+  organizations,
+  orderItems,
   insertLeadSchema, 
   insertOrderSchema, 
   insertMessageSchema,
@@ -29,6 +31,8 @@ import {
   insertFeedbackSchema,
   insertFeedbackCommentSchema,
   insertFeedbackVoteSchema,
+  insertOrganizationSchema,
+  insertOrderItemSchema,
   ROLES,
   PERMISSIONS,
   type Permission
@@ -1635,6 +1639,230 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         feedback: updatedFeedback
       });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Organizations endpoints
+  app.get("/api/organizations", async (req, res) => {
+    try {
+      const orgs = await storage.getOrganizations();
+      res.json({ data: orgs });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/organizations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid organization ID" });
+      }
+      
+      const org = await storage.getOrganizationById(id);
+      if (!org) {
+        return res.status(404).json({ error: "Organization not found" });
+      }
+      
+      res.json({ data: org });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/organizations", async (req, res) => {
+    try {
+      const validatedData = insertOrganizationSchema.parse(req.body);
+      const newOrg = await storage.createOrganization(validatedData);
+      
+      // Create activity for the new organization
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "organization",
+        content: `New organization ${newOrg.name} created`,
+        relatedId: newOrg.id,
+        relatedType: "organization"
+      });
+      
+      res.status(201).json({ data: newOrg });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+
+  app.patch("/api/organizations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid organization ID" });
+      }
+      
+      const org = await storage.getOrganizationById(id);
+      if (!org) {
+        return res.status(404).json({ error: "Organization not found" });
+      }
+      
+      const validatedData = insertOrganizationSchema.partial().parse(req.body);
+      const updatedOrg = await storage.updateOrganization(id, validatedData);
+      
+      // Create activity for the updated organization
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "organization",
+        content: `Organization ${updatedOrg.name} updated`,
+        relatedId: updatedOrg.id,
+        relatedType: "organization"
+      });
+      
+      res.json({ data: updatedOrg });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+
+  app.delete("/api/organizations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid organization ID" });
+      }
+      
+      const org = await storage.getOrganizationById(id);
+      if (!org) {
+        return res.status(404).json({ error: "Organization not found" });
+      }
+      
+      await storage.deleteOrganization(id);
+      
+      // Create activity for the deleted organization
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "organization",
+        content: `Organization ${org.name} deleted`,
+        relatedId: id,
+        relatedType: "organization"
+      });
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/organizations/type/:type", async (req, res) => {
+    try {
+      const type = req.params.type;
+      const orgs = await storage.getOrganizationsByType(type);
+      res.json({ data: orgs });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/organizations/:id/orders", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid organization ID" });
+      }
+      
+      const orders = await storage.getOrdersByOrganization(id);
+      res.json({ data: orders });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Order Items endpoints
+  app.get("/api/orders/:orderId/items", async (req, res) => {
+    try {
+      const orderId = parseInt(req.params.orderId);
+      if (isNaN(orderId)) {
+        return res.status(400).json({ error: "Invalid order ID" });
+      }
+      
+      const items = await storage.getOrderItems(orderId);
+      res.json({ data: items });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/order-items", async (req, res) => {
+    try {
+      const validatedData = insertOrderItemSchema.parse(req.body);
+      const newItem = await storage.createOrderItem(validatedData);
+      
+      res.status(201).json({ data: newItem });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+
+  app.patch("/api/order-items/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid order item ID" });
+      }
+      
+      const item = await storage.getOrderItemById(id);
+      if (!item) {
+        return res.status(404).json({ error: "Order item not found" });
+      }
+      
+      const validatedData = insertOrderItemSchema.partial().parse(req.body);
+      const updatedItem = await storage.updateOrderItem(id, validatedData);
+      
+      res.json({ data: updatedItem });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+
+  app.delete("/api/order-items/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid order item ID" });
+      }
+      
+      const item = await storage.getOrderItemById(id);
+      if (!item) {
+        return res.status(404).json({ error: "Order item not found" });
+      }
+      
+      await storage.deleteOrderItem(id);
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Clear existing sample data
+  app.post("/api/clear-example-data", isAdmin, async (req, res) => {
+    try {
+      await storage.clearExampleData();
+      res.json({ success: true, message: "Example data cleared successfully" });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

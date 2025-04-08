@@ -5,21 +5,14 @@ import {
   ShoppingBag, 
   DollarSign, 
   MessageSquare, 
-  Bell, 
-  Calendar, 
-  LayoutDashboard 
+  Bell
 } from "lucide-react";
 import StatsCard from "@/components/stats-card";
 import RevenueChart from "@/components/revenue-chart";
 import RecentActivity from "@/components/recent-activity";
 import RecentLeads from "@/components/recent-leads";
 import RecentOrders from "@/components/recent-orders";
-import ThemeToggle from "@/components/ui/theme-toggle";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard, DashboardStats } from "@/types";
-import { formatCurrency } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function Dashboard() {
@@ -81,94 +74,46 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Header with welcome message */}
-      <div className="bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800">
-        <div className="container py-4 md:py-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-              <p className="text-muted-foreground mt-1">
-                Welcome back, {user?.firstName || user?.username}. Today is {currentDate}.
-              </p>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <Button variant="outline" size="sm" className="hidden md:flex">
-                <Calendar className="mr-2 h-4 w-4" />
-                View Calendar
-              </Button>
-              
-              <div className="relative">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  <Bell size={18} />
-                  <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-                </Button>
-              </div>
-              
-              <Avatar className="h-9 w-9 hidden md:flex">
-                <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                  {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0) || ''}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-          </div>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">
+          Welcome back, {user?.username}. Today is {currentDate}.
+        </p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statsCards.map((card, index) => (
+          <StatsCard key={index} card={card} />
+        ))}
+      </div>
+
+      {/* Revenue Chart */}
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+        <h2 className="text-lg font-medium mb-4">Revenue Overview</h2>
+        <RevenueChart />
+      </div>
+
+      {/* Recent Activity */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="md:col-span-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <h2 className="text-lg font-medium mb-4">Recent Activity</h2>
+          <RecentActivity />
         </div>
       </div>
 
-      {/* Dashboard content */}
-      <div className="container space-y-6">
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {statsCards.map((card, index) => (
-            <StatsCard key={index} card={card} />
-          ))}
+      {/* Recent Leads and Orders */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <h2 className="text-lg font-medium mb-4">Recent Leads</h2>
+          <RecentLeads />
         </div>
-
-        {/* Charts and Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-          <Card className="col-span-2">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium">Revenue Overview</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <RevenueChart />
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium">Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <RecentActivity />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Leads and Orders */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium">Recent Leads</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <RecentLeads />
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium">Recent Orders</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <RecentOrders />
-            </CardContent>
-          </Card>
+        
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <h2 className="text-lg font-medium mb-4">Recent Orders</h2>
+          <RecentOrders />
         </div>
       </div>
     </div>

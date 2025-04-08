@@ -1,7 +1,6 @@
 import { cn } from "@/lib/utils";
 import { StatCard } from "@/types";
 import { HelpTooltip } from "@/components/ui/help-tooltip";
-import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, ArrowRightLeft } from "lucide-react";
 
 interface StatsCardProps {
@@ -93,8 +92,8 @@ export default function StatsCard({ card }: StatsCardProps) {
   };
 
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-6">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm">
+      <div className="p-6">
         <div className="flex justify-between items-start">
           <div className="space-y-2">
             <div className="flex items-center gap-1">
@@ -102,7 +101,7 @@ export default function StatsCard({ card }: StatsCardProps) {
                 content={getHelpContent(card.title)}
                 side="top"
               >
-                <p className="text-sm font-medium text-muted-foreground">{card.title}</p>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{card.title}</p>
               </HelpTooltip>
             </div>
             <h3 className="text-2xl font-bold">{card.value}</h3>
@@ -117,7 +116,7 @@ export default function StatsCard({ card }: StatsCardProps) {
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

@@ -245,6 +245,8 @@ export function setupAuth(app: Express) {
             username: newUser.username,
             fullName: newUser.fullName,
             role: newUser.role,
+            permissions: newUser.permissions,
+            visiblePages: newUser.visiblePages,
           }
         });
       });
@@ -274,6 +276,7 @@ export function setupAuth(app: Express) {
             fullName: user.fullName,
             role: user.role,
             permissions: user.permissions,
+            visiblePages: user.visiblePages,
           } 
         });
       });
@@ -303,6 +306,7 @@ export function setupAuth(app: Express) {
         fullName: user.fullName,
         role: user.role,
         permissions: user.permissions,
+        visiblePages: user.visiblePages,
       } 
     });
   });
@@ -319,6 +323,7 @@ export function setupAuth(app: Express) {
         fullName: user.fullName,
         role: user.role,
         permissions: user.permissions,
+        visiblePages: user.visiblePages,
         createdAt: user.createdAt,
       }));
       
@@ -358,6 +363,7 @@ export function setupAuth(app: Express) {
           fullName: user.fullName,
           role: user.role,
           permissions: defaultPermissions,
+          visiblePages: user.visiblePages,
         }
       });
     } catch (error: any) {
@@ -395,6 +401,7 @@ export function setupAuth(app: Express) {
           fullName: user.fullName,
           role: user.role,
           permissions: user.permissions,
+          visiblePages: user.visiblePages,
         }
       });
     } catch (error: any) {

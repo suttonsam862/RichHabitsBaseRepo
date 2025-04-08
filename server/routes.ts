@@ -408,7 +408,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      res.json(updatedUser);
+      res.json({
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          username: updatedUser.username,
+          fullName: updatedUser.fullName,
+          role: updatedUser.role,
+          permissions: updatedUser.permissions,
+          visiblePages: updatedUser.visiblePages,
+        }
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -445,7 +455,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      res.json(updatedUser);
+      res.json({
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          username: updatedUser.username,
+          fullName: updatedUser.fullName,
+          role: updatedUser.role,
+          permissions: updatedUser.permissions,
+          visiblePages: updatedUser.visiblePages,
+        }
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -475,7 +495,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      res.json(updatedUser);
+      res.json({
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          username: updatedUser.username,
+          fullName: updatedUser.fullName,
+          role: updatedUser.role,
+          permissions: updatedUser.permissions,
+          visiblePages: updatedUser.visiblePages,
+        }
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -515,6 +545,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the updated user
       const updatedUser = await storage.getUser(userId);
       
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found after update" });
+      }
+      
       // Create activity for password change
       if (req.user) {
         const currentUser = req.user as any;
@@ -527,7 +561,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      res.json(updatedUser);
+      res.json({
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          username: updatedUser.username,
+          fullName: updatedUser.fullName,
+          role: updatedUser.role,
+          permissions: updatedUser.permissions,
+          visiblePages: updatedUser.visiblePages,
+        }
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

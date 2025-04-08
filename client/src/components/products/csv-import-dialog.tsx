@@ -119,18 +119,23 @@ export function CSVImportDialog({ open, onOpenChange }: CSVImportDialogProps) {
               <p className="text-sm text-muted-foreground mb-4">
                 Upload a CSV file or paste CSV data below
               </p>
-              <input 
-                type="file"
-                accept=".csv"
-                id="csv-upload"
-                className="sr-only"
-                onChange={handleFileChange}
-              />
-              <label htmlFor="csv-upload">
-                <Button type="button" variant="outline" className="cursor-pointer">
+              <div className="flex items-center justify-center">
+                <input 
+                  type="file"
+                  accept=".csv"
+                  id="csv-upload"
+                  className="sr-only"
+                  onChange={handleFileChange}
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="cursor-pointer"
+                  onClick={() => document.getElementById('csv-upload')?.click()}
+                >
                   Select CSV File
                 </Button>
-              </label>
+              </div>
             </div>
             
             <div>

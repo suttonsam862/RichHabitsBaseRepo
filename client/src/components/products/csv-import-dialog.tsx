@@ -116,21 +116,19 @@ export function CSVImportDialog({ open, onOpenChange }: CSVImportDialogProps) {
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="max-w-3xl">
-        <div className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-          {stage === 'preview' ? (
-            <div className="flex items-center gap-2">
-              <Button 
-                onClick={handleImport} 
-                disabled={importMutation.isPending}
-                variant="default"
-                size="sm"
-                className="h-8"
-              >
-                Import Now
-              </Button>
-            </div>
-          ) : null}
-        </div>
+        {stage === 'preview' && (
+          <div className="absolute right-14 top-4 z-10">
+            <Button 
+              onClick={handleImport} 
+              disabled={importMutation.isPending}
+              variant="default"
+              size="sm"
+              className="h-8 bg-primary text-white hover:bg-primary/90 font-medium"
+            >
+              Import Now
+            </Button>
+          </div>
+        )}
         
         <DialogHeader>
           <DialogTitle>Import Products from CSV</DialogTitle>
@@ -226,11 +224,21 @@ export function CSVImportDialog({ open, onOpenChange }: CSVImportDialogProps) {
               </pre>
             </ScrollableDialogContent>
             
-            <div className="text-sm bg-gray-50 p-3 rounded-md">
+            <div className="text-sm bg-gray-50 p-4 rounded-md">
               <p className="font-medium mb-1">Ready to import?</p>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground mb-3">
                 Click "Import Products" below to add these items to your catalog, or go back to make changes.
               </p>
+              <Button 
+                onClick={handleImport} 
+                disabled={importMutation.isPending}
+                className="w-full bg-primary text-white hover:bg-primary/90"
+              >
+                {importMutation.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Import Products
+              </Button>
             </div>
           </div>
         )}
@@ -283,15 +291,6 @@ export function CSVImportDialog({ open, onOpenChange }: CSVImportDialogProps) {
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStage('upload')}>
                 Back
-              </Button>
-              <Button 
-                onClick={handleImport} 
-                disabled={importMutation.isPending}
-              >
-                {importMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Import Products
               </Button>
             </div>
           )}

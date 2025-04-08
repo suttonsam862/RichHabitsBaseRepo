@@ -1,7 +1,6 @@
 import { cn } from "@/lib/utils";
 import { StatCard } from "@/types";
 import { HelpTooltip } from "@/components/ui/help-tooltip";
-import { TrendingUp, TrendingDown, ArrowRightLeft } from "lucide-react";
 
 interface StatsCardProps {
   card: StatCard;
@@ -64,56 +63,42 @@ export default function StatsCard({ card }: StatsCardProps) {
     }
   };
 
-  // Determine trend indicator based on change text
-  const getTrendIndicator = () => {
-    const change = card.change.toLowerCase();
-    if (change.includes('increase')) {
-      return (
-        <div className="flex items-center text-green-600 dark:text-green-500">
-          <TrendingUp size={14} className="mr-1" />
-          <span>{card.change}</span>
-        </div>
-      );
-    } else if (change.includes('decrease')) {
-      return (
-        <div className="flex items-center text-red-600 dark:text-red-500">
-          <TrendingDown size={14} className="mr-1" />
-          <span>{card.change}</span>
-        </div>
-      );
-    } else {
-      return (
-        <div className="flex items-center text-gray-600 dark:text-gray-400">
-          <ArrowRightLeft size={14} className="mr-1" />
-          <span>{card.change}</span>
-        </div>
-      );
-    }
-  };
-
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm">
-      <div className="p-6">
-        <div className="flex justify-between items-start">
-          <div className="space-y-2">
-            <div className="flex items-center gap-1">
-              <HelpTooltip 
-                content={getHelpContent(card.title)}
-                side="top"
-              >
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{card.title}</p>
-              </HelpTooltip>
-            </div>
-            <h3 className="text-2xl font-bold">{card.value}</h3>
-            <p className="text-xs font-medium">
-              {getTrendIndicator()}
-            </p>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <div className="flex items-center gap-1">
+            <HelpTooltip 
+              content={getHelpContent(card.title)}
+              side="top"
+            >
+              <p className="text-sm font-medium text-gray-500">{card.title}</p>
+            </HelpTooltip>
           </div>
-          
-          <div className={cn("p-3 rounded-full", card.iconBg)}>
-            <div className={cn("text-[20px]", card.iconColor)}>
-              {card.icon}
-            </div>
+          <h3 className="text-2xl font-bold mt-1">{card.value}</h3>
+          <p className="text-xs font-medium text-green-500 mt-1 flex items-center">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              width="14" 
+              height="14" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              className="mr-1"
+            >
+              <path d="m6 9 6-6 6 6"></path>
+              <path d="M6 12h12"></path>
+              <path d="m6 15 6 6 6-6"></path>
+            </svg>
+            <span>{card.change}</span>
+          </p>
+        </div>
+        <div className={cn("p-3 rounded-full", card.iconBg)}>
+          <div className={cn("text-[20px]", card.iconColor)}>
+            {card.icon}
           </div>
         </div>
       </div>

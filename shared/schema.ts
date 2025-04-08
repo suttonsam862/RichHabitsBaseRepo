@@ -93,26 +93,19 @@ export const leads = pgTable("leads", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Forward reference for circular dependencies
-export const organizationsRef = pgTable('organizations', {
-  id: serial('id').primaryKey(),
-});
-
 // Order model
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
-  organizationId: integer("organization_id").references(() => organizationsRef.id),
   orderId: text("order_id").notNull().unique(),
   customerName: text("customer_name").notNull(),
   customerEmail: text("customer_email"),
-  totalAmount: numeric("total_amount").notNull(), 
+  totalAmount: numeric("total_amount").notNull(),
   status: text("status").default("pending").notNull(),
   items: text("items"),
   shippingAddress: text("shipping_address"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at"),
 });
 
 // Message model
@@ -257,51 +250,6 @@ export type FabricOption = typeof fabricOptions.$inferSelect;
 export type FabricCut = typeof fabricCuts.$inferSelect;
 export type CustomizationOption = typeof customizationOptions.$inferSelect;
 export type SalesTeamMember = typeof salesTeamMembers.$inferSelect;
-
-// Organizations table
-export const organizations = pgTable('organizations', {
-  id: serial('id').primaryKey(),
-  name: text('name').notNull(),
-  type: text('type').notNull().default('customer'), // customer, supplier, partner
-  email: text('email'),
-  phone: text('phone'),
-  address: text('address'),
-  city: text('city'),
-  state: text('state'),
-  zipCode: text('zip_code'),
-  country: text('country'),
-  contactName: text('contact_name'),
-  contactEmail: text('contact_email'),
-  contactPhone: text('contact_phone'),
-  notes: text('notes'),
-  status: text('status').notNull().default('active'), // active, inactive
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
-
-// Order items table (for line item management)
-export const orderItems = pgTable('order_items', {
-  id: serial('id').primaryKey(),
-  orderId: integer('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
-  productId: integer('product_id').notNull().references(() => products.id),
-  quantity: integer('quantity').notNull().default(1),
-  unitPrice: text('unit_price').notNull(),
-  totalPrice: text('total_price').notNull(),
-  customizations: json('customizations').$type<Record<string, string>>(),
-  status: text('status').notNull().default('pending'), // pending, in_design, in_production, completed
-  notes: text('notes'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
-
-// Export the schemas and types for organizations and order items
-export const insertOrganizationSchema = createInsertSchema(organizations).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true, createdAt: true, updatedAt: true });
-
-export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
-export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
-export type Organization = typeof organizations.$inferSelect;
-export type OrderItem = typeof orderItems.$inferSelect;
 
 // Define feedback table
 export const feedback = pgTable('feedback', {

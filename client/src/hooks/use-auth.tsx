@@ -159,11 +159,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     console.log("Raw user data for mapping:", userFromDb);
     
+    // Split fullName into firstName and lastName if available
+    let firstName = undefined;
+    let lastName = undefined;
+    
+    if (userFromDb.firstName) {
+      firstName = userFromDb.firstName;
+    } else if (userFromDb.fullName) {
+      const nameParts = userFromDb.fullName.split(' ');
+      firstName = nameParts[0];
+      if (nameParts.length > 1) {
+        lastName = nameParts.slice(1).join(' ');
+      }
+    }
+    
     return {
       id: userFromDb.id.toString(),
       email: userFromDb.email || userFromDb.username,
       username: userFromDb.username,
       fullName: userFromDb.fullName === null ? undefined : userFromDb.fullName,
+      firstName: userFromDb.firstName || firstName,
+      lastName: userFromDb.lastName || lastName,
       avatarUrl: userFromDb.avatarUrl === null ? undefined : userFromDb.avatarUrl,
       role: userFromDb.role || 'user',
       permissions: userFromDb.permissions || [],

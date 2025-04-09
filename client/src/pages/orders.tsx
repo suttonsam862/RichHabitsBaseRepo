@@ -387,6 +387,7 @@ export default function Orders() {
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -397,17 +398,124 @@ export default function Orders() {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.quantity}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.price}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(item.quantity * item.price).toFixed(2)}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="text-red-500 hover:text-red-700"
+                                onClick={() => {
+                                  // Create a copy of the items array
+                                  const items = JSON.parse(selectedOrder.items);
+                                  // Remove item at index
+                                  const newItems = [...items.slice(0, index), ...items.slice(index + 1)];
+                                  // Update order
+                                  setSelectedOrder({
+                                    ...selectedOrder,
+                                    items: JSON.stringify(newItems)
+                                  });
+                                  
+                                  toast({
+                                    title: "Item removed",
+                                    description: "The item has been removed from the order.",
+                                  });
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={4} className="px-6 py-4 text-sm text-center text-gray-500">
+                          <td colSpan={5} className="px-6 py-4 text-sm text-center text-gray-500">
                             {selectedOrder.itemName || "No items available"}
                           </td>
                         </tr>
                       )}
                     </tbody>
                   </table>
+                </div>
+                
+                {/* Add New Item */}
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Add New Item</h4>
+                  <div className="flex flex-wrap gap-3">
+                    <Input 
+                      placeholder="Item name" 
+                      className="flex-1 min-w-[200px]" 
+                      id="new-item-name"
+                    />
+                    <Input 
+                      placeholder="Quantity" 
+                      type="number" 
+                      min="1" 
+                      className="w-24" 
+                      id="new-item-quantity"
+                    />
+                    <Input 
+                      placeholder="Price" 
+                      type="number" 
+                      min="0.01" 
+                      step="0.01" 
+                      className="w-24" 
+                      id="new-item-price"
+                    />
+                    <Button 
+                      className="bg-brand-600 hover:bg-brand-700"
+                      onClick={() => {
+                        const nameInput = document.getElementById('new-item-name') as HTMLInputElement;
+                        const quantityInput = document.getElementById('new-item-quantity') as HTMLInputElement;
+                        const priceInput = document.getElementById('new-item-price') as HTMLInputElement;
+                        
+                        if (!nameInput?.value || !quantityInput?.value || !priceInput?.value) {
+                          toast({
+                            title: "Missing fields",
+                            description: "Please fill in all item fields",
+                            variant: "destructive"
+                          });
+                          return;
+                        }
+                        
+                        const newItem = {
+                          name: nameInput.value,
+                          quantity: parseInt(quantityInput.value),
+                          price: parseFloat(priceInput.value)
+                        };
+                        
+                        // Get existing items or initialize empty array
+                        let items = [];
+                        if (selectedOrder.items) {
+                          try {
+                            items = JSON.parse(selectedOrder.items);
+                          } catch (e) {
+                            console.error("Error parsing items:", e);
+                          }
+                        }
+                        
+                        // Add new item
+                        items.push(newItem);
+                        
+                        // Update order
+                        setSelectedOrder({
+                          ...selectedOrder,
+                          items: JSON.stringify(items)
+                        });
+                        
+                        // Clear inputs
+                        nameInput.value = "";
+                        quantityInput.value = "";
+                        priceInput.value = "";
+                        
+                        toast({
+                          title: "Item added",
+                          description: "The item has been added to the order.",
+                        });
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Item
+                    </Button>
+                  </div>
                 </div>
               </div>
               

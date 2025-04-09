@@ -47,32 +47,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
-      // Get lead count
-      const leadCount = await db.select({ count: sql`COUNT(*)` }).from(leads);
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       
-      // Get active order count
-      const activeOrderCount = await db.select({ count: sql`COUNT(*)` }).from(orders).where(
-        or(
-          eq(orders.status, 'pending'),
-          eq(orders.status, 'processing'),
-          eq(orders.status, 'paid')
-        )
+      const user = req.user as User;
+      
+      // Check user permissions
+      const canViewAllLeads = hasPermission(
+        user.role,
+        user.permissions,
+        PERMISSIONS.VIEW_ALL_LEADS
       );
       
-      // Get monthly revenue
-      const revenueResult = await db.execute(sql`
-        SELECT SUM("total_amount") as revenue
-        FROM ${orders}
-        WHERE "status" = 'paid' OR "status" = 'delivered'
-        AND "created_at" >= date_trunc('month', current_date)
-      `);
+      const canViewAllOrders = hasPermission(
+        user.role,
+        user.permissions,
+        PERMISSIONS.VIEW_ALL_ORDERS
+      );
+
+      let leadCountQuery;
+      let activeOrderCountQuery;
+      let monthlyRevenueQuery;
+      
+      // Filter leads based on user permissions
+      if (canViewAllLeads) {
+        // Admin or users with VIEW_ALL_LEADS permission see all leads
+        leadCountQuery = db.select({ count: sql`COUNT(*)` }).from(leads);
+      } else if (user.role === ROLES.AGENT) {
+        // Sales agents see both their assigned leads and open (unassigned) leads
+        leadCountQuery = db.select({ count: sql`COUNT(*)` }).from(leads).where(
+          or(
+            eq(leads.userId, user.id),
+            eq(leads.userId, 0)
+          )
+        );
+      } else {
+        // Other users only see leads assigned to them
+        leadCountQuery = db.select({ count: sql`COUNT(*)` }).from(leads).where(
+          eq(leads.userId, user.id)
+        );
+      }
+      
+      // Filter orders based on user permissions
+      if (canViewAllOrders) {
+        // Admin or users with VIEW_ALL_ORDERS permission see all active orders
+        activeOrderCountQuery = db.select({ count: sql`COUNT(*)` }).from(orders).where(
+          or(
+            eq(orders.status, 'pending'),
+            eq(orders.status, 'processing'),
+            eq(orders.status, 'paid')
+          )
+        );
+        
+        // Get overall monthly revenue for users with full permissions
+        monthlyRevenueQuery = sql`
+          SELECT SUM("total_amount") as revenue
+          FROM ${orders}
+          WHERE ("status" = 'paid' OR "status" = 'delivered')
+          AND "created_at" >= date_trunc('month', current_date)
+        `;
+      } else {
+        // Filter for orders assigned to the user
+        activeOrderCountQuery = db.select({ count: sql`COUNT(*)` }).from(orders)
+          .where(
+            and(
+              eq(orders.userId, user.id),
+              or(
+                eq(orders.status, 'pending'),
+                eq(orders.status, 'processing'),
+                eq(orders.status, 'paid')
+              )
+            )
+          );
+        
+        // Get monthly revenue only for orders assigned to this user
+        monthlyRevenueQuery = sql`
+          SELECT SUM("total_amount") as revenue
+          FROM ${orders}
+          WHERE ("status" = 'paid' OR "status" = 'delivered')
+          AND "created_at" >= date_trunc('month', current_date)
+          AND "user_id" = ${user.id}
+        `;
+      }
+      
+      // Get unread message count - this could also be filtered by user if needed
+      const unreadMessageCountQuery = db.select({ count: sql`COUNT(*)` }).from(messages)
+        .where(eq(messages.status, 'unread'));
+
+      // Execute all queries in parallel
+      const [
+        leadCount,
+        activeOrderCount,
+        revenueResult,
+        unreadMessageCount
+      ] = await Promise.all([
+        leadCountQuery,
+        activeOrderCountQuery,
+        db.execute(monthlyRevenueQuery),
+        unreadMessageCountQuery
+      ]);
       
       const monthlyRevenue = revenueResult.rows[0]?.revenue || 0;
-      
-      // Get unread message count
-      const unreadMessageCount = await db.select({ count: sql`COUNT(*)` }).from(messages).where(
-        eq(messages.status, 'unread')
-      );
       
       const stats = {
         totalLeads: Number(leadCount[0]?.count || 0),

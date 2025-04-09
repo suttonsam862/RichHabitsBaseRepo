@@ -206,6 +206,26 @@ export default function Orders() {
     },
   });
   
+  const updateOrderMutation = useMutation({
+    mutationFn: async (orderData: any) => {
+      return await apiRequest("PATCH", `/api/orders/${orderData.id}`, orderData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      toast({
+        title: "Order updated",
+        description: "Order has been updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update order",
+        variant: "destructive",
+      });
+    },
+  });
+
   const deleteOrderMutation = useMutation({
     mutationFn: async (id: number) => {
       return await apiRequest("DELETE", `/api/orders/${id}`);
@@ -598,6 +618,36 @@ export default function Orders() {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-gray-200">
+                <Button 
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => {
+                    // Calculate total amount from line items
+                    let totalAmount = 0;
+                    if (selectedOrder.items) {
+                      const items = JSON.parse(selectedOrder.items);
+                      items.forEach((item: any) => {
+                        const sizes = item.sizes || {};
+                        const totalQuantity = Object.values(sizes).reduce(
+                          (sum: number, qty: any) => sum + (parseInt(qty) || 0), 0
+                        );
+                        const unitCost = parseFloat(item.price) || 0;
+                        totalAmount += totalQuantity * unitCost;
+                      });
+                    }
+                    
+                    // Update the order with the new total amount and items
+                    const updatedOrder = {
+                      ...selectedOrder,
+                      totalAmount: totalAmount.toFixed(2),
+                    };
+                    
+                    // Save changes to the server
+                    updateOrderMutation.mutate(updatedOrder);
+                    setOpenViewDialog(false);
+                  }}
+                >
+                  Save Order
+                </Button>
                 <Button 
                   className="bg-purple-600 hover:bg-purple-700 text-white"
                   onClick={() => {
@@ -1009,48 +1059,13 @@ export default function Orders() {
                         <td className="p-4 text-right">
                           <Button 
                             variant="outline" 
-                            size="sm" 
-                            className="mr-2"
+                            size="sm"
                             onClick={() => {
                               setSelectedOrder(order);
                               setOpenViewDialog(true);
                             }}
                           >
                             View
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="mr-2"
-                            onClick={() => {
-                              setSelectedOrder(order);
-                              setSelectedOrderId(order.id);
-                              form.reset({
-                                customerName: order.customerName,
-                                customerEmail: order.customerEmail,
-                                totalAmount: order.totalAmount,
-                                status: order.status as any,
-                                items: order.items,
-                                shippingAddress: order.shippingAddress || "",
-                                notes: order.notes || "",
-                                itemName: order.itemName || ""
-                              });
-                              setOpenEditDialog(true);
-                            }}
-                          >
-                            Edit
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => {
-                              setSelectedOrder(order);
-                              setSelectedOrderId(order.id);
-                              setOpenDeleteDialog(true);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </td>
                       </tr>

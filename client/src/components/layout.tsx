@@ -20,7 +20,7 @@ export default function Layout({ user, children }: LayoutProps) {
   }
 
   return (
-    <div className="flex min-h-screen h-screen bg-white">
+    <div className="flex min-h-screen h-screen bg-gray-50">
       {/* Only one Sidebar component, positioned absolutely */}
       <Sidebar user={user} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
@@ -28,7 +28,7 @@ export default function Layout({ user, children }: LayoutProps) {
       <MobileMenu onMenuToggle={toggleSidebar} />
       
       {/* Main content with padding to account for sidebar */}
-      <div className="flex-1 flex flex-col w-full md:ml-72 pt-16 md:pt-0 bg-white">
+      <div className="flex-1 flex flex-col w-full relative md:ml-72 pt-16 md:pt-0 bg-white overflow-hidden">
         <main className="flex-1 w-full overflow-y-auto">
           {children}
         </main>

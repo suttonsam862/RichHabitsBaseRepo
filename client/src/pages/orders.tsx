@@ -21,6 +21,8 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
+import { hasPermission } from "@shared/permissions";
+import { PERMISSIONS } from "@shared/schema";
 
 const formSchema = insertOrderSchema.extend({
   // Override totalAmount to make it optional in the form
@@ -674,13 +676,31 @@ export default function Orders() {
                 >
                   Submit to Manufacturing
                 </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => setOpenViewDialog(false)}
-                  className="ml-auto"
-                >
-                  Close
-                </Button>
+                
+                <div className="ml-auto flex gap-2">
+                  {/* Only show delete button for users with delete_orders permission */}
+                  {hasPermission(user?.role || 'viewer', user?.permissions, PERMISSIONS.DELETE_ORDERS) && (
+                    <Button 
+                      variant="outline"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200"
+                      onClick={() => {
+                        setSelectedOrderId(selectedOrder.id);
+                        setOpenDeleteDialog(true);
+                        setOpenViewDialog(false);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </Button>
+                  )}
+                  
+                  <Button 
+                    variant="outline"
+                    onClick={() => setOpenViewDialog(false)}
+                  >
+                    Close
+                  </Button>
+                </div>
               </div>
             </div>
           )}

@@ -332,9 +332,34 @@ export default function OrderManagement() {
   
   // Handle form submission
   const onSubmit = (values: OrderFormValues) => {
+    // Create a clean orderData object with preprocessed values
     const orderData = {
-      ...values,
       id: selectedOrder.id,
+      orderId: values.orderId,
+      customerName: values.customerName,
+      customerEmail: values.customerEmail || null,
+      status: values.status,
+      shippingAddress: values.shippingAddress || null,
+      notes: values.notes || null,
+      dueDate: values.dueDate || null,
+      priorityLevel: values.priorityLevel || "medium",
+      
+      // Handle numeric fields - convert empty strings to null to avoid DB type conversion errors
+      assignedSalesRepId: values.assignedSalesRepId && values.assignedSalesRepId !== "" ? 
+                         parseInt(values.assignedSalesRepId) : null,
+      
+      assignedDesignerId: values.assignedDesignerId && values.assignedDesignerId !== "" ? 
+                         parseInt(values.assignedDesignerId) : null,
+      
+      assignedManufacturerId: values.assignedManufacturerId && values.assignedManufacturerId !== "" ? 
+                             parseInt(values.assignedManufacturerId) : null,
+      
+      organizationId: values.organizationId && values.organizationId !== "" ? 
+                     parseInt(values.organizationId) : null,
+      
+      // Handle total amount
+      totalAmount: values.totalAmount && values.totalAmount !== "" ? 
+                  values.totalAmount : "0"
     };
     
     updateOrderMutation.mutate(orderData);

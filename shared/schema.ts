@@ -31,6 +31,7 @@ export const PERMISSIONS = {
   EDIT_LEADS: 'edit_leads',
   DELETE_LEADS: 'delete_leads',
   VIEW_LEADS: 'view_leads',
+  VIEW_ALL_LEADS: 'view_all_leads',
   
   // Order management
   CREATE_ORDERS: 'create_orders',

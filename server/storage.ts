@@ -88,7 +88,7 @@ export interface IStorage {
   getSalesTeamPerformance(): Promise<any>;
   
   // Lead methods
-  getLeads(): Promise<Lead[]>;
+  getLeads(userId?: number, includeOpenLeads?: boolean): Promise<Lead[]>;
   getRecentLeads(limit?: number): Promise<Lead[]>;
   createLead(lead: InsertLead): Promise<Lead>;
   getLeadById(id: number): Promise<Lead | undefined>;
@@ -293,12 +293,54 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Lead methods
-  async getLeads(): Promise<Lead[]> {
-    return db.select().from(leads).orderBy(desc(leads.createdAt));
+  async getLeads(userId?: number, includeOpenLeads?: boolean): Promise<Lead[]> {
+    if (userId && includeOpenLeads) {
+      // For salespeople: return both leads assigned to them and unassigned (open) leads
+      return db.select()
+        .from(leads)
+        .where(
+          or(
+            eq(leads.salesRepId, userId),
+            isNull(leads.salesRepId)
+          )
+        )
+        .orderBy(desc(leads.createdAt));
+    } else if (userId) {
+      // Only return leads assigned to this user
+      return db.select()
+        .from(leads)
+        .where(eq(leads.salesRepId, userId))
+        .orderBy(desc(leads.createdAt));
+    } else {
+      // Return all leads (for admin)
+      return db.select().from(leads).orderBy(desc(leads.createdAt));
+    }
   }
   
-  async getRecentLeads(limit: number = 5): Promise<Lead[]> {
-    return db.select().from(leads).orderBy(desc(leads.createdAt)).limit(limit);
+  async getRecentLeads(limit: number = 5, userId?: number, includeOpenLeads?: boolean): Promise<Lead[]> {
+    if (userId && includeOpenLeads) {
+      // For salespeople: return both leads assigned to them and unassigned (open) leads
+      return db.select()
+        .from(leads)
+        .where(
+          or(
+            eq(leads.salesRepId, userId),
+            isNull(leads.salesRepId)
+          )
+        )
+        .orderBy(desc(leads.createdAt))
+        .limit(limit);
+    } else if (userId) {
+      // Only return leads assigned to this user
+      return db.select()
+        .from(leads)
+        .where(eq(leads.salesRepId, userId))
+        .orderBy(desc(leads.createdAt))
+        .limit(limit);
+    } else {
+      // Return all leads (for admin)
+      return db.select().from(leads).orderBy(desc(leads.createdAt)).limit(limit);
+    }
   }
   
   async createLead(lead: InsertLead): Promise<Lead> {

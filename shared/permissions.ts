@@ -13,6 +13,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     PERMISSIONS.CREATE_LEADS,
     PERMISSIONS.EDIT_LEADS,
     PERMISSIONS.VIEW_LEADS,
+    PERMISSIONS.VIEW_ALL_LEADS,
     
     PERMISSIONS.CREATE_ORDERS,
     PERMISSIONS.EDIT_ORDERS,
@@ -165,6 +166,7 @@ export function getPermissionGroups(): { category: string; permissions: Permissi
         PERMISSIONS.EDIT_LEADS,
         PERMISSIONS.DELETE_LEADS,
         PERMISSIONS.VIEW_LEADS,
+        PERMISSIONS.VIEW_ALL_LEADS,
       ],
     },
     {

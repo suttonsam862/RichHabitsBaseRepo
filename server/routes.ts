@@ -91,7 +91,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Leads endpoints
   app.get("/api/leads", async (req, res) => {
     try {
-      const leads = await storage.getLeads();
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as any;
+      
+      // Check if user has permission to see all leads or just their assigned ones
+      const canViewAllLeads = hasPermission(
+        user.role,
+        user.permissions,
+        PERMISSIONS.VIEW_ALL_LEADS
+      );
+      
+      let leads;
+      if (canViewAllLeads) {
+        // User has permission to view all leads
+        leads = await storage.getLeads();
+      } else if (user.role === ROLES.AGENT) {
+        // Sales agents see both their assigned leads and open (unassigned) leads
+        leads = await storage.getLeads(user.id, true);
+      } else {
+        // Other users only see leads assigned to them
+        leads = await storage.getLeads(user.id);
+      }
+      
       res.json({ data: leads });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -100,7 +125,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/leads/recent", async (req, res) => {
     try {
-      const recentLeads = await storage.getRecentLeads(3);
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const user = req.user as User;
+      
+      // Check if user has permission to see all leads or just their assigned ones
+      const canViewAllLeads = hasPermission(
+        user.role,
+        user.permissions,
+        PERMISSIONS.VIEW_ALL_LEADS
+      );
+      
+      let recentLeads;
+      if (canViewAllLeads) {
+        // User has permission to view all leads
+        recentLeads = await storage.getRecentLeads(3);
+      } else if (user.role === ROLES.AGENT) {
+        // Sales agents see both their assigned leads and open (unassigned) leads
+        recentLeads = await storage.getRecentLeads(3, user.id, true);
+      } else {
+        // Other users only see leads assigned to them
+        recentLeads = await storage.getRecentLeads(3, user.id);
+      }
+      
       res.json({ data: recentLeads });
     } catch (error: any) {
       res.status(500).json({ error: error.message });

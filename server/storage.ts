@@ -9,6 +9,7 @@ import {
   fabricCuts,
   customizationOptions,
   salesTeamMembers,
+  organizations,
   feedback,
   feedbackComments,
   feedbackVotes,
@@ -33,6 +34,8 @@ import {
   type InsertCustomizationOption,
   type SalesTeamMember,
   type InsertSalesTeamMember,
+  type Organization,
+  type InsertOrganization,
   type Feedback,
   type FeedbackComment,
   type FeedbackVote,
@@ -128,6 +131,13 @@ export interface IStorage {
   createCustomizationOption(option: InsertCustomizationOption): Promise<CustomizationOption>;
   updateCustomizationOption(id: number, option: Partial<InsertCustomizationOption>): Promise<CustomizationOption>;
   deleteCustomizationOption(id: number): Promise<void>;
+  
+  // Organization methods
+  getOrganizations(): Promise<Organization[]>;
+  getOrganizationById(id: number): Promise<Organization | undefined>;
+  createOrganization(organization: InsertOrganization): Promise<Organization>;
+  updateOrganization(id: number, organization: Partial<InsertOrganization>): Promise<Organization>;
+  deleteOrganization(id: number): Promise<void>;
   
   // Analytics methods
   getRevenueData(period: string): Promise<any[]>;
@@ -667,7 +677,37 @@ export class DatabaseStorage implements IStorage {
     await db.delete(customizationOptions).where(eq(customizationOptions.id, id));
   }
   
-  // Data management
+  // Organization methods
+  async getOrganizations(): Promise<Organization[]> {
+    return db.select().from(organizations).orderBy(asc(organizations.name));
+  }
+
+  async getOrganizationById(id: number): Promise<Organization | undefined> {
+    const [organization] = await db.select().from(organizations).where(eq(organizations.id, id));
+    return organization || undefined;
+  }
+
+  async createOrganization(organization: InsertOrganization): Promise<Organization> {
+    const [newOrganization] = await db
+      .insert(organizations)
+      .values(organization)
+      .returning();
+    return newOrganization;
+  }
+
+  async updateOrganization(id: number, organization: Partial<InsertOrganization>): Promise<Organization> {
+    const [updatedOrganization] = await db
+      .update(organizations)
+      .set({ ...organization, updatedAt: new Date() })
+      .where(eq(organizations.id, id))
+      .returning();
+    return updatedOrganization;
+  }
+
+  async deleteOrganization(id: number): Promise<void> {
+    await db.delete(organizations).where(eq(organizations.id, id));
+  }
+  
   async clearExampleData(): Promise<void> {
     // We'll preserve the admin user only (id=1), but clear all other data
     try {
@@ -683,6 +723,7 @@ export class DatabaseStorage implements IStorage {
       await db.delete(fabricOptions);
       await db.delete(fabricCuts);
       await db.delete(customizationOptions);
+      await db.delete(organizations);
       
       console.log("Example data cleared successfully");
     } catch (error) {

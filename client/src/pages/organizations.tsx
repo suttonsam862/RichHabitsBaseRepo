@@ -198,206 +198,10 @@ export default function OrganizationsPage() {
     }
   });
 
-  // Sample data for demonstration - would be replaced with API data
-  const sampleOrganizations: Organization[] = [
-    {
-      id: 1,
-      name: "Acme Corporation",
-      type: "client",
-      industry: "Technology",
-      website: "www.acmecorp.com",
-      phone: "(555) 123-4567",
-      email: "contact@acmecorp.com",
-      address: "123 Main St",
-      city: "San Francisco",
-      state: "CA",
-      zip: "94105",
-      country: "USA",
-      logoUrl: null,
-      notes: "Key client with multiple ongoing projects",
-      status: "active",
-      primaryContactId: 1,
-      totalRevenue: "125000.00",
-      createdAt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 2,
-      name: "Globex Industries",
-      type: "client",
-      industry: "Manufacturing",
-      website: "www.globexindustries.com",
-      phone: "(555) 987-6543",
-      email: "info@globexindustries.com",
-      address: "456 Industrial Way",
-      city: "Chicago",
-      state: "IL",
-      zip: "60607",
-      country: "USA",
-      logoUrl: null,
-      notes: "Large enterprise client with regular orders",
-      status: "active",
-      primaryContactId: 3,
-      totalRevenue: "78500.00",
-      createdAt: new Date(Date.now() - 290 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 3,
-      name: "Eco Materials",
-      type: "vendor",
-      industry: "Sustainable Materials",
-      website: "www.ecomaterials.com",
-      phone: "(555) 321-7890",
-      email: "supply@ecomaterials.com",
-      address: "789 Green Ave",
-      city: "Portland",
-      state: "OR",
-      zip: "97204",
-      country: "USA",
-      logoUrl: null,
-      notes: "Primary supplier for eco-friendly packaging materials",
-      status: "active",
-      primaryContactId: 5,
-      totalRevenue: "0.00",
-      createdAt: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 4,
-      name: "TechPartners Inc",
-      type: "partner",
-      industry: "Technology",
-      website: "www.techpartners.com",
-      phone: "(555) 456-7890",
-      email: "partners@techpartners.com",
-      address: "101 Tech Park",
-      city: "Austin",
-      state: "TX",
-      zip: "78701",
-      country: "USA",
-      logoUrl: null,
-      notes: "Strategic technology partner for software integration",
-      status: "active",
-      primaryContactId: 7,
-      totalRevenue: "45000.00",
-      createdAt: new Date(Date.now() - 220 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 5,
-      name: "Old Client LLC",
-      type: "client",
-      industry: "Retail",
-      website: "www.oldclient.com",
-      phone: "(555) 111-2222",
-      email: "info@oldclient.com",
-      address: "222 Market St",
-      city: "Denver",
-      state: "CO",
-      zip: "80202",
-      country: "USA",
-      logoUrl: null,
-      notes: "Inactive client, last order over a year ago",
-      status: "inactive",
-      primaryContactId: 9,
-      totalRevenue: "12000.00",
-      createdAt: new Date(Date.now() - 500 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 380 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-  ];
-
-  const sampleContacts: Contact[] = [
-    {
-      id: 1,
-      organizationId: 1,
-      firstName: "John",
-      lastName: "Smith",
-      title: "CEO",
-      email: "john.smith@acmecorp.com",
-      phone: "(555) 123-4567",
-      isPrimary: true,
-      notes: "Main decision maker",
-      avatarUrl: null,
-    },
-    {
-      id: 2,
-      organizationId: 1,
-      firstName: "Sarah",
-      lastName: "Johnson",
-      title: "Procurement Manager",
-      email: "sarah.johnson@acmecorp.com",
-      phone: "(555) 123-4589",
-      isPrimary: false,
-      notes: "Handles all purchasing decisions",
-      avatarUrl: null,
-    },
-    {
-      id: 3,
-      organizationId: 2,
-      firstName: "Michael",
-      lastName: "Brown",
-      title: "Director of Operations",
-      email: "michael.brown@globexindustries.com",
-      phone: "(555) 987-6543",
-      isPrimary: true,
-      notes: "Primary contact for all orders",
-      avatarUrl: null,
-    },
-    {
-      id: 4,
-      organizationId: 2,
-      firstName: "Emily",
-      lastName: "Davis",
-      title: "Marketing Manager",
-      email: "emily.davis@globexindustries.com",
-      phone: "(555) 987-6555",
-      isPrimary: false,
-      notes: "Handles promotional materials",
-      avatarUrl: null,
-    },
-  ];
-
-  const sampleOrders: Order[] = [
-    {
-      id: 1,
-      orderId: "ORD-0001",
-      organizationId: 1,
-      totalAmount: "24500.00",
-      status: "completed",
-      createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 2,
-      orderId: "ORD-0015",
-      organizationId: 1,
-      totalAmount: "18750.00",
-      status: "completed",
-      createdAt: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 3,
-      orderId: "ORD-0032",
-      organizationId: 1,
-      totalAmount: "35000.00",
-      status: "in_progress",
-      createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 4,
-      orderId: "ORD-0045",
-      organizationId: 1,
-      totalAmount: "48750.00",
-      status: "pending",
-      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-  ];
-
-  const organizations = organizationsData?.data || sampleOrganizations;
-  const contacts = contactsData?.data || 
-                 (selectedOrg ? sampleContacts.filter(c => c.organizationId === selectedOrg.id) : []);
-  const orders = ordersData?.data || 
-               (selectedOrg ? sampleOrders.filter(o => o.organizationId === selectedOrg.id) : []);
+  // Use the data from the API
+  const organizations = organizationsData?.data || [];
+  const contacts = contactsData?.data || [];
+  const orders = ordersData?.data || [];
 
   const filteredOrganizations = organizations.filter(org => {
     // Filter by search query
@@ -568,7 +372,7 @@ export default function OrganizationsPage() {
                   <TableBody>
                     {filteredOrganizations.map((org) => {
                       // Find primary contact for this organization
-                      const primaryContact = sampleContacts.find(
+                      const primaryContact = contacts.find(
                         c => c.organizationId === org.id && c.isPrimary
                       );
                       
@@ -1309,9 +1113,7 @@ export default function OrganizationsPage() {
         </DialogContent>
       </Dialog>
 
-      <div className="fixed z-40 bottom-0 left-0 right-0 bg-black/70 text-center text-white text-xs py-1">
-        Data shown is sample data for demonstration purposes. API endpoints for organizations would need to be implemented on the backend.
-      </div>
+
     </>
   );
 }

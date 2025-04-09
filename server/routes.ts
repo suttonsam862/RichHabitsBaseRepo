@@ -14,6 +14,7 @@ import {
   fabricOptions,
   fabricCuts,
   customizationOptions,
+  organizations,
   feedback,
   feedbackComments,
   feedbackVotes,
@@ -26,6 +27,7 @@ import {
   insertFabricCutSchema,
   insertCustomizationOptionSchema,
   insertSalesTeamMemberSchema,
+  insertOrganizationSchema,
   insertFeedbackSchema,
   insertFeedbackCommentSchema,
   insertFeedbackVoteSchema,
@@ -596,6 +598,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Sales team management endpoints
   // Get all sales team members - Admin only
+  // Organizations endpoints
+  app.get("/api/organizations", async (req, res) => {
+    try {
+      const organizations = await storage.getOrganizations();
+      res.json({ data: organizations });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/organizations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid organization ID" });
+      }
+      
+      const organization = await storage.getOrganizationById(id);
+      if (!organization) {
+        return res.status(404).json({ error: "Organization not found" });
+      }
+      
+      res.json({ data: organization });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/organizations", hasRequiredPermission(PERMISSIONS.MANAGE_USERS), async (req, res) => {
+    try {
+      const validatedData = insertOrganizationSchema.parse(req.body);
+      const newOrganization = await storage.createOrganization(validatedData);
+      
+      // Create activity for the new organization
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "organization",
+        content: `New organization ${newOrganization.name} created`,
+        relatedId: newOrganization.id,
+        relatedType: "organization"
+      });
+      
+      res.status(201).json({ data: newOrganization });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  app.patch("/api/organizations/:id", hasRequiredPermission(PERMISSIONS.MANAGE_USERS), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid organization ID" });
+      }
+      
+      const organization = await storage.getOrganizationById(id);
+      if (!organization) {
+        return res.status(404).json({ error: "Organization not found" });
+      }
+      
+      const validatedData = insertOrganizationSchema.partial().parse(req.body);
+      const updatedOrganization = await storage.updateOrganization(id, validatedData);
+      
+      // Create activity for the updated organization
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "organization",
+        content: `Organization ${updatedOrganization.name} updated`,
+        relatedId: id,
+        relatedType: "organization"
+      });
+      
+      res.json({ data: updatedOrganization });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  app.delete("/api/organizations/:id", hasRequiredPermission(PERMISSIONS.MANAGE_USERS), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid organization ID" });
+      }
+      
+      const organization = await storage.getOrganizationById(id);
+      if (!organization) {
+        return res.status(404).json({ error: "Organization not found" });
+      }
+      
+      await storage.deleteOrganization(id);
+      
+      // Create activity for the deleted organization
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "organization",
+        content: `Organization ${organization.name} deleted`,
+        relatedId: id,
+        relatedType: "organization"
+      });
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
   app.get("/api/admin/sales-team", hasRequiredPermission(PERMISSIONS.MANAGE_USERS), async (req, res) => {
     try {
       const members = await storage.getSalesTeamMembers();

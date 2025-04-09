@@ -190,16 +190,29 @@ export const insertProductSchema = createInsertSchema(products).omit({ id: true,
 export const insertFabricOptionSchema = createInsertSchema(fabricOptions).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertFabricCutSchema = createInsertSchema(fabricCuts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCustomizationOptionSchema = createInsertSchema(customizationOptions).omit({ id: true, createdAt: true, updatedAt: true });
-
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type InsertLead = z.infer<typeof insertLeadSchema>;
-export type InsertOrder = z.infer<typeof insertOrderSchema>;
-export type InsertMessage = z.infer<typeof insertMessageSchema>;
-export type InsertActivity = z.infer<typeof insertActivitySchema>;
-export type InsertProduct = z.infer<typeof insertProductSchema>;
-export type InsertFabricOption = z.infer<typeof insertFabricOptionSchema>;
-export type InsertFabricCut = z.infer<typeof insertFabricCutSchema>;
-export type InsertCustomizationOption = z.infer<typeof insertCustomizationOptionSchema>;
+// Organizations table
+export const organizations = pgTable('organizations', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  type: text('type').notNull().default('client'), // 'client', 'vendor', 'partner'
+  industry: text('industry').notNull(),
+  website: text('website'),
+  phone: text('phone'),
+  email: text('email'),
+  address: text('address'),
+  city: text('city'),
+  state: text('state'),
+  zip: text('zip'),
+  country: text('country').default('USA'),
+  logoUrl: text('logo_url'),
+  notes: text('notes'),
+  status: text('status').notNull().default('active'), // 'active', 'inactive'
+  primaryContactId: integer('primary_contact_id'),
+  assignedSalesRepId: integer('assigned_sales_rep_id'),  // Will be linked later
+  totalRevenue: numeric('total_revenue').default('0.00'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
 
 // Sales team table
 export const salesTeamMembers = pgTable('sales_team_members', {
@@ -236,9 +249,11 @@ export const salesTeamMembers = pgTable('sales_team_members', {
 
 // Create insert schemas
 export const insertSalesTeamMemberSchema = createInsertSchema(salesTeamMembers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertOrganizationSchema = createInsertSchema(organizations).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Create types from insert schemas
 export type InsertSalesTeamMember = z.infer<typeof insertSalesTeamMemberSchema>;
+export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
 
 export type User = typeof users.$inferSelect;
 export type Lead = typeof leads.$inferSelect;
@@ -250,6 +265,7 @@ export type FabricOption = typeof fabricOptions.$inferSelect;
 export type FabricCut = typeof fabricCuts.$inferSelect;
 export type CustomizationOption = typeof customizationOptions.$inferSelect;
 export type SalesTeamMember = typeof salesTeamMembers.$inferSelect;
+export type Organization = typeof organizations.$inferSelect;
 
 // Define feedback table
 export const feedback = pgTable('feedback', {

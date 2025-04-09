@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db } from "./db";
 import { sql, eq, or } from "drizzle-orm";
 import { setupAuth, hashPassword } from "./auth";
+import { hasPermission } from '../shared/permissions';
 import { 
   leads,
   orders,
@@ -601,7 +602,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Organizations endpoints
   app.get("/api/organizations", async (req, res) => {
     try {
-      const organizations = await storage.getOrganizations();
+      // Check if the user has permission to manage organizations
+      const isAdmin = (req.user as any)?.role === ROLES.ADMIN;
+      const canManageOrganizations = hasPermission(
+        (req.user as any)?.role || ROLES.VIEWER,
+        (req.user as any)?.permissions,
+        PERMISSIONS.MANAGE_ORGANIZATIONS
+      );
+      
+      let organizations: Organization[] = [];
+      
+      if (isAdmin || canManageOrganizations) {
+        // Admin and managers see all organizations
+        organizations = await storage.getOrganizations();
+      } else {
+        // Regular users only see organizations assigned to them
+        const salesTeamMembers = await storage.getSalesTeamMembers();
+        const userSalesTeamMember = salesTeamMembers.find(member => member.email === (req.user as any)?.email);
+        
+        if (userSalesTeamMember) {
+          // Get organizations where this user is the assigned sales rep
+          organizations = await storage.getOrganizationsBySalesRep(userSalesTeamMember.id);
+        }
+        // If user is not a sales team member, the organizations array remains empty
+      }
+      
       res.json({ data: organizations });
     } catch (error: any) {
       res.status(500).json({ error: error.message });

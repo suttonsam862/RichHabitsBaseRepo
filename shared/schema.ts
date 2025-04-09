@@ -21,6 +21,11 @@ export const PERMISSIONS = {
   MANAGE_USERS: 'manage_users',
   VIEW_USERS: 'view_users',
   
+  // Organization management
+  VIEW_ORGANIZATIONS: 'view_organizations',
+  REQUEST_ORGANIZATION: 'request_organization',
+  MANAGE_ORGANIZATIONS: 'manage_organizations',
+  
   // Lead management
   CREATE_LEADS: 'create_leads',
   EDIT_LEADS: 'edit_leads',

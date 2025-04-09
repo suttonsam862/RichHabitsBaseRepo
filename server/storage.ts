@@ -134,6 +134,7 @@ export interface IStorage {
   
   // Organization methods
   getOrganizations(): Promise<Organization[]>;
+  getOrganizationsBySalesRep(salesRepId: number): Promise<Organization[]>;
   getOrganizationById(id: number): Promise<Organization | undefined>;
   createOrganization(organization: InsertOrganization): Promise<Organization>;
   updateOrganization(id: number, organization: Partial<InsertOrganization>): Promise<Organization>;
@@ -680,6 +681,13 @@ export class DatabaseStorage implements IStorage {
   // Organization methods
   async getOrganizations(): Promise<Organization[]> {
     return db.select().from(organizations).orderBy(asc(organizations.name));
+  }
+  
+  async getOrganizationsBySalesRep(salesRepId: number): Promise<Organization[]> {
+    return db.select()
+      .from(organizations)
+      .where(eq(organizations.assignedSalesRepId, salesRepId))
+      .orderBy(asc(organizations.name));
   }
 
   async getOrganizationById(id: number): Promise<Organization | undefined> {

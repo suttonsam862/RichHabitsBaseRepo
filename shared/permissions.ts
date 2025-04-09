@@ -6,6 +6,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   [ROLES.MANAGER]: [
     PERMISSIONS.VIEW_USERS,
     
+    PERMISSIONS.VIEW_ORGANIZATIONS,
+    PERMISSIONS.REQUEST_ORGANIZATION,
+    PERMISSIONS.MANAGE_ORGANIZATIONS,
+    
     PERMISSIONS.CREATE_LEADS,
     PERMISSIONS.EDIT_LEADS,
     PERMISSIONS.VIEW_LEADS,
@@ -24,6 +28,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     PERMISSIONS.VIEW_ANALYTICS,
   ],
   [ROLES.AGENT]: [
+    PERMISSIONS.VIEW_ORGANIZATIONS,
+    PERMISSIONS.REQUEST_ORGANIZATION,
+    
     PERMISSIONS.CREATE_LEADS,
     PERMISSIONS.EDIT_LEADS,
     PERMISSIONS.VIEW_LEADS,
@@ -140,6 +147,14 @@ export function getPermissionGroups(): { category: string; permissions: Permissi
       permissions: [
         PERMISSIONS.MANAGE_USERS,
         PERMISSIONS.VIEW_USERS,
+      ],
+    },
+    {
+      category: 'Organization Management',
+      permissions: [
+        PERMISSIONS.VIEW_ORGANIZATIONS,
+        PERMISSIONS.REQUEST_ORGANIZATION,
+        PERMISSIONS.MANAGE_ORGANIZATIONS,
       ],
     },
     {

@@ -9,21 +9,32 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { PlusCircle, Search, Filter, Download, Trash2, AlertTriangle } from "lucide-react";
+import { PlusCircle, Search, Filter, Download, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { insertOrderSchema } from "@shared/schema";
-import { Order, OrderStatus } from "@/types";
+import { Order, OrderStatus, Product } from "@/types";
 import { generateOrderId } from "@/lib/utils";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useAuth } from "@/hooks/use-auth";
 
 const formSchema = insertOrderSchema.extend({
   status: z.enum(["pending", "processing", "paid", "shipped", "delivered", "cancelled", "refunded"]),
+  organizationId: z.string().optional(),
+  productIds: z.array(z.string()).optional(),
 });
+
+interface Organization {
+  id: number;
+  name: string;
+  type: string;
+  industry: string;
+  status: string;
+}
 
 export default function Orders() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,13 +45,38 @@ export default function Orders() {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
+  // Query for orders
   const { data, isLoading } = useQuery({
     queryKey: ['/api/orders'],
     refetchInterval: false,
     refetchOnWindowFocus: false,
+  });
+  
+  // Query for organizations - filtered by current user's assignments if they're a sales agent
+  const { data: organizationsData, isLoading: isLoadingOrganizations } = useQuery({
+    queryKey: ['/api/organizations'],
+    select: (data: any) => {
+      // If user has admin role, show all organizations
+      // Otherwise, filter to only show organizations assigned to this sales rep
+      if (user?.role === 'admin') {
+        return data?.data || [];
+      } else {
+        // In a real system, this would be filtered by the server based on user access
+        // This is a simplified client-side filter for demonstration
+        return (data?.data || []).filter((org: Organization) => org.status === 'active');
+      }
+    },
+  });
+  
+  // Query for products
+  const { data: productsData, isLoading: isLoadingProducts } = useQuery<Product[]>({
+    queryKey: ['/api/products'],
+    select: (data: any) => data?.data || [],
   });
 
   // Sample data - would normally come from the API
@@ -110,6 +146,8 @@ export default function Orders() {
       notes: "",
       items: "",
       shippingAddress: "",
+      organizationId: undefined,
+      productIds: [],
     },
   });
 
@@ -124,6 +162,7 @@ export default function Orders() {
         description: "New order has been added successfully",
       });
       setOpenAddDialog(false);
+      setSelectedProducts([]);
       form.reset({
         orderId: generateOrderId(),
         customerName: "",
@@ -133,6 +172,8 @@ export default function Orders() {
         notes: "",
         items: "",
         shippingAddress: "",
+        organizationId: undefined,
+        productIds: [],
       });
     },
     onError: (error) => {
@@ -331,6 +372,49 @@ export default function Orders() {
                       )}
                     />
                     
+                    {/* New Organization Field */}
+                    <FormField
+                      control={form.control}
+                      name="organizationId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Select Organization</FormLabel>
+                          <FormControl>
+                            <Select 
+                              onValueChange={field.onChange} 
+                              value={field.value}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select an organization" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {isLoadingOrganizations ? (
+                                  <div className="flex items-center justify-center py-2">
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    <span>Loading organizations...</span>
+                                  </div>
+                                ) : organizationsData?.length > 0 ? (
+                                  organizationsData.map((org: Organization) => (
+                                    <SelectItem 
+                                      key={org.id} 
+                                      value={org.id.toString()}
+                                    >
+                                      {org.name} ({org.type})
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <SelectItem value="" disabled>
+                                    No organizations available
+                                  </SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
                     <FormField
                       control={form.control}
                       name="customerName"
@@ -340,6 +424,64 @@ export default function Orders() {
                           <FormControl>
                             <Input placeholder="John Doe" {...field} />
                           </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    {/* Product Selection Field */}
+                    <FormField
+                      control={form.control}
+                      name="productIds"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Select Products</FormLabel>
+                          <div className="space-y-2">
+                            {isLoadingProducts ? (
+                              <div className="flex items-center">
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                <span>Loading products...</span>
+                              </div>
+                            ) : productsData?.length > 0 ? (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border rounded-md">
+                                {productsData.map((product: any) => (
+                                  <div 
+                                    key={product.id} 
+                                    className="flex items-center space-x-2"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      id={`product-${product.id}`}
+                                      value={product.id.toString()}
+                                      checked={selectedProducts.includes(product.id.toString())}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (e.target.checked) {
+                                          setSelectedProducts([...selectedProducts, value]);
+                                          field.onChange([...selectedProducts, value]);
+                                        } else {
+                                          const filtered = selectedProducts.filter(id => id !== value);
+                                          setSelectedProducts(filtered);
+                                          field.onChange(filtered);
+                                        }
+                                      }}
+                                      className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                                    />
+                                    <label 
+                                      htmlFor={`product-${product.id}`}
+                                      className="text-sm text-gray-700 truncate"
+                                    >
+                                      {product.name} ({product.sport}) - {product.wholesalePrice}
+                                    </label>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-500 italic">
+                                No products available
+                              </div>
+                            )}
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}

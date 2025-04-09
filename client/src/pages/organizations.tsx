@@ -16,12 +16,12 @@ import { Switch } from "@/components/ui/switch";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Loader2, Users, User, Building, Search, Phone, Mail, MapPin, PlusCircle, Edit, Trash, FileText, ShoppingBag, DollarSign, Save, Plus } from "lucide-react";
+import { Loader2, Users, User, Building, Search, Phone, Mail, MapPin, PlusCircle, Edit, Trash, FileText, ShoppingBag, DollarSign, Save, Plus, Dumbbell, GraduationCap, Trophy, UsersRound } from "lucide-react";
 
 interface Organization {
   id: number;
   name: string;
-  type: 'client' | 'vendor' | 'partner';
+  type: 'client' | 'vendor' | 'partner' | 'school' | 'sports_team' | 'club' | 'gym';
   industry: string;
   website: string;
   phone: string;
@@ -37,6 +37,7 @@ interface Organization {
   primaryContactId: number | null;
   assignedSalesRepId: number | null;
   totalRevenue: string;
+  icon?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -1049,13 +1050,57 @@ export default function OrganizationsPage() {
       <Dialog open={addOrgDialogOpen} onOpenChange={setAddOrgDialogOpen}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add New Organization</DialogTitle>
+            <DialogTitle>Add New Customer Organization</DialogTitle>
             <DialogDescription>
-              Create a new organization record
+              Create a new customer organization record
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="icon">Organization Icon</Label>
+              <Select
+                value={editedOrg.icon || 'building'}
+                onValueChange={(value) => setEditedOrg({...editedOrg, icon: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an icon" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="building">
+                    <div className="flex items-center">
+                      <Building className="mr-2 h-4 w-4" />
+                      <span>Building</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="school">
+                    <div className="flex items-center">
+                      <GraduationCap className="mr-2 h-4 w-4" />
+                      <span>School</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="gym">
+                    <div className="flex items-center">
+                      <Dumbbell className="mr-2 h-4 w-4" />
+                      <span>Gym</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="team">
+                    <div className="flex items-center">
+                      <UsersRound className="mr-2 h-4 w-4" />
+                      <span>Team</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="club">
+                    <div className="flex items-center">
+                      <Trophy className="mr-2 h-4 w-4" />
+                      <span>Club</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="orgName">Organization Name</Label>
               <Input
@@ -1066,7 +1111,7 @@ export default function OrganizationsPage() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="orgType">Type</Label>
+              <Label htmlFor="orgType">Organization Type</Label>
               <Select
                 value={editedOrg.type || 'client'}
                 onValueChange={(value) => setEditedOrg({...editedOrg, type: value as any})}
@@ -1076,19 +1121,32 @@ export default function OrganizationsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="client">Client</SelectItem>
-                  <SelectItem value="vendor">Vendor</SelectItem>
-                  <SelectItem value="partner">Partner</SelectItem>
+                  <SelectItem value="school">School</SelectItem>
+                  <SelectItem value="sports_team">Sports Team</SelectItem>
+                  <SelectItem value="club">Club</SelectItem>
+                  <SelectItem value="gym">Gym/Fitness Center</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="industry">Industry</Label>
-              <Input
-                id="industry"
+              <Select
                 value={editedOrg.industry || ''}
-                onChange={(e) => setEditedOrg({...editedOrg, industry: e.target.value})}
-              />
+                onValueChange={(value) => setEditedOrg({...editedOrg, industry: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select industry" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="education">Education</SelectItem>
+                  <SelectItem value="sports">Sports</SelectItem>
+                  <SelectItem value="fitness">Fitness</SelectItem>
+                  <SelectItem value="recreation">Recreation</SelectItem>
+                  <SelectItem value="health">Health & Wellness</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="space-y-2">

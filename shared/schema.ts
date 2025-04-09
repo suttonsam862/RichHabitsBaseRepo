@@ -199,7 +199,7 @@ export const insertCustomizationOptionSchema = createInsertSchema(customizationO
 export const organizations = pgTable('organizations', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
-  type: text('type').notNull().default('client'), // 'client', 'vendor', 'partner'
+  type: text('type').notNull().default('client'), // 'client', 'vendor', 'partner', 'school', 'sports_team', 'club', 'gym'
   industry: text('industry').notNull(),
   website: text('website'),
   phone: text('phone'),
@@ -215,6 +215,7 @@ export const organizations = pgTable('organizations', {
   primaryContactId: integer('primary_contact_id'),
   assignedSalesRepId: integer('assigned_sales_rep_id'),  // Will be linked later
   totalRevenue: numeric('total_revenue').default('0.00'),
+  icon: text('icon'), // Icon identifier for UI: 'building', 'school', 'gym', 'team', 'club'
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

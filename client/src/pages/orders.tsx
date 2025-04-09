@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { PlusCircle, Search, Filter, Download, Trash2, AlertTriangle, Loader2 } from "lucide-react";
+import { PlusCircle, Search, Filter, Download, Trash2, AlertTriangle, Loader2, Plus, Minus, ShoppingBag } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -38,6 +38,7 @@ interface Organization {
 
 export default function Orders() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [productSearchTerm, setProductSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
   const [openViewDialog, setOpenViewDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
@@ -78,6 +79,21 @@ export default function Orders() {
     queryKey: ['/api/products'],
     select: (data: any) => data?.data || [],
   });
+  
+  // Filter products based on search term
+  const filteredProducts = useMemo(() => {
+    if (!productsData) return [];
+    
+    if (!productSearchTerm) return productsData;
+    
+    const searchLower = productSearchTerm.toLowerCase();
+    return productsData.filter((product: any) => 
+      product.name?.toLowerCase().includes(searchLower) || 
+      product.sport?.toLowerCase().includes(searchLower) || 
+      product.sku?.toLowerCase().includes(searchLower) || 
+      product.description?.toLowerCase().includes(searchLower)
+    );
+  }, [productsData, productSearchTerm]);
 
   // Sample data - would normally come from the API
   const sampleOrders: Order[] = [
@@ -437,50 +453,102 @@ export default function Orders() {
                         <FormItem>
                           <FormLabel>Select Products</FormLabel>
                           <div className="space-y-2">
-                            {isLoadingProducts ? (
-                              <div className="flex items-center">
-                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                <span>Loading products...</span>
+                            <div className="space-y-4">
+                              <div className="relative">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                                <Input
+                                  placeholder="Search products..."
+                                  className="pl-8 w-full"
+                                  value={productSearchTerm}
+                                  onChange={(e) => setProductSearchTerm(e.target.value)}
+                                />
                               </div>
-                            ) : productsData?.length > 0 ? (
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border rounded-md">
-                                {productsData.map((product: any) => (
-                                  <div 
-                                    key={product.id} 
-                                    className="flex items-center space-x-2"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      id={`product-${product.id}`}
-                                      value={product.id.toString()}
-                                      checked={selectedProducts.includes(product.id.toString())}
-                                      onChange={(e) => {
-                                        const value = e.target.value;
-                                        if (e.target.checked) {
-                                          setSelectedProducts([...selectedProducts, value]);
-                                          field.onChange([...selectedProducts, value]);
-                                        } else {
-                                          const filtered = selectedProducts.filter(id => id !== value);
-                                          setSelectedProducts(filtered);
-                                          field.onChange(filtered);
-                                        }
-                                      }}
-                                      className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
-                                    />
-                                    <label 
-                                      htmlFor={`product-${product.id}`}
-                                      className="text-sm text-gray-700 truncate"
+                              
+                              {isLoadingProducts ? (
+                                <div className="flex items-center justify-center h-40 border rounded-md">
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                  <span>Loading products...</span>
+                                </div>
+                              ) : filteredProducts?.length > 0 ? (
+                                <div className="space-y-2 max-h-60 overflow-y-auto p-2 border rounded-md">
+                                  {filteredProducts.map((product: any) => (
+                                    <div 
+                                      key={product.id} 
+                                      className="flex items-center justify-between p-2 border rounded-md hover:bg-gray-50"
                                     >
-                                      {product.name} ({product.sport}) - {product.wholesalePrice}
-                                    </label>
+                                      <div className="flex-1">
+                                        <div className="font-medium">{product.name}</div>
+                                        <div className="text-sm text-gray-500">
+                                          {product.sport} • SKU: {product.sku} • {product.wholesalePrice}
+                                        </div>
+                                        {selectedProducts.includes(product.id.toString()) && (
+                                          <div className="text-xs text-gray-500 mt-1">
+                                            <span className="font-medium">Sizes:</span> XS, S, M, L, XL, XXL (view only)
+                                          </div>
+                                        )}
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant={selectedProducts.includes(product.id.toString()) ? "destructive" : "outline"}
+                                        className="ml-2"
+                                        onClick={() => {
+                                          const value = product.id.toString();
+                                          if (selectedProducts.includes(value)) {
+                                            // Remove the product
+                                            const filtered = selectedProducts.filter(id => id !== value);
+                                            setSelectedProducts(filtered);
+                                            field.onChange(filtered);
+                                          } else {
+                                            // Add the product
+                                            setSelectedProducts([...selectedProducts, value]);
+                                            field.onChange([...selectedProducts, value]);
+                                          }
+                                        }}
+                                      >
+                                        {selectedProducts.includes(product.id.toString()) ? (
+                                          <>
+                                            <Minus className="h-4 w-4 mr-1" />
+                                            Remove
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Plus className="h-4 w-4 mr-1" />
+                                            Add
+                                          </>
+                                        )}
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-center h-40 border rounded-md">
+                                  <div className="text-center">
+                                    <ShoppingBag className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                                    <div className="text-sm text-gray-500">
+                                      {productSearchTerm ? "No products match your search" : "No products available"}
+                                    </div>
                                   </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="text-sm text-gray-500 italic">
-                                No products available
-                              </div>
-                            )}
+                                </div>
+                              )}
+                              
+                              {selectedProducts.length > 0 && (
+                                <div className="border rounded-md p-3 bg-gray-50">
+                                  <h4 className="font-medium text-sm mb-2">Selected Products ({selectedProducts.length})</h4>
+                                  <div className="text-sm text-gray-600">
+                                    {selectedProducts.map((id, index) => {
+                                      const product = productsData?.find((p: any) => p.id.toString() === id);
+                                      return product ? (
+                                        <span key={id}>
+                                          {product.name}
+                                          {index < selectedProducts.length - 1 ? ', ' : ''}
+                                        </span>
+                                      ) : null;
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                           <FormMessage />
                         </FormItem>

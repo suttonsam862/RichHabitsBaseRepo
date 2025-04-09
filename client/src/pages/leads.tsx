@@ -9,8 +9,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { PlusCircle, Search, Filter } from "lucide-react";
+import { PlusCircle, Search, Filter, Inbox, UserCircle } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -19,6 +20,7 @@ import { formatDate } from "@/lib/utils";
 import { insertLeadSchema } from "@shared/schema";
 import { Lead, LeadStatus } from "@/types";
 import { HelpIconOnly } from "@/components/ui/help-tooltip";
+import { useAuth } from "@/hooks/use-auth";
 
 const formSchema = insertLeadSchema.extend({
   status: z.enum(["new", "contacted", "qualified", "proposal", "negotiation", "closed", "lost"]),
@@ -255,6 +257,24 @@ export default function Leads() {
       updateLeadMutation.mutate({ ...values, id: selectedLeadId });
     }
   }
+
+  const { user } = useAuth();
+  
+  // Create filtered lists for unclaimed and user's leads
+  const unclaimedLeads = leads.filter(lead => lead.status === "new" && !lead.salesRepId)
+    .filter(lead => {
+      const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           lead.email.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesSearch;
+    });
+  
+  const myLeads = leads.filter(lead => lead.salesRepId === user?.id)
+    .filter(lead => {
+      const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           lead.email.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
 
   return (
     <>
@@ -521,65 +541,78 @@ export default function Leads() {
             </div>
           </CardHeader>
           <CardContent className="bg-white">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
-                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="text-right p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredLeads.length > 0 ? (
-                    filteredLeads.map((lead) => (
-                      <tr key={lead.id} className="hover:bg-gray-50">
-                        <td className="p-4 text-sm text-gray-900">{lead.name}</td>
-                        <td className="p-4 text-sm text-gray-600">{lead.email}</td>
-                        <td className="p-4 text-sm text-gray-600">{lead.phone}</td>
-                        <td className="p-4 text-sm text-gray-600">{lead.source}</td>
-                        <td className="p-4">
-                          <Badge className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(lead.status as LeadStatus)}`}>
-                            {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
-                          </Badge>
-                        </td>
-                        <td className="p-4 text-right">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="mr-2" 
-                            onClick={() => {
-                              // Display lead details in a view dialog
-                              setSelectedLead(lead);
-                              setOpenViewDialog(true);
-                            }}
-                          >
-                            View
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              // Open edit dialog with lead details
-                              form.reset({
-                                name: lead.name,
-                                email: lead.email,
-                                phone: lead.phone || "",
-                                source: lead.source,
-                                status: lead.status as any,
-                                notes: lead.notes || ""
-                              });
-                              setSelectedLeadId(lead.id);
-                              setOpenEditDialog(true);
-                            }}
-                          >
-                            Edit
-                          </Button>
-                        </td>
+            <Tabs defaultValue="unclaimed" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="unclaimed" className="flex items-center">
+                  <Inbox className="h-4 w-4 mr-2" />
+                  Unclaimed Leads
+                </TabsTrigger>
+                <TabsTrigger value="my-leads" className="flex items-center">
+                  <UserCircle className="h-4 w-4 mr-2" />
+                  My Leads
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="unclaimed" className="mt-2">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                        <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                        <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                        <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="text-right p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                       </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {unclaimedLeads.length > 0 ? (
+                        unclaimedLeads.map((lead) => (
+                          <tr key={lead.id} className="hover:bg-gray-50">
+                            <td className="p-4 text-sm text-gray-900">{lead.name}</td>
+                            <td className="p-4 text-sm text-gray-600">{lead.email}</td>
+                            <td className="p-4 text-sm text-gray-600">{lead.phone}</td>
+                            <td className="p-4 text-sm text-gray-600">{lead.source}</td>
+                            <td className="p-4">
+                              <Badge className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(lead.status as LeadStatus)}`}>
+                                {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
+                              </Badge>
+                            </td>
+                            <td className="p-4 text-right">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="mr-2" 
+                                onClick={() => {
+                                  // Display lead details in a view dialog
+                                  setSelectedLead(lead);
+                                  setOpenViewDialog(true);
+                                }}
+                              >
+                                View
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  // Open edit dialog with lead details
+                                  form.reset({
+                                    name: lead.name,
+                                    email: lead.email,
+                                    phone: lead.phone || "",
+                                    source: lead.source,
+                                    status: lead.status as any,
+                                    notes: lead.notes || ""
+                                  });
+                                  setSelectedLeadId(lead.id);
+                                  setOpenEditDialog(true);
+                                }}
+                              >
+                                Edit
+                              </Button>
+                            </td>
+                          </tr>
                     ))
                   ) : (
                     <tr>
@@ -591,6 +624,81 @@ export default function Leads() {
                 </tbody>
               </table>
             </div>
+              </TabsContent>
+              
+              <TabsContent value="my-leads" className="mt-2">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                        <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                        <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                        <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="text-right p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {myLeads.length > 0 ? (
+                        myLeads.map((lead) => (
+                          <tr key={lead.id} className="hover:bg-gray-50">
+                            <td className="p-4 text-sm text-gray-900">{lead.name}</td>
+                            <td className="p-4 text-sm text-gray-600">{lead.email}</td>
+                            <td className="p-4 text-sm text-gray-600">{lead.phone}</td>
+                            <td className="p-4 text-sm text-gray-600">{lead.source}</td>
+                            <td className="p-4">
+                              <Badge className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(lead.status as LeadStatus)}`}>
+                                {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
+                              </Badge>
+                            </td>
+                            <td className="p-4 text-right">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="mr-2" 
+                                onClick={() => {
+                                  // Display lead details in a view dialog
+                                  setSelectedLead(lead);
+                                  setOpenViewDialog(true);
+                                }}
+                              >
+                                View
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  // Open edit dialog with lead details
+                                  form.reset({
+                                    name: lead.name,
+                                    email: lead.email,
+                                    phone: lead.phone || "",
+                                    source: lead.source,
+                                    status: lead.status as any,
+                                    notes: lead.notes || ""
+                                  });
+                                  setSelectedLeadId(lead.id);
+                                  setOpenEditDialog(true);
+                                }}
+                              >
+                                Edit
+                              </Button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="p-4 text-center text-gray-500">
+                            No leads assigned to you found matching your criteria.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>

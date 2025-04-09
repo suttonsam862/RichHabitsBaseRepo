@@ -26,6 +26,7 @@ const formSchema = insertOrderSchema.extend({
   status: z.enum(["pending", "processing", "paid", "shipped", "delivered", "cancelled", "refunded"]),
   organizationId: z.string().optional(),
   productIds: z.array(z.string()).optional(),
+  itemName: z.string().optional(),
 });
 
 interface Organization {
@@ -164,6 +165,7 @@ export default function Orders() {
       shippingAddress: "",
       organizationId: undefined,
       productIds: [],
+      itemName: "",
     },
   });
 
@@ -190,6 +192,7 @@ export default function Orders() {
         shippingAddress: "",
         organizationId: undefined,
         productIds: [],
+        itemName: "",
       });
     },
     onError: (error) => {
@@ -439,6 +442,21 @@ export default function Orders() {
                           <FormLabel>Customer Name</FormLabel>
                           <FormControl>
                             <Input placeholder="John Doe" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    {/* Item Name Field */}
+                    <FormField
+                      control={form.control}
+                      name="itemName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Item Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Custom Jersey Set" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -720,7 +738,8 @@ export default function Orders() {
                                 status: order.status as any,
                                 items: order.items,
                                 shippingAddress: order.shippingAddress || "",
-                                notes: order.notes || ""
+                                notes: order.notes || "",
+                                itemName: order.itemName || ""
                               });
                               setOpenEditDialog(true);
                             }}

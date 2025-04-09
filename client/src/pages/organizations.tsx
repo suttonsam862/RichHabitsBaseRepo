@@ -35,6 +35,7 @@ interface Organization {
   notes: string | null;
   status: 'active' | 'inactive';
   primaryContactId: number | null;
+  assignedSalesRepId: number | null;
   totalRevenue: string;
   createdAt: string;
   updatedAt: string;
@@ -95,6 +96,10 @@ export default function OrganizationsPage() {
   const { data: ordersData, isLoading: ordersLoading } = useQuery({
     queryKey: ['/api/organizations', selectedOrg?.id, 'orders'],
     enabled: !!selectedOrg,
+  });
+  
+  const { data: salesTeamData, isLoading: salesTeamLoading } = useQuery({
+    queryKey: ['/api/admin/sales-team'],
   });
 
   const createOrganizationMutation = useMutation({
@@ -198,12 +203,38 @@ export default function OrganizationsPage() {
     }
   });
 
+  // Define query result interfaces
+  interface OrganizationsQueryResult {
+    data: Organization[];
+  }
+  
+  interface ContactsQueryResult {
+    data: Contact[];
+  }
+  
+  interface OrdersQueryResult {
+    data: Order[];
+  }
+  
+  interface SalesTeamQueryResult {
+    data: {
+      id: number;
+      firstName: string;
+      lastName: string;
+      role: string;
+      email: string;
+      phone: string;
+      [key: string]: any;
+    }[];
+  }
+  
   // Use the data from the API
-  const organizations = organizationsData?.data || [];
-  const contacts = contactsData?.data || [];
-  const orders = ordersData?.data || [];
+  const organizations = (organizationsData as OrganizationsQueryResult)?.data || [];
+  const contacts = (contactsData as ContactsQueryResult)?.data || [];
+  const orders = (ordersData as OrdersQueryResult)?.data || [];
+  const salesTeam = (salesTeamData as SalesTeamQueryResult)?.data || [];
 
-  const filteredOrganizations = organizations.filter(org => {
+  const filteredOrganizations = organizations.filter((org: Organization) => {
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -299,7 +330,7 @@ export default function OrganizationsPage() {
     }
   };
 
-  const primaryContact = contacts.find(c => c.isPrimary);
+  const primaryContact = contacts.find((c: Contact) => c.isPrimary);
 
   return (
     <>
@@ -370,10 +401,10 @@ export default function OrganizationsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredOrganizations.map((org) => {
+                    {filteredOrganizations.map((org: Organization) => {
                       // Find primary contact for this organization
                       const primaryContact = contacts.find(
-                        c => c.organizationId === org.id && c.isPrimary
+                        (c: Contact) => c.organizationId === org.id && c.isPrimary
                       );
                       
                       return (
@@ -471,6 +502,54 @@ export default function OrganizationsPage() {
                 <TabsContent value="details" className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
+                      <div>
+                        <h3 className="text-lg font-medium">Team Assignment</h3>
+                        {editMode ? (
+                          <div className="space-y-2 mt-3">
+                            <Label htmlFor="editSalesRep">Assigned Sales Rep</Label>
+                            <Select
+                              value={String(editedOrg.assignedSalesRepId ?? (selectedOrg.assignedSalesRepId || ''))}
+                              onValueChange={(value) => 
+                                setEditedOrg({...editedOrg, assignedSalesRepId: value ? parseInt(value) : null})
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a sales rep" />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-[200px] overflow-y-auto">
+                                <SelectItem value="">None</SelectItem>
+                                {salesTeam.map((rep: {id: number; firstName: string; lastName: string; role: string}) => (
+                                  <SelectItem key={rep.id} value={String(rep.id)}>
+                                    {rep.firstName} {rep.lastName} - {rep.role}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ) : (
+                          <div className="mt-3">
+                            {selectedOrg.assignedSalesRepId ? (
+                              (() => {
+                                const assignedRep = salesTeam.find((rep: {id: number; firstName: string; lastName: string; role: string}) => rep.id === selectedOrg.assignedSalesRepId);
+                                return (
+                                  <div className="flex items-center">
+                                    <User className="h-4 w-4 mr-2 text-gray-500" />
+                                    <span>
+                                      {assignedRep ? `${assignedRep.firstName} ${assignedRep.lastName} - ${assignedRep.role}` : 'Sales Rep Not Found'}
+                                    </span>
+                                  </div>
+                                );
+                              })()
+                            ) : (
+                              <div className="text-gray-500 flex items-center">
+                                <User className="h-4 w-4 mr-2" />
+                                <span>No sales rep assigned</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      
                       <div>
                         <h3 className="text-lg font-medium">Contact Information</h3>
                         
@@ -968,7 +1047,7 @@ export default function OrganizationsPage() {
 
       {/* Add Organization Dialog */}
       <Dialog open={addOrgDialogOpen} onOpenChange={setAddOrgDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Organization</DialogTitle>
             <DialogDescription>
@@ -1042,6 +1121,28 @@ export default function OrganizationsPage() {
             </div>
             
             <Separator />
+            
+            <div className="space-y-2">
+              <Label htmlFor="salesRep">Assigned Sales Rep</Label>
+              <Select
+                value={String(editedOrg.assignedSalesRepId || '')}
+                onValueChange={(value) => 
+                  setEditedOrg({...editedOrg, assignedSalesRepId: value ? parseInt(value) : null})
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a sales rep" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px] overflow-y-auto">
+                  <SelectItem value="">None</SelectItem>
+                  {salesTeam.map((rep: {id: number; firstName: string; lastName: string; role: string}) => (
+                    <SelectItem key={rep.id} value={String(rep.id)}>
+                      {rep.firstName} {rep.lastName} - {rep.role}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             
             <div className="space-y-2">
               <Label htmlFor="address">Address</Label>

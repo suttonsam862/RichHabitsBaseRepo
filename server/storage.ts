@@ -318,12 +318,31 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Order methods
-  async getOrders(): Promise<Order[]> {
-    return db.select().from(orders).orderBy(desc(orders.createdAt));
+  async getOrders(userId?: number): Promise<Order[]> {
+    if (userId) {
+      // If userId is provided, filter by assigned sales rep
+      return db.select()
+        .from(orders)
+        .where(eq(orders.assignedSalesRepId, userId))
+        .orderBy(desc(orders.createdAt));
+    } else {
+      // If no userId, return all orders
+      return db.select().from(orders).orderBy(desc(orders.createdAt));
+    }
   }
   
-  async getRecentOrders(limit: number = 5): Promise<Order[]> {
-    return db.select().from(orders).orderBy(desc(orders.createdAt)).limit(limit);
+  async getRecentOrders(limit: number = 5, userId?: number): Promise<Order[]> {
+    if (userId) {
+      // If userId is provided, filter by assigned sales rep
+      return db.select()
+        .from(orders)
+        .where(eq(orders.assignedSalesRepId, userId))
+        .orderBy(desc(orders.createdAt))
+        .limit(limit);
+    } else {
+      // If no userId, return all recent orders
+      return db.select().from(orders).orderBy(desc(orders.createdAt)).limit(limit);
+    }
   }
   
   async createOrder(order: InsertOrder): Promise<Order> {

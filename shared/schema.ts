@@ -38,6 +38,7 @@ export const PERMISSIONS = {
   DELETE_ORDERS: 'delete_orders',
   VIEW_ORDERS: 'view_orders',
   APPROVE_ORDERS: 'approve_orders',
+  VIEW_ALL_ORDERS: 'view_all_orders',
   
   // Design management
   CREATE_DESIGNS: 'create_designs',
@@ -110,6 +111,13 @@ export const orders = pgTable("orders", {
   items: text("items"),
   shippingAddress: text("shipping_address"),
   notes: text("notes"),
+  assignedSalesRepId: integer("assigned_sales_rep_id"),
+  assignedDesignerId: integer("assigned_designer_id"),
+  assignedManufacturerId: integer("assigned_manufacturer_id"),
+  organizationId: integer("organization_id"),
+  priorityLevel: text("priority_level").default("medium"),
+  dueDate: text("due_date"),
+  updatedAt: timestamp("updated_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -142,6 +150,13 @@ export const insertLeadSchema = createInsertSchema(leads).omit({ id: true, creat
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
 export const insertActivitySchema = createInsertSchema(activities).omit({ id: true, createdAt: true });
+
+// Insert types
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertLead = z.infer<typeof insertLeadSchema>;
+export type InsertOrder = z.infer<typeof insertOrderSchema>;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type InsertActivity = z.infer<typeof insertActivitySchema>;
 
 // Types
 // Products schema
@@ -195,6 +210,12 @@ export const insertProductSchema = createInsertSchema(products).omit({ id: true,
 export const insertFabricOptionSchema = createInsertSchema(fabricOptions).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertFabricCutSchema = createInsertSchema(fabricCuts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCustomizationOptionSchema = createInsertSchema(customizationOptions).omit({ id: true, createdAt: true, updatedAt: true });
+
+// Insert types for catalogs
+export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type InsertFabricOption = z.infer<typeof insertFabricOptionSchema>;
+export type InsertFabricCut = z.infer<typeof insertFabricCutSchema>;
+export type InsertCustomizationOption = z.infer<typeof insertCustomizationOptionSchema>;
 // Organizations table
 export const organizations = pgTable('organizations', {
   id: serial('id').primaryKey(),

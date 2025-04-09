@@ -172,8 +172,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Orders endpoints
   app.get("/api/orders", async (req, res) => {
     try {
-      const orders = await storage.getOrders();
-      res.json({ data: orders });
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as any;
+      
+      // Check if user has permission to see all orders or just their assigned ones
+      const canViewAllOrders = hasPermission(
+        user.role,
+        user.permissions,
+        PERMISSIONS.VIEW_ALL_ORDERS
+      );
+      
+      if (canViewAllOrders) {
+        // User has permission to view all orders
+        const orders = await storage.getOrders();
+        return res.json({ data: orders });
+      } else {
+        // User can only view orders assigned to them
+        const orders = await storage.getOrders(user.id);
+        return res.json({ data: orders });
+      }
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -181,8 +202,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/orders/recent", async (req, res) => {
     try {
-      const recentOrders = await storage.getRecentOrders(3);
-      res.json({ data: recentOrders });
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as any;
+      
+      // Check if user has permission to see all orders or just their assigned ones
+      const canViewAllOrders = hasPermission(
+        user.role,
+        user.permissions,
+        PERMISSIONS.VIEW_ALL_ORDERS
+      );
+      
+      if (canViewAllOrders) {
+        // User has permission to view all orders
+        const recentOrders = await storage.getRecentOrders(3);
+        return res.json({ data: recentOrders });
+      } else {
+        // User can only view orders assigned to them
+        const recentOrders = await storage.getRecentOrders(3, user.id);
+        return res.json({ data: recentOrders });
+      }
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

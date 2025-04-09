@@ -17,6 +17,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     PERMISSIONS.CREATE_ORDERS,
     PERMISSIONS.EDIT_ORDERS,
     PERMISSIONS.VIEW_ORDERS,
+    PERMISSIONS.VIEW_ALL_ORDERS,
     
     PERMISSIONS.VIEW_CATALOG,
     PERMISSIONS.MANAGE_CATALOG,
@@ -173,6 +174,7 @@ export function getPermissionGroups(): { category: string; permissions: Permissi
         PERMISSIONS.EDIT_ORDERS,
         PERMISSIONS.DELETE_ORDERS,
         PERMISSIONS.VIEW_ORDERS,
+        PERMISSIONS.VIEW_ALL_ORDERS,
         PERMISSIONS.APPROVE_ORDERS,
       ],
     },

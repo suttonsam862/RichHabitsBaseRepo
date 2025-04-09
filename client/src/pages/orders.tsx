@@ -478,9 +478,7 @@ export default function Orders() {
                                     >
                                       <div className="flex-1">
                                         <div className="font-medium">
-                                          {typeof product.item === 'string' && !product.item.startsWith('$') 
-                                            ? product.item 
-                                            : product.name}
+                                          {product.name}
                                         </div>
                                         <div className="text-sm text-gray-500">
                                           {product.sport} • SKU: {product.sku} • {product.wholesalePrice}
@@ -544,7 +542,7 @@ export default function Orders() {
                                       const product = productsData?.find((p: any) => p.id.toString() === id);
                                       return product ? (
                                         <span key={id}>
-                                          {typeof product.item === 'string' && !product.item.startsWith('$') ? product.item : product.name} ({product.sport})
+                                          {product.name} ({product.sport})
                                           {index < selectedProducts.length - 1 ? ', ' : ''}
                                         </span>
                                       ) : null;

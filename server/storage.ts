@@ -340,6 +340,32 @@ export class DatabaseStorage implements IStorage {
   }
   
   async deleteOrder(id: number): Promise<void> {
+    // First, get the order to find its orderId
+    const order = await this.getOrderById(id);
+    if (!order) {
+      throw new Error("Order not found");
+    }
+    
+    // Check if there are any design projects associated with this order
+    const designProjectsList = await db
+      .select()
+      .from(designProjects)
+      .where(eq(designProjects.orderId, order.orderId));
+    
+    // If there are design projects, delete them first along with all related records
+    if (designProjectsList.length > 0) {
+      for (const project of designProjectsList) {
+        // Delete design versions, revisions, and messages
+        await db.delete(designVersions).where(eq(designVersions.projectId, project.id));
+        await db.delete(designRevisions).where(eq(designRevisions.designId, project.id));
+        await db.delete(designMessages).where(eq(designMessages.designId, project.id));
+        
+        // Delete the design project
+        await db.delete(designProjects).where(eq(designProjects.id, project.id));
+      }
+    }
+    
+    // Now delete the order
     await db.delete(orders).where(eq(orders.id, id));
   }
   

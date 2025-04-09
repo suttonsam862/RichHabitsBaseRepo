@@ -833,21 +833,22 @@ export default function OrganizationsPage() {
                           <CardContent className="p-4">
                             <div className="flex items-start">
                               <Avatar className="h-10 w-10 mr-3">
-                                <AvatarImage src={contact.avatarUrl || ""} />
+                                <AvatarImage src={contact?.avatarUrl || ""} />
                                 <AvatarFallback>
-                                  {contact.firstName.charAt(0)}{contact.lastName.charAt(0)}
+                                  {contact?.firstName ? contact.firstName.charAt(0) : ''}
+                                  {contact?.lastName ? contact.lastName.charAt(0) : ''}
                                 </AvatarFallback>
                               </Avatar>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between">
                                   <div>
                                     <div className="font-medium">
-                                      {contact.firstName} {contact.lastName}
-                                      {contact.isPrimary && (
+                                      {contact?.firstName || 'No'} {contact?.lastName || 'Contact'}
+                                      {contact?.isPrimary && (
                                         <Badge className="ml-2 text-xs bg-blue-100 text-blue-800 border border-blue-300">Primary</Badge>
                                       )}
                                     </div>
-                                    <div className="text-gray-500 text-sm">{contact.title}</div>
+                                    <div className="text-gray-500 text-sm">{contact?.title || 'No Title'}</div>
                                   </div>
                                   <div className="flex">
                                     <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -861,8 +862,8 @@ export default function OrganizationsPage() {
                                 <div className="mt-2 space-y-1 text-sm">
                                   <div className="flex items-center">
                                     <Mail className="h-3.5 w-3.5 mr-1.5 text-gray-500" />
-                                    <a href={`mailto:${contact.email}`} className="text-blue-600 hover:underline">
-                                      {contact.email}
+                                    <a href={`mailto:${contact?.email || ''}`} className="text-blue-600 hover:underline">
+                                      {contact?.email || 'No Email'}
                                     </a>
                                   </div>
                                   <div className="flex items-center">

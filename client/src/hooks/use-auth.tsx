@@ -130,14 +130,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiRequest("POST", "/api/logout");
     },
     onSuccess: () => {
+      // Clear any user data from cache
       queryClient.setQueryData(["/api/user"], null);
+      
+      // Clear all query cache to ensure a fresh start
+      queryClient.clear();
+      
       toast({
         title: "Logged out",
         description: "You have been successfully logged out",
       });
       
-      // Redirect to auth page after logout
-      window.location.href = '/auth';
+      // Fully clear the session with a complete page reload
+      setTimeout(() => {
+        // A short delay to ensure the toast is seen
+        window.location.href = '/auth';
+      }, 500);
     },
     onError: (error: Error) => {
       toast({
@@ -168,7 +176,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userRole = (userFromDb.role || 'user').toLowerCase();
     
     // Ensure role matches one of our valid UserRole types 
-    const validRoles = ['admin', 'sales', 'designer', 'manufacturing', 'customer', 'user'];
+    const validRoles = ['admin', 'sales', 'designer', 'manufacturing', 'customer', 'user', 'agent'];
     const role = validRoles.includes(userRole) 
       ? userRole as UserRole 
       : 'user';

@@ -1,6 +1,6 @@
 import { User, Lead, Order, Message, Activity } from "@shared/schema";
 
-export type UserRole = 'admin' | 'sales' | 'designer' | 'manufacturing' | 'customer' | 'user';
+export type UserRole = 'admin' | 'sales' | 'designer' | 'manufacturing' | 'customer' | 'user' | 'agent';
 
 export interface AuthUser {
   id: string;

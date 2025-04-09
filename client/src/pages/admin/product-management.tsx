@@ -1094,7 +1094,7 @@ const ProductManagementPage: FC = () => {
                         category: selectedProduct.category,
                         gender: selectedProduct.gender,
                         imageUrl: selectedProduct.imageUrl,
-                        price: selectedProduct.price.toString(),
+                        price: selectedProduct.price ? selectedProduct.price.toString() : '',
                         minOrder: selectedProduct.minOrder,
                         leadTime: selectedProduct.leadTime,
                         isActive: selectedProduct.isActive,

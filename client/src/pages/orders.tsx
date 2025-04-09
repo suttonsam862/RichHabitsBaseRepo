@@ -23,7 +23,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useAuth } from "@/hooks/use-auth";
 
 const formSchema = insertOrderSchema.extend({
-  status: z.enum(["pending", "processing", "paid", "shipped", "delivered", "cancelled", "refunded"]),
+  // Override totalAmount to make it optional in the form
+  totalAmount: z.string().optional().transform(val => val || "0.00"),
+  status: z.enum(["pending", "processing", "paid", "shipped", "delivered", "cancelled", "refunded"]).default("pending"),
   organizationId: z.string().optional(),
   productIds: z.array(z.string()).optional(),
   itemName: z.string().optional(),
@@ -259,7 +261,13 @@ export default function Orders() {
   };
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    addOrderMutation.mutate(values);
+    // Set default values for required fields that were removed from the form
+    const orderData = {
+      ...values,
+      totalAmount: values.totalAmount || "0.00",  // Default to 0.00 if not provided
+      status: values.status || "pending"          // Default to pending if not provided
+    };
+    addOrderMutation.mutate(orderData);
   }
 
   const exportToPDF = () => {
@@ -497,10 +505,10 @@ export default function Orders() {
                                     >
                                       <div className="flex-1">
                                         <div className="font-medium">
-                                          Product: {product.name}
+                                          {product.sport} - {product.name}, {product.sku}
                                         </div>
                                         <div className="text-sm text-gray-500">
-                                          {product.sport} • SKU: {product.sku} • {product.wholesalePrice}
+                                          Wholesale Price: ${product.wholesalePrice}
                                         </div>
                                         {selectedProducts.includes(product.id.toString()) && (
                                           <div className="text-xs text-gray-500 mt-1">
@@ -555,15 +563,15 @@ export default function Orders() {
                               
                               {selectedProducts.length > 0 && (
                                 <div className="border rounded-md p-3 bg-gray-50">
-                                  <h4 className="font-medium text-sm mb-2">Selected Products - Not Item Name ({selectedProducts.length})</h4>
+                                  <h4 className="font-medium text-sm mb-2">Selected Products ({selectedProducts.length})</h4>
                                   <div className="text-sm text-gray-600">
                                     {selectedProducts.map((id, index) => {
                                       const product = productsData?.find((p: any) => p.id.toString() === id);
                                       return product ? (
-                                        <span key={id}>
-                                          {product.name} ({product.sport})
-                                          {index < selectedProducts.length - 1 ? ', ' : ''}
-                                        </span>
+                                        <div key={id} className="mb-1">
+                                          {product.sport} - {product.name}, {product.sku}
+                                          {index < selectedProducts.length - 1 ? '' : ''}
+                                        </div>
                                       ) : null;
                                     })}
                                   </div>
@@ -576,46 +584,7 @@ export default function Orders() {
                       )}
                     />
                     
-                    <FormField
-                      control={form.control}
-                      name="totalAmount"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Amount</FormLabel>
-                          <FormControl>
-                            <Input placeholder="$1,200.00" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Status</FormLabel>
-                          <FormControl>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a status" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="processing">Processing</SelectItem>
-                                <SelectItem value="paid">Paid</SelectItem>
-                                <SelectItem value="shipped">Shipped</SelectItem>
-                                <SelectItem value="delivered">Delivered</SelectItem>
-                                <SelectItem value="cancelled">Cancelled</SelectItem>
-                                <SelectItem value="refunded">Refunded</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {/* Amount and status fields removed from create dialog */}
                     
                     <FormField
                       control={form.control}

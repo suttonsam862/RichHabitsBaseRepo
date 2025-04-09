@@ -508,16 +508,16 @@ export default function OrganizationsPage() {
                           <div className="space-y-2 mt-3">
                             <Label htmlFor="editSalesRep">Assigned Sales Rep</Label>
                             <Select
-                              value={String(editedOrg.assignedSalesRepId ?? (selectedOrg.assignedSalesRepId || ''))}
+                              value={editedOrg.assignedSalesRepId ?? selectedOrg.assignedSalesRepId ? String(editedOrg.assignedSalesRepId ?? selectedOrg.assignedSalesRepId) : "none"}
                               onValueChange={(value) => 
-                                setEditedOrg({...editedOrg, assignedSalesRepId: value ? parseInt(value) : null})
+                                setEditedOrg({...editedOrg, assignedSalesRepId: value && value !== "none" ? parseInt(value) : null})
                               }
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select a sales rep" />
                               </SelectTrigger>
                               <SelectContent className="max-h-[200px] overflow-y-auto">
-                                <SelectItem value="">None</SelectItem>
+                                <SelectItem value="none">None</SelectItem>
                                 {salesTeam.map((rep: {id: number; firstName: string; lastName: string; role: string}) => (
                                   <SelectItem key={rep.id} value={String(rep.id)}>
                                     {rep.firstName} {rep.lastName} - {rep.role}
@@ -1125,16 +1125,16 @@ export default function OrganizationsPage() {
             <div className="space-y-2">
               <Label htmlFor="salesRep">Assigned Sales Rep</Label>
               <Select
-                value={String(editedOrg.assignedSalesRepId || '')}
+                value={editedOrg.assignedSalesRepId ? String(editedOrg.assignedSalesRepId) : "none"}
                 onValueChange={(value) => 
-                  setEditedOrg({...editedOrg, assignedSalesRepId: value ? parseInt(value) : null})
+                  setEditedOrg({...editedOrg, assignedSalesRepId: value && value !== "none" ? parseInt(value) : null})
                 }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a sales rep" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[200px] overflow-y-auto">
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {salesTeam.map((rep: {id: number; firstName: string; lastName: string; role: string}) => (
                     <SelectItem key={rep.id} value={String(rep.id)}>
                       {rep.firstName} {rep.lastName} - {rep.role}

@@ -80,14 +80,14 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       return menuGroups;
     }
     
-    // If visiblePages is not defined or null, return all menu items (but this should only happen for admin)
-    if (user?.visiblePages === null) {
-      console.log("No visible pages filter applied for user:", user?.username);
+    // If visiblePages is not defined or null, use default pages for the role
+    if (user?.visiblePages === null || user?.visiblePages === undefined) {
+      console.log("No visible pages filter applied for user:", user?.username, "- using defaults for role");
       return menuGroups;
     }
     
     // If visiblePages is empty array and user is not admin, show only essential pages
-    if (!user?.visiblePages || user.visiblePages.length === 0) {
+    if (user.visiblePages.length === 0) {
       console.log("User has no visible pages, showing only essential pages for:", user?.username);
       return menuGroups.map(group => ({
         ...group,
@@ -111,14 +111,22 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
         
         // If the item has an id, check if it's in the user's visiblePages
         if (item.id) {
-          const isVisible = user.visiblePages?.includes(item.id) ?? true;
+          const isVisible = user.visiblePages?.includes(item.id) ?? false;
           console.log(`Checking page with ID ${item.id}: ${isVisible ? 'visible' : 'hidden'}`);
           return isVisible;
         }
         
         // For items without an id, extract the id from the href (remove leading slash)
         const pageId = item.href.replace(/^\//, '');
-        const isVisible = user.visiblePages?.includes(pageId) ?? true;
+        
+        // Check special cases for design-communication and production-communication
+        if (pageId === 'design-communication' || pageId === 'production-communication') {
+          const isVisible = user.visiblePages?.includes(pageId) ?? false;
+          console.log(`Checking special page ${item.name} (${pageId}): ${isVisible ? 'visible' : 'hidden'}`);
+          return isVisible;
+        }
+        
+        const isVisible = user.visiblePages?.includes(pageId) ?? false;
         console.log(`Checking page ${item.name} (${pageId}): ${isVisible ? 'visible' : 'hidden'}`);
         return isVisible;
       })

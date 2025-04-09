@@ -290,29 +290,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
       };
       
-      // Convert string IDs to numbers where appropriate
-      if (updatedOrderData.assignedSalesRepId && updatedOrderData.assignedSalesRepId !== "unassigned") {
-        updatedOrderData.assignedSalesRepId = parseInt(updatedOrderData.assignedSalesRepId);
-      } else if (updatedOrderData.assignedSalesRepId === "unassigned") {
-        updatedOrderData.assignedSalesRepId = null;
+      // Convert string IDs to numbers where appropriate or set to null for empty/unassigned
+      if (updatedOrderData.assignedSalesRepId) {
+        if (updatedOrderData.assignedSalesRepId !== "unassigned" && updatedOrderData.assignedSalesRepId !== "") {
+          updatedOrderData.assignedSalesRepId = parseInt(updatedOrderData.assignedSalesRepId);
+          // If NaN after parsing, set to null
+          if (isNaN(updatedOrderData.assignedSalesRepId)) {
+            updatedOrderData.assignedSalesRepId = null;
+          }
+        } else {
+          updatedOrderData.assignedSalesRepId = null;
+        }
       }
       
-      if (updatedOrderData.assignedDesignerId && updatedOrderData.assignedDesignerId !== "unassigned") {
-        updatedOrderData.assignedDesignerId = parseInt(updatedOrderData.assignedDesignerId);
-      } else if (updatedOrderData.assignedDesignerId === "unassigned") {
-        updatedOrderData.assignedDesignerId = null;
+      if (updatedOrderData.assignedDesignerId !== undefined) {
+        if (updatedOrderData.assignedDesignerId !== "unassigned" && updatedOrderData.assignedDesignerId !== "") {
+          updatedOrderData.assignedDesignerId = parseInt(updatedOrderData.assignedDesignerId);
+          // If NaN after parsing, set to null
+          if (isNaN(updatedOrderData.assignedDesignerId)) {
+            updatedOrderData.assignedDesignerId = null;
+          }
+        } else {
+          updatedOrderData.assignedDesignerId = null;
+        }
       }
       
-      if (updatedOrderData.assignedManufacturerId && updatedOrderData.assignedManufacturerId !== "unassigned") {
-        updatedOrderData.assignedManufacturerId = parseInt(updatedOrderData.assignedManufacturerId);
-      } else if (updatedOrderData.assignedManufacturerId === "unassigned") {
-        updatedOrderData.assignedManufacturerId = null;
+      if (updatedOrderData.assignedManufacturerId !== undefined) {
+        if (updatedOrderData.assignedManufacturerId !== "unassigned" && updatedOrderData.assignedManufacturerId !== "") {
+          updatedOrderData.assignedManufacturerId = parseInt(updatedOrderData.assignedManufacturerId);
+          // If NaN after parsing, set to null
+          if (isNaN(updatedOrderData.assignedManufacturerId)) {
+            updatedOrderData.assignedManufacturerId = null;
+          }
+        } else {
+          updatedOrderData.assignedManufacturerId = null;
+        }
       }
       
-      if (updatedOrderData.organizationId && updatedOrderData.organizationId !== "none") {
-        updatedOrderData.organizationId = parseInt(updatedOrderData.organizationId);
-      } else if (updatedOrderData.organizationId === "none") {
-        updatedOrderData.organizationId = null;
+      if (updatedOrderData.organizationId !== undefined) {
+        if (updatedOrderData.organizationId !== "none" && updatedOrderData.organizationId !== "") {
+          updatedOrderData.organizationId = parseInt(updatedOrderData.organizationId);
+          // If NaN after parsing, set to null
+          if (isNaN(updatedOrderData.organizationId)) {
+            updatedOrderData.organizationId = null;
+          }
+        } else {
+          updatedOrderData.organizationId = null;
+        }
+      }
+      
+      // Parse totalAmount if it's a string
+      if (typeof updatedOrderData.totalAmount === 'string' && updatedOrderData.totalAmount !== "") {
+        updatedOrderData.totalAmount = parseFloat(updatedOrderData.totalAmount);
+        if (isNaN(updatedOrderData.totalAmount)) {
+          updatedOrderData.totalAmount = null;
+        }
       }
       
       // Set updatedAt timestamp

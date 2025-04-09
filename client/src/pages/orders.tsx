@@ -403,7 +403,7 @@ export default function Orders() {
                                     </SelectItem>
                                   ))
                                 ) : (
-                                  <SelectItem value="" disabled>
+                                  <SelectItem value="no-org" disabled>
                                     No organizations available
                                   </SelectItem>
                                 )}

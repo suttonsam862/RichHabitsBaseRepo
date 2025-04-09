@@ -10,6 +10,11 @@ interface LayoutProps {
 
 export default function Layout({ user, children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Add debug logs for user data
+  console.log("LAYOUT USER OBJECT:", user);
+  console.log("User role in Layout:", user?.role);
+  console.log("Layout - is admin?", user?.role === 'admin');
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);

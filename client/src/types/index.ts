@@ -1,14 +1,16 @@
 import { User, Lead, Order, Message, Activity } from "@shared/schema";
 
+export type UserRole = 'admin' | 'sales' | 'designer' | 'manufacturing' | 'customer' | 'user';
+
 export interface AuthUser {
   id: string;
   email: string;
   username?: string;
   fullName?: string;
   avatarUrl?: string;
-  role?: string;
+  role: UserRole; // Make role required and properly typed
   permissions?: string[];
-  visiblePages?: string[];
+  visiblePages?: string[] | null; // Allow null to distinguish between "not set" and "empty array"
 }
 
 export interface StatCard {

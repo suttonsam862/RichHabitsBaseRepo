@@ -52,6 +52,11 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   const [location] = useLocation();
   const { toast } = useToast();
   const { logoutMutation } = useAuth();
+  
+  // Debug output for role detection
+  console.log("SIDEBAR USER OBJECT:", user);
+  console.log("User role:", user?.role);
+  console.log("Is user admin?", user?.role === 'admin');
 
   const handleSignOut = async () => {
     try {

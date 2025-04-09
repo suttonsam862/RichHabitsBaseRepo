@@ -4,7 +4,7 @@ import {
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { AuthUser } from "@/types";
+import { AuthUser, UserRole } from "@/types";
 import { User } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -163,12 +163,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // This ensures the sidebar filtering function will show all pages to admin users
     let visiblePages = null;
     
-    // For non-admin roles, use the visiblePages from DB or empty array
-    if (userFromDb.role !== 'admin') {
+    // Get user role from DB or default to 'user' if missing
+    // Important: ensure consistency in role casing
+    const userRole = (userFromDb.role || 'user').toLowerCase();
+    
+    // Ensure role matches one of our valid UserRole types 
+    const validRoles = ['admin', 'sales', 'designer', 'manufacturing', 'customer', 'user'];
+    const role = validRoles.includes(userRole) 
+      ? userRole as UserRole 
+      : 'user';
+    
+    // Special handling for admin role - always use null visiblePages to show all
+    if (role !== 'admin') {
       visiblePages = Array.isArray(userFromDb.visiblePages) 
         ? userFromDb.visiblePages 
         : [];
     }
+    
+    // Always log the role for debugging
+    console.log("MAPPED USER ROLE:", role);
+    console.log("IS ADMIN?", role === 'admin');
     
     return {
       id: userFromDb.id.toString(),
@@ -176,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       username: userFromDb.username,
       fullName: userFromDb.fullName === null ? undefined : userFromDb.fullName,
       avatarUrl: userFromDb.avatarUrl === null ? undefined : userFromDb.avatarUrl,
-      role: userFromDb.role || 'user',
+      role: role,
       permissions: Array.isArray(userFromDb.permissions) ? userFromDb.permissions : [],
       visiblePages: visiblePages
     };

@@ -68,10 +68,29 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
 
   // Filter menu items based on user's visible pages
   const filterMenuItemsByVisibility = (menuGroups: MenuGroup[]): MenuGroup[] => {
-    // If visiblePages is not defined or empty, return all menu items
-    if (!user?.visiblePages || user.visiblePages.length === 0) {
+    // IMPORTANT: For admin role, always show ALL menu items regardless of visiblePages
+    if (user?.role === 'admin') {
+      console.log("Admin user detected, showing all pages for:", user?.username);
+      return menuGroups;
+    }
+    
+    // If visiblePages is not defined or null, return all menu items (but this should only happen for admin)
+    if (user?.visiblePages === null) {
       console.log("No visible pages filter applied for user:", user?.username);
       return menuGroups;
+    }
+    
+    // If visiblePages is empty array and user is not admin, show only essential pages
+    if (!user?.visiblePages || user.visiblePages.length === 0) {
+      console.log("User has no visible pages, showing only essential pages for:", user?.username);
+      return menuGroups.map(group => ({
+        ...group,
+        items: group.items.filter(item => 
+          item.href === '/profile' || 
+          item.href === '/settings' || 
+          item.href === '/dashboard'
+        )
+      })).filter(group => group.items.length > 0);
     }
 
     console.log("Filtering pages by visibility for user:", user?.username, user.visiblePages);
@@ -80,7 +99,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       ...group,
       items: group.items.filter(item => {
         // Always show profile and settings (essential pages)
-        if (item.href === '/profile' || item.href === '/settings') {
+        if (item.href === '/profile' || item.href === '/settings' || item.href === '/dashboard') {
           return true;
         }
         

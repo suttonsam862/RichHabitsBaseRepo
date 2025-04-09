@@ -317,6 +317,140 @@ export default function Orders() {
 
   return (
     <>
+      {/* View Order Dialog */}
+      <Dialog open={openViewDialog} onOpenChange={setOpenViewDialog}>
+        <DialogContent className="sm:max-w-3xl bg-white max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">Order Details</DialogTitle>
+            <DialogDescription>
+              View complete information about this order.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedOrder && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Order ID</h3>
+                  <p className="mt-1 text-sm text-gray-900">{selectedOrder.orderId}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Date Created</h3>
+                  <p className="mt-1 text-sm text-gray-900">
+                    {new Date(selectedOrder.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Customer Name</h3>
+                  <p className="mt-1 text-sm text-gray-900">{selectedOrder.customerName}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Customer Email</h3>
+                  <p className="mt-1 text-sm text-gray-900">{selectedOrder.customerEmail || "—"}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Amount</h3>
+                  <p className="mt-1 text-sm text-gray-900">${selectedOrder.totalAmount}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Status</h3>
+                  <div className="mt-1">
+                    <Badge className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedOrder.status as OrderStatus)}`}>
+                      {selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1)}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Shipping Address</h3>
+                <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
+                  {selectedOrder.shippingAddress || "No shipping address provided"}
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Notes</h3>
+                <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
+                  {selectedOrder.notes || "No notes provided"}
+                </p>
+              </div>
+              
+              {/* Line Items Section */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Line Items</h3>
+                <div className="bg-gray-50 rounded-md overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {selectedOrder.items ? (
+                        JSON.parse(selectedOrder.items).map((item: any, index: number) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.quantity}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.price}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(item.quantity * item.price).toFixed(2)}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-4 text-sm text-center text-gray-500">
+                            {selectedOrder.itemName || "No items available"}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-gray-200">
+                <Button 
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  onClick={() => {
+                    // Would typically send to design system
+                    toast({
+                      title: "Order sent to design",
+                      description: `Order ${selectedOrder.orderId} has been submitted to the design team.`,
+                    });
+                    setOpenViewDialog(false);
+                  }}
+                >
+                  Submit to Design
+                </Button>
+                <Button 
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  onClick={() => {
+                    // Would typically send to manufacturing
+                    toast({
+                      title: "Order sent to manufacturing",
+                      description: `Order ${selectedOrder.orderId} has been submitted to manufacturing.`,
+                    });
+                    setOpenViewDialog(false);
+                  }}
+                >
+                  Submit to Manufacturing
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setOpenViewDialog(false)}
+                  className="ml-auto"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={openDeleteDialog} onOpenChange={setOpenDeleteDialog}>
         <AlertDialogContent className="bg-white max-h-[90vh] overflow-y-auto">

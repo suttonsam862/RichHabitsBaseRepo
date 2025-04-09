@@ -59,25 +59,29 @@ export default function DesignPage() {
   const { toast } = useToast();
 
   const { data: designProjects, isLoading } = useQuery({
-    queryKey: ['/api/design/projects'],
+    queryKey: ['/api/designs'],
     refetchInterval: false,
   });
 
-  const { data: projectVersions, isLoading: versionsLoading } = useQuery({
-    queryKey: ['/api/design/versions', selectedProject?.id],
+  const { data: projectDetails, isLoading: versionsLoading } = useQuery({
+    queryKey: ['/api/designs', selectedProject?.id],
     enabled: !!selectedProject,
   });
 
   const claimProjectMutation = useMutation({
     mutationFn: async (projectId: number) => {
-      const res = await fetch(`/api/design/projects/${projectId}/claim`, {
+      const res = await fetch(`/api/designs/${projectId}/assign`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}), // Empty body for self-assignment
       });
       if (!res.ok) throw new Error('Failed to claim project');
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({queryKey: ['/api/design/projects']});
+      queryClient.invalidateQueries({queryKey: ['/api/designs']});
       toast({
         title: "Project claimed",
         description: "You have successfully claimed this design project",
@@ -94,20 +98,30 @@ export default function DesignPage() {
 
   const uploadVersionMutation = useMutation({
     mutationFn: async (data: {projectId: number, designFile: File, description: string}) => {
-      const formData = new FormData();
-      formData.append('designFile', data.designFile);
-      formData.append('description', data.description);
+      // For now, without file upload capabilities, we'll just send the description
+      // In a full implementation, we would use FormData to upload the file
       
-      const res = await fetch(`/api/design/projects/${data.projectId}/versions`, {
+      // Create a temporary URL for the file (in a real implementation this would be a CDN URL)
+      const imageUrl = URL.createObjectURL(data.designFile);
+      
+      const res = await fetch(`/api/designs/${data.projectId}/versions`, {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          designUrl: 'https://via.placeholder.com/600x400', // Placeholder URL for demonstration
+          thumbnailUrl: 'https://via.placeholder.com/150', // Placeholder URL for demonstration
+          description: data.description,
+          status: 'pending_review'
+        }),
       });
       
       if (!res.ok) throw new Error('Failed to upload design version');
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({queryKey: ['/api/design/versions', selectedProject?.id]});
+      queryClient.invalidateQueries({queryKey: ['/api/designs', selectedProject?.id]});
       setUploadDialogOpen(false);
       setNewVersion({
         designFile: null,
@@ -129,7 +143,7 @@ export default function DesignPage() {
 
   const submitFeedbackMutation = useMutation({
     mutationFn: async (data: {versionId: number, feedback: string, status: 'approved' | 'rejected'}) => {
-      const res = await fetch(`/api/design/versions/${data.versionId}/feedback`, {
+      const res = await fetch(`/api/designs/versions/${data.versionId}/feedback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -144,8 +158,8 @@ export default function DesignPage() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({queryKey: ['/api/design/versions', selectedProject?.id]});
-      queryClient.invalidateQueries({queryKey: ['/api/design/projects']});
+      queryClient.invalidateQueries({queryKey: ['/api/designs', selectedProject?.id]});
+      queryClient.invalidateQueries({queryKey: ['/api/designs']});
       setFeedback("");
       toast({
         title: "Feedback submitted",
@@ -250,7 +264,7 @@ export default function DesignPage() {
   ];
 
   const projects = designProjects?.data || sampleProjects;
-  const versions = projectVersions?.data || 
+  const versions = projectDetails?.versions || 
                    (selectedProject ? sampleVersions.filter(v => v.projectId === selectedProject.id) : []);
 
   const filteredProjects = activeTab === "all" 

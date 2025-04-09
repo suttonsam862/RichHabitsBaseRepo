@@ -1781,6 +1781,409 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
+  
+  // Design Projects API
+  app.get("/api/designs", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).send("Authentication required");
+      }
+      
+      let projects;
+      
+      if (req.query.filter === 'assigned' && req.user.role === 'designer') {
+        // Designers get their assigned projects
+        projects = await storage.getDesignProjectsByDesignerId(req.user.id);
+      } else if (req.query.filter === 'unassigned' && req.user.role === 'designer') {
+        // Designers can also see unassigned projects they can claim
+        projects = await storage.getUnassignedDesignProjects();
+      } else if (req.user.role === 'admin') {
+        // Admins get all projects
+        projects = await storage.getDesignProjects();
+      } else {
+        // Regular users get projects for their orders
+        projects = await storage.getDesignProjectsByUserId(req.user.id);
+      }
+      
+      res.json(projects);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/designs/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).send("Authentication required");
+      }
+      
+      const projectId = parseInt(req.params.id);
+      const project = await storage.getDesignProject(projectId);
+      
+      if (!project) {
+        return res.status(404).json({ error: "Design project not found" });
+      }
+      
+      // Check authorization (only admin, assigned designer, or customer who owns the order)
+      const isAdmin = req.user.role === 'admin';
+      const isDesigner = req.user.role === 'designer' && project.designerId === req.user.id;
+      const isCustomer = await storage.getOrderById(project.orderId).then(order => order?.userId === req.user.id);
+      
+      if (!isAdmin && !isDesigner && !isCustomer) {
+        return res.status(403).json({ error: "You don't have permission to view this design" });
+      }
+      
+      // Get the versions for this project
+      const versions = await storage.getDesignVersions(projectId);
+      
+      res.json({
+        project,
+        versions
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/designs", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).send("Authentication required");
+      }
+      
+      // Verify if user has permission to create a design project
+      if (req.user.role !== 'admin' && req.user.role !== 'sales') {
+        return res.status(403).json({ error: "You don't have permission to create design projects" });
+      }
+      
+      const newProject = await storage.createDesignProject({
+        ...req.body,
+        status: 'pending',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      
+      res.status(201).json(newProject);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.put("/api/designs/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).send("Authentication required");
+      }
+      
+      const projectId = parseInt(req.params.id);
+      const project = await storage.getDesignProject(projectId);
+      
+      if (!project) {
+        return res.status(404).json({ error: "Design project not found" });
+      }
+      
+      // Check authorization (only admin or assigned designer can update)
+      const isAdmin = req.user.role === 'admin';
+      const isDesigner = req.user.role === 'designer' && project.designerId === req.user.id;
+      
+      if (!isAdmin && !isDesigner) {
+        return res.status(403).json({ error: "You don't have permission to update this design" });
+      }
+      
+      const updatedProject = await storage.updateDesignProject(projectId, {
+        ...req.body,
+        updatedAt: new Date()
+      });
+      
+      res.json(updatedProject);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.delete("/api/designs/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).send("Authentication required");
+      }
+      
+      // Only admin can delete design projects
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Only administrators can delete design projects" });
+      }
+      
+      const projectId = parseInt(req.params.id);
+      const project = await storage.getDesignProject(projectId);
+      
+      if (!project) {
+        return res.status(404).json({ error: "Design project not found" });
+      }
+      
+      await storage.deleteDesignProject(projectId);
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Design project assignment
+  app.post("/api/designs/:id/assign", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).send("Authentication required");
+      }
+      
+      const projectId = parseInt(req.params.id);
+      const project = await storage.getDesignProject(projectId);
+      
+      if (!project) {
+        return res.status(404).json({ error: "Design project not found" });
+      }
+      
+      // Check authorization (admin can assign to anyone, designers can self-assign)
+      const isAdmin = req.user.role === 'admin';
+      const isSelfAssigning = req.user.role === 'designer' && req.body.designerId === req.user.id;
+      
+      if (!isAdmin && !isSelfAssigning) {
+        return res.status(403).json({ error: "You don't have permission to assign this design" });
+      }
+      
+      // If designerId is not provided, use the current user's ID (for self-assignment)
+      const designerId = req.body.designerId || req.user.id;
+      const designerName = req.body.designerName || req.user.fullName;
+      
+      const updatedProject = await storage.assignDesignProject(projectId, designerId, designerName);
+      
+      res.json(updatedProject);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Design Versions API
+  app.post("/api/designs/:id/versions", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).send("Authentication required");
+      }
+      
+      const projectId = parseInt(req.params.id);
+      const project = await storage.getDesignProject(projectId);
+      
+      if (!project) {
+        return res.status(404).json({ error: "Design project not found" });
+      }
+      
+      // Only assigned designer can submit versions
+      if (req.user.role !== 'designer' || project.designerId !== req.user.id) {
+        return res.status(403).json({ error: "Only the assigned designer can submit versions" });
+      }
+      
+      const newVersion = await storage.createDesignVersion({
+        projectId,
+        designUrl: req.body.designUrl,
+        notes: req.body.notes,
+        status: 'pending_review',
+        createdAt: new Date()
+      });
+      
+      res.status(201).json(newVersion);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Design Version Approval/Rejection
+  app.put("/api/designs/:projectId/versions/:versionId", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).send("Authentication required");
+      }
+      
+      const projectId = parseInt(req.params.projectId);
+      const versionId = parseInt(req.params.versionId);
+      
+      const project = await storage.getDesignProject(projectId);
+      if (!project) {
+        return res.status(404).json({ error: "Design project not found" });
+      }
+      
+      const version = await storage.getDesignVersion(versionId);
+      if (!version) {
+        return res.status(404).json({ error: "Design version not found" });
+      }
+      
+      // Check if user is authorized to approve/reject (admin or customer who owns the order)
+      const isAdmin = req.user.role === 'admin';
+      const isCustomer = await storage.getOrderById(project.orderId).then(order => order?.userId === req.user.id);
+      
+      if (!isAdmin && !isCustomer) {
+        return res.status(403).json({ error: "You don't have permission to approve or reject versions" });
+      }
+      
+      // Update the version status
+      const updatedVersion = await storage.updateDesignVersion(versionId, {
+        status: req.body.status // 'approved' or 'rejected'
+      });
+      
+      // If approved, update the project to reflect the approved version
+      if (req.body.status === 'approved') {
+        await storage.updateDesignProject(projectId, {
+          status: 'approved',
+          approvedVersion: version.versionNumber
+        });
+      }
+      
+      // If rejected, create a revision request
+      if (req.body.status === 'rejected' && req.body.feedback) {
+        await storage.createDesignRevision({
+          designId: projectId,
+          description: req.body.feedback,
+          requestedBy: req.user.id,
+          requestedByName: req.user.fullName,
+          requestedAt: new Date(),
+          status: 'pending'
+        });
+      }
+      
+      res.json(updatedVersion);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Design Messages API
+  app.get("/api/designs/:id/messages", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).send("Authentication required");
+      }
+      
+      const designId = parseInt(req.params.id);
+      const project = await storage.getDesignProject(designId);
+      
+      if (!project) {
+        return res.status(404).json({ error: "Design project not found" });
+      }
+      
+      // Check authorization
+      const isAdmin = req.user.role === 'admin';
+      const isDesigner = req.user.role === 'designer' && project.designerId === req.user.id;
+      const isCustomer = await storage.getOrderById(project.orderId).then(order => order?.userId === req.user.id);
+      
+      if (!isAdmin && !isDesigner && !isCustomer) {
+        return res.status(403).json({ error: "You don't have permission to view messages for this design" });
+      }
+      
+      const messages = await storage.getDesignMessages(designId);
+      
+      res.json(messages);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/designs/:id/messages", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).send("Authentication required");
+      }
+      
+      const designId = parseInt(req.params.id);
+      const project = await storage.getDesignProject(designId);
+      
+      if (!project) {
+        return res.status(404).json({ error: "Design project not found" });
+      }
+      
+      // Check authorization
+      const isAdmin = req.user.role === 'admin';
+      const isDesigner = req.user.role === 'designer' && project.designerId === req.user.id;
+      const isCustomer = await storage.getOrderById(project.orderId).then(order => order?.userId === req.user.id);
+      
+      if (!isAdmin && !isDesigner && !isCustomer) {
+        return res.status(403).json({ error: "You don't have permission to send messages for this design" });
+      }
+      
+      const newMessage = await storage.createDesignMessage({
+        designId,
+        message: req.body.message,
+        senderId: req.user.id,
+        senderName: req.user.fullName,
+        senderRole: req.user.role,
+        attachments: req.body.attachments || [],
+        sentAt: new Date()
+      });
+      
+      res.status(201).json(newMessage);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Add feedback to a design version
+  app.post("/api/designs/versions/:versionId/feedback", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).send("Authentication required");
+      }
+      
+      const versionId = parseInt(req.params.versionId);
+      const { feedback, status } = req.body;
+      
+      if (!feedback || !status) {
+        return res.status(400).json({ error: "Feedback and status are required" });
+      }
+      
+      if (!['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ error: "Status must be 'approved' or 'rejected'" });
+      }
+      
+      const version = await storage.getDesignVersion(versionId);
+      if (!version) {
+        return res.status(404).json({ error: "Design version not found" });
+      }
+      
+      const project = await storage.getDesignProject(version.projectId);
+      if (!project) {
+        return res.status(404).json({ error: "Design project not found" });
+      }
+      
+      // Check authorization
+      const isAdmin = req.user.role === 'admin';
+      const isCustomer = await storage.getOrderById(project.orderId).then(order => order?.userId === req.user.id);
+      
+      if (!isAdmin && !isCustomer) {
+        return res.status(403).json({ error: "You don't have permission to provide feedback on this design" });
+      }
+      
+      // Update the version with feedback
+      const updatedVersion = await storage.updateDesignVersion(versionId, {
+        feedback,
+        status
+      });
+      
+      // Update the project status based on the feedback
+      if (status === 'approved') {
+        await storage.updateDesignProject(version.projectId, {
+          status: 'approved',
+          approvedVersion: version.versionNumber,
+          feedback
+        });
+      } else {
+        await storage.updateDesignProject(version.projectId, {
+          status: 'in_progress',
+          feedback
+        });
+      }
+      
+      res.status(200).json(updatedVersion);
+    } catch (error: any) {
+      console.error("Error providing feedback:", error);
+      res.status(500).json({ error: "Failed to provide feedback" });
+    }
+  });
 
   return httpServer;
 }

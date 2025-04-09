@@ -13,6 +13,10 @@ import {
   feedback,
   feedbackComments,
   feedbackVotes,
+  designProjects,
+  designVersions,
+  designRevisions,
+  designMessages,
   ROLES,
   type User, 
   type InsertUser, 
@@ -36,6 +40,14 @@ import {
   type InsertSalesTeamMember,
   type Organization,
   type InsertOrganization,
+  type DesignProject,
+  type InsertDesignProject,
+  type DesignVersion,
+  type InsertDesignVersion,
+  type DesignRevision,
+  type InsertDesignRevision,
+  type DesignMessage,
+  type InsertDesignMessage,
   type Feedback,
   type FeedbackComment,
   type FeedbackVote,
@@ -45,7 +57,7 @@ import {
   type Permission
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, sql, and, or, isNull, asc } from "drizzle-orm";
+import { eq, desc, sql, and, or, isNull, asc, inArray } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -169,6 +181,37 @@ export interface IStorage {
   addFeedbackVote(vote: InsertFeedbackVote): Promise<FeedbackVote>;
   removeFeedbackVote(userId: number, feedbackId: number): Promise<void>;
   updateFeedbackVoteCount(feedbackId: number): Promise<void>;
+  
+  // Design Projects methods
+  getDesignProjects(): Promise<DesignProject[]>;
+  getDesignProject(id: number): Promise<DesignProject | undefined>;
+  getDesignProjectsByUserId(userId: number): Promise<DesignProject[]>;
+  getDesignProjectsByDesignerId(designerId: number): Promise<DesignProject[]>;
+  getUnassignedDesignProjects(): Promise<DesignProject[]>;
+  createDesignProject(project: InsertDesignProject): Promise<DesignProject>;
+  updateDesignProject(id: number, project: Partial<InsertDesignProject>): Promise<DesignProject>;
+  deleteDesignProject(id: number): Promise<void>;
+  assignDesignProject(id: number, designerId: number, designerName: string): Promise<DesignProject>;
+  
+  // Design Versions methods
+  getDesignVersions(projectId: number): Promise<DesignVersion[]>;
+  getDesignVersion(id: number): Promise<DesignVersion | undefined>;
+  createDesignVersion(version: InsertDesignVersion): Promise<DesignVersion>;
+  updateDesignVersion(id: number, version: Partial<InsertDesignVersion>): Promise<DesignVersion>;
+  deleteDesignVersion(id: number): Promise<void>;
+  
+  // Design Revisions methods
+  getDesignRevisions(designId: number): Promise<DesignRevision[]>;
+  getDesignRevision(id: number): Promise<DesignRevision | undefined>;
+  createDesignRevision(revision: InsertDesignRevision): Promise<DesignRevision>;
+  updateDesignRevision(id: number, revision: Partial<InsertDesignRevision>): Promise<DesignRevision>;
+  completeDesignRevision(id: number): Promise<DesignRevision>;
+  deleteDesignRevision(id: number): Promise<void>;
+  
+  // Design Messages methods
+  getDesignMessages(designId: number): Promise<DesignMessage[]>;
+  createDesignMessage(message: InsertDesignMessage): Promise<DesignMessage>;
+  deleteDesignMessage(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -892,6 +935,217 @@ export class DatabaseStorage implements IStorage {
     await db.update(feedback)
       .set({ voteCount: upvotes - downvotes })
       .where(eq(feedback.id, feedbackId));
+  }
+  
+  // Design Projects methods
+  async getDesignProjects(): Promise<DesignProject[]> {
+    return db.select().from(designProjects).orderBy(desc(designProjects.createdAt));
+  }
+  
+  async getDesignProject(id: number): Promise<DesignProject | undefined> {
+    const [project] = await db.select().from(designProjects).where(eq(designProjects.id, id));
+    return project;
+  }
+  
+  async getDesignProjectsByUserId(userId: number): Promise<DesignProject[]> {
+    // Get orders created by this user, then find design projects related to those orders
+    const userOrders = await db.select().from(orders).where(eq(orders.userId, userId));
+    const orderIds = userOrders.map(order => order.orderId);
+    
+    if (orderIds.length === 0) return [];
+    
+    return db.select()
+      .from(designProjects)
+      .where(inArray(designProjects.orderId, orderIds))
+      .orderBy(desc(designProjects.createdAt));
+  }
+  
+  async getDesignProjectsByDesignerId(designerId: number): Promise<DesignProject[]> {
+    return db.select()
+      .from(designProjects)
+      .where(eq(designProjects.designerId, designerId))
+      .orderBy(desc(designProjects.createdAt));
+  }
+  
+  async getUnassignedDesignProjects(): Promise<DesignProject[]> {
+    return db.select()
+      .from(designProjects)
+      .where(sql`designer_id IS NULL`)
+      .orderBy(desc(designProjects.createdAt));
+  }
+  
+  async createDesignProject(project: InsertDesignProject): Promise<DesignProject> {
+    const [newProject] = await db
+      .insert(designProjects)
+      .values(project)
+      .returning();
+    return newProject;
+  }
+  
+  async updateDesignProject(id: number, project: Partial<InsertDesignProject>): Promise<DesignProject> {
+    const [updatedProject] = await db
+      .update(designProjects)
+      .set({ ...project, updatedAt: new Date() })
+      .where(eq(designProjects.id, id))
+      .returning();
+    return updatedProject;
+  }
+  
+  async deleteDesignProject(id: number): Promise<void> {
+    // First delete all related versions and revisions (cascading should handle this, but being explicit)
+    await db.delete(designVersions).where(eq(designVersions.projectId, id));
+    await db.delete(designRevisions).where(eq(designRevisions.designId, id));
+    await db.delete(designMessages).where(eq(designMessages.designId, id));
+    
+    // Then delete the project itself
+    await db.delete(designProjects).where(eq(designProjects.id, id));
+  }
+  
+  async assignDesignProject(id: number, designerId: number, designerName: string): Promise<DesignProject> {
+    const [updatedProject] = await db
+      .update(designProjects)
+      .set({ 
+        designerId,
+        designerName,
+        status: 'in_progress',
+        updatedAt: new Date()
+      })
+      .where(eq(designProjects.id, id))
+      .returning();
+    return updatedProject;
+  }
+  
+  // Design Versions methods
+  async getDesignVersions(projectId: number): Promise<DesignVersion[]> {
+    return db.select()
+      .from(designVersions)
+      .where(eq(designVersions.projectId, projectId))
+      .orderBy(asc(designVersions.versionNumber));
+  }
+  
+  async getDesignVersion(id: number): Promise<DesignVersion | undefined> {
+    const [version] = await db.select().from(designVersions).where(eq(designVersions.id, id));
+    return version;
+  }
+  
+  async createDesignVersion(version: InsertDesignVersion): Promise<DesignVersion> {
+    // Get the current highest version number for this project
+    const result = await db.execute(sql`
+      SELECT MAX(version_number) as max_version
+      FROM ${designVersions}
+      WHERE project_id = ${version.projectId}
+    `);
+    
+    const maxVersion = parseInt(result.rows[0]?.max_version as string) || 0;
+    const versionNumber = maxVersion + 1;
+    
+    // Create the new version
+    const [newVersion] = await db
+      .insert(designVersions)
+      .values({ ...version, versionNumber })
+      .returning();
+    
+    // Update the project status to 'review' if it was 'in_progress'
+    const [project] = await db.select().from(designProjects).where(eq(designProjects.id, version.projectId));
+    if (project && project.status === 'in_progress') {
+      await db.update(designProjects)
+        .set({ 
+          status: 'review',
+          updatedAt: new Date()
+        })
+        .where(eq(designProjects.id, version.projectId));
+    }
+    
+    return newVersion;
+  }
+  
+  async updateDesignVersion(id: number, version: Partial<InsertDesignVersion>): Promise<DesignVersion> {
+    const [updatedVersion] = await db
+      .update(designVersions)
+      .set(version)
+      .where(eq(designVersions.id, id))
+      .returning();
+    return updatedVersion;
+  }
+  
+  async deleteDesignVersion(id: number): Promise<void> {
+    await db.delete(designVersions).where(eq(designVersions.id, id));
+  }
+  
+  // Design Revisions methods
+  async getDesignRevisions(designId: number): Promise<DesignRevision[]> {
+    return db.select()
+      .from(designRevisions)
+      .where(eq(designRevisions.designId, designId))
+      .orderBy(desc(designRevisions.requestedAt));
+  }
+  
+  async getDesignRevision(id: number): Promise<DesignRevision | undefined> {
+    const [revision] = await db.select().from(designRevisions).where(eq(designRevisions.id, id));
+    return revision;
+  }
+  
+  async createDesignRevision(revision: InsertDesignRevision): Promise<DesignRevision> {
+    const [newRevision] = await db
+      .insert(designRevisions)
+      .values(revision)
+      .returning();
+    
+    // Update the design project status to indicate revisions needed
+    await db.update(designProjects)
+      .set({ 
+        status: 'in_progress',
+        feedback: revision.description,
+        updatedAt: new Date()
+      })
+      .where(eq(designProjects.id, revision.designId));
+    
+    return newRevision;
+  }
+  
+  async updateDesignRevision(id: number, revision: Partial<InsertDesignRevision>): Promise<DesignRevision> {
+    const [updatedRevision] = await db
+      .update(designRevisions)
+      .set(revision)
+      .where(eq(designRevisions.id, id))
+      .returning();
+    return updatedRevision;
+  }
+  
+  async completeDesignRevision(id: number): Promise<DesignRevision> {
+    const [updatedRevision] = await db
+      .update(designRevisions)
+      .set({ 
+        status: 'completed',
+        completedAt: new Date()
+      })
+      .where(eq(designRevisions.id, id))
+      .returning();
+    return updatedRevision;
+  }
+  
+  async deleteDesignRevision(id: number): Promise<void> {
+    await db.delete(designRevisions).where(eq(designRevisions.id, id));
+  }
+  
+  // Design Messages methods
+  async getDesignMessages(designId: number): Promise<DesignMessage[]> {
+    return db.select()
+      .from(designMessages)
+      .where(eq(designMessages.designId, designId))
+      .orderBy(asc(designMessages.sentAt));
+  }
+  
+  async createDesignMessage(message: InsertDesignMessage): Promise<DesignMessage> {
+    const [newMessage] = await db
+      .insert(designMessages)
+      .values(message)
+      .returning();
+    return newMessage;
+  }
+  
+  async deleteDesignMessage(id: number): Promise<void> {
+    await db.delete(designMessages).where(eq(designMessages.id, id));
   }
 }
 

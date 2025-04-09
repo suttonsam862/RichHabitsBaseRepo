@@ -313,7 +313,79 @@ export const insertFeedbackSchema = createInsertSchema(feedback).omit({ id: true
 export const insertFeedbackCommentSchema = createInsertSchema(feedbackComments).omit({ id: true, createdAt: true });
 export const insertFeedbackVoteSchema = createInsertSchema(feedbackVotes).omit({ id: true, createdAt: true });
 
+// Design Projects table
+export const designProjects = pgTable('design_projects', {
+  id: serial('id').primaryKey(),
+  orderId: text('order_id').notNull().references(() => orders.orderId),
+  customerName: text('customer_name').notNull(),
+  customerEmail: text('customer_email'),
+  status: text('status').default('new').notNull(), // 'new', 'in_progress', 'review', 'approved', 'rejected', 'completed'
+  designerId: integer('designer_id').references(() => users.id),
+  designerName: text('designer_name'),
+  description: text('description').notNull(),
+  requirements: text('requirements'),
+  attachments: json('attachments').$type<string[]>(),
+  thumbnailUrl: text('thumbnail_url'),
+  feedback: text('feedback'),
+  approvedVersion: integer('approved_version'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Design Versions table
+export const designVersions = pgTable('design_versions', {
+  id: serial('id').primaryKey(),
+  projectId: integer('project_id').notNull().references(() => designProjects.id, { onDelete: 'cascade' }),
+  versionNumber: integer('version_number').notNull(),
+  designUrl: text('design_url').notNull(),
+  thumbnailUrl: text('thumbnail_url'),
+  description: text('description'),
+  status: text('status').default('draft').notNull(), // 'draft', 'submitted', 'approved', 'rejected'
+  feedback: text('feedback'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Design Revision Requests
+export const designRevisions = pgTable('design_revisions', {
+  id: serial('id').primaryKey(),
+  designId: integer('design_id').notNull().references(() => designProjects.id, { onDelete: 'cascade' }),
+  requestedById: integer('requested_by_id').notNull().references(() => users.id),
+  requestedByName: text('requested_by_name').notNull(),
+  description: text('description').notNull(),
+  status: text('status').default('pending').notNull(), // 'pending', 'completed'
+  requestedAt: timestamp('requested_at').defaultNow(),
+  completedAt: timestamp('completed_at'),
+});
+
+// Design Messages
+export const designMessages = pgTable('design_messages', {
+  id: serial('id').primaryKey(),
+  designId: integer('design_id').notNull().references(() => designProjects.id, { onDelete: 'cascade' }),
+  senderId: integer('sender_id').notNull().references(() => users.id),
+  senderName: text('sender_name').notNull(),
+  senderRole: text('sender_role').notNull(),
+  message: text('message').notNull(),
+  attachments: json('attachments').$type<string[]>(),
+  sentAt: timestamp('sent_at').defaultNow(),
+});
+
+// Create insert schemas for design tables
+export const insertDesignProjectSchema = createInsertSchema(designProjects).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertDesignVersionSchema = createInsertSchema(designVersions).omit({ id: true, createdAt: true });
+export const insertDesignRevisionSchema = createInsertSchema(designRevisions).omit({ id: true, requestedAt: true, completedAt: true });
+export const insertDesignMessageSchema = createInsertSchema(designMessages).omit({ id: true, sentAt: true });
+
 // Define types
+export type InsertDesignProject = z.infer<typeof insertDesignProjectSchema>;
+export type InsertDesignVersion = z.infer<typeof insertDesignVersionSchema>;
+export type InsertDesignRevision = z.infer<typeof insertDesignRevisionSchema>;
+export type InsertDesignMessage = z.infer<typeof insertDesignMessageSchema>;
+export type DesignProject = typeof designProjects.$inferSelect;
+export type DesignVersion = typeof designVersions.$inferSelect;
+export type DesignRevision = typeof designRevisions.$inferSelect;
+export type DesignMessage = typeof designMessages.$inferSelect;
+
+// Define types for feedback
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 export type InsertFeedbackComment = z.infer<typeof insertFeedbackCommentSchema>;
 export type InsertFeedbackVote = z.infer<typeof insertFeedbackVoteSchema>;

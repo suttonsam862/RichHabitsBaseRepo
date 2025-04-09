@@ -11,9 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, FileImage, Pencil, Check, X, User, Calendar, Tag, MessageSquare, Palette, Upload, Download } from "lucide-react";
+import { Loader2, FileImage, Pencil, Check, X, User, Calendar, Tag, MessageSquare, Palette, Upload, Download, FileCheck, Inbox } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import { formatDate } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 
 interface DesignProject {
   id: number;
@@ -46,7 +47,7 @@ interface DesignVersion {
 }
 
 export default function DesignPage() {
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("unclaimed");
   const [selectedProject, setSelectedProject] = useState<DesignProject | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -55,6 +56,7 @@ export default function DesignPage() {
     description: "",
   });
   const [feedback, setFeedback] = useState("");
+  const { user } = useAuth();
 
   const { toast } = useToast();
 
@@ -267,17 +269,14 @@ export default function DesignPage() {
   const versions = projectDetails?.versions || 
                    (selectedProject ? sampleVersions.filter(v => v.projectId === selectedProject.id) : []);
 
-  const filteredProjects = activeTab === "all" 
-    ? projects 
-    : projects.filter(project => {
-        switch(activeTab) {
-          case "new": return project.status === "new";
-          case "in_progress": return project.status === "in_progress";
-          case "review": return project.status === "review";
-          case "completed": return ["approved", "completed"].includes(project.status);
-          default: return true;
-        }
-      });
+  const filteredProjects = projects.filter(project => {
+    switch(activeTab) {
+      case "unclaimed": return project.designerId === null;
+      case "my-designs": return project.designerId === user?.id;
+      case "past-designs": return ["approved", "completed"].includes(project.status) && project.designerId === user?.id;
+      default: return true;
+    }
+  });
 
   const handleProjectClick = (project: DesignProject) => {
     setSelectedProject(project);
@@ -356,13 +355,20 @@ export default function DesignPage() {
       </div>
 
       <div className="p-6">
-        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs defaultValue="unclaimed" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="mb-4">
-            <TabsTrigger value="all">All Projects</TabsTrigger>
-            <TabsTrigger value="new">New</TabsTrigger>
-            <TabsTrigger value="in_progress">In Progress</TabsTrigger>
-            <TabsTrigger value="review">In Review</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="unclaimed" className="flex items-center">
+              <Inbox className="h-4 w-4 mr-2" />
+              Unclaimed Designs
+            </TabsTrigger>
+            <TabsTrigger value="my-designs" className="flex items-center">
+              <Pencil className="h-4 w-4 mr-2" />
+              My Designs
+            </TabsTrigger>
+            <TabsTrigger value="past-designs" className="flex items-center">
+              <FileCheck className="h-4 w-4 mr-2" />
+              Past Designs
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeTab} className="space-y-4">
@@ -509,7 +515,7 @@ export default function DesignPage() {
                 </Button>
               )}
 
-              {(selectedProject?.status === "in_progress" || selectedProject?.status === "review") && selectedProject.designerId === 1 && (
+              {(selectedProject?.status === "in_progress" || selectedProject?.status === "review") && selectedProject?.designerId === user?.id && (
                 <Button 
                   onClick={() => setUploadDialogOpen(true)}
                   className="w-full"

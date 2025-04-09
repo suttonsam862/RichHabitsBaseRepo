@@ -690,6 +690,7 @@ export default function Orders() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
+                    <th className="text-center p-4 text-xs font-medium text-gray-500 uppercase tracking-wider w-12"></th>
                     <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
                     <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
                     <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
@@ -702,6 +703,9 @@ export default function Orders() {
                   {filteredOrders.length > 0 ? (
                     filteredOrders.map((order) => (
                       <tr key={order.id} className="hover:bg-gray-50">
+                        <td className="p-4 text-center">
+                          <ShoppingBag className="h-5 w-5 mx-auto text-gray-500" />
+                        </td>
                         <td className="p-4 text-sm font-medium text-gray-900">{order.orderId}</td>
                         <td className="p-4 text-sm text-gray-600">{order.customerName}</td>
                         <td className="p-4 text-sm text-gray-600">{order.totalAmount}</td>
@@ -764,7 +768,7 @@ export default function Orders() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6} className="p-4 text-center text-gray-500">
+                      <td colSpan={7} className="p-4 text-center text-gray-500">
                         No orders found matching your criteria.
                       </td>
                     </tr>

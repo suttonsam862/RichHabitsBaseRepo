@@ -340,33 +340,70 @@ export class DatabaseStorage implements IStorage {
   }
   
   async deleteOrder(id: number): Promise<void> {
-    // First, get the order to find its orderId
-    const order = await this.getOrderById(id);
-    if (!order) {
-      throw new Error("Order not found");
-    }
-    
-    // Check if there are any design projects associated with this order
-    const designProjectsList = await db
-      .select()
-      .from(designProjects)
-      .where(eq(designProjects.orderId, order.orderId));
-    
-    // If there are design projects, delete them first along with all related records
-    if (designProjectsList.length > 0) {
-      for (const project of designProjectsList) {
-        // Delete design versions, revisions, and messages
-        await db.delete(designVersions).where(eq(designVersions.projectId, project.id));
-        await db.delete(designRevisions).where(eq(designRevisions.designId, project.id));
-        await db.delete(designMessages).where(eq(designMessages.designId, project.id));
-        
-        // Delete the design project
-        await db.delete(designProjects).where(eq(designProjects.id, project.id));
+    try {
+      // First, get the order to find its orderId
+      const order = await this.getOrderById(id);
+      if (!order) {
+        throw new Error("Order not found");
       }
+      
+      // First, try to delete any associated design projects
+      // We need to do this in a specific order to respect foreign key constraints
+      // 1. Get all design projects associated with this order
+      // 2. For each design project, delete associated versions, revisions, and messages
+      // 3. Delete the design project
+      // 4. Then finally delete the order
+      
+      console.log(`Deleting order: ${order.orderId} (ID: ${id})`);
+      
+      // Step 1: Get all design projects for this order
+      const designProjectsResult = await db.execute(sql`
+        SELECT * FROM design_projects 
+        WHERE order_id = ${order.orderId}
+      `);
+      
+      const designProjects = designProjectsResult.rows;
+      console.log(`Found ${designProjects.length} design projects to delete for order ${order.orderId}`);
+      
+      // Step 2: Delete related records for each design project
+      for (const project of designProjects) {
+        console.log(`Deleting design project ${project.id} and its related records`);
+        
+        // Delete design versions
+        await db.execute(sql`
+          DELETE FROM design_versions 
+          WHERE project_id = ${project.id}
+        `);
+        
+        // Delete design revisions
+        await db.execute(sql`
+          DELETE FROM design_revisions 
+          WHERE design_id = ${project.id}
+        `);
+        
+        // Delete design messages
+        await db.execute(sql`
+          DELETE FROM design_messages 
+          WHERE design_id = ${project.id}
+        `);
+      }
+      
+      // Step 3: Delete all design projects for this order
+      if (designProjects.length > 0) {
+        await db.execute(sql`
+          DELETE FROM design_projects 
+          WHERE order_id = ${order.orderId}
+        `);
+        console.log(`Deleted ${designProjects.length} design projects for order ${order.orderId}`);
+      }
+      
+      // Step 4: Finally delete the order
+      await db.delete(orders).where(eq(orders.id, id));
+      console.log(`Successfully deleted order ${order.orderId}`);
+    } catch (error) {
+      console.error("Error deleting order:", error);
+      throw error;
     }
-    
-    // Now delete the order
-    await db.delete(orders).where(eq(orders.id, id));
   }
   
   // Message methods

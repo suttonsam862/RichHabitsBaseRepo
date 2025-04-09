@@ -18,6 +18,7 @@ import {
   Palette,
   Factory,
   Building,
+  ClipboardEdit,
   Building2,
   UsersRound,
   BriefcaseBusiness,
@@ -213,24 +214,14 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               icon: <HardHat className="mr-2" size={16} />,
             },
             {
+              name: "Order Management",
+              href: "/admin/order-management",
+              icon: <ClipboardEdit className="mr-2" size={16} />,
+            },
+            {
               name: "Corporate",
               href: "/corporate",
               icon: <Building className="mr-2" size={16} />,
-            },
-            {
-              name: "Financial",
-              href: "/admin/financial",
-              icon: <BadgeDollarSign className="mr-2" size={16} />,
-            },
-            {
-              name: "Pending Bills",
-              href: "/admin/pending-bills",
-              icon: <BadgeDollarSign className="mr-2" size={16} />,
-            },
-            {
-              name: "Pending Payouts",
-              href: "/admin/pending-payouts",
-              icon: <BadgeDollarSign className="mr-2" size={16} />,
             },
             {
               name: "Reports",

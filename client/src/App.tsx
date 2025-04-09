@@ -28,6 +28,7 @@ import SalesTeam from "./pages/admin/sales-team";
 import DesignTeam from "./pages/admin/design-team";
 import ManufacturingTeam from "./pages/admin/manufacturing-team";
 import ProductManagement from "./pages/admin/product-management";
+import OrderManagement from "./pages/admin/order-management";
 
 // The main dashboard layout with all protected routes
 function DashboardLayout() {
@@ -60,6 +61,7 @@ function DashboardLayout() {
         <Route path="/admin/design-team" component={DesignTeam} />
         <Route path="/admin/manufacturing-team" component={ManufacturingTeam} />
         <Route path="/admin/product-management" component={ProductManagement} />
+        <Route path="/admin/order-management" component={OrderManagement} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

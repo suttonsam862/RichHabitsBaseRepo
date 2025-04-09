@@ -739,40 +739,44 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   const menuGroups = getMenuItems();
   
   const groupedMenuItems = (
-    <div className="space-y-8 py-4">
-      {menuGroups.map((group, groupIndex) => (
-        <div key={`group-${groupIndex}`} className="px-3 py-2">
-          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
-            {group.title}
-          </h2>
-          <div className="space-y-1">
-            {group.items.map((item, itemIndex) => (
-              <Link 
-                key={`item-${groupIndex}-${itemIndex}`}
-                href={item.href}
-                onClick={onClose}
-              >
-                <div
-                  className={cn(
-                    "flex items-center rounded-md px-4 py-2 text-sm font-medium cursor-pointer",
-                    location === item.href
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                      : "hover:bg-accent hover:text-accent-foreground"
-                  )}
+    <div className="flex flex-col min-h-full justify-between py-4">
+      {/* Main menu groups */}
+      <div className="space-y-6">
+        {menuGroups.map((group, groupIndex) => (
+          <div key={`group-${groupIndex}`} className="px-3 py-2">
+            <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
+              {group.title}
+            </h2>
+            <div className="space-y-1">
+              {group.items.map((item, itemIndex) => (
+                <Link 
+                  key={`item-${groupIndex}-${itemIndex}`}
+                  href={item.href}
+                  onClick={onClose}
                 >
-                  {item.icon}
-                  {item.name}
-                </div>
-              </Link>
-            ))}
+                  <div
+                    className={cn(
+                      "flex items-center rounded-md px-4 py-2 text-sm font-medium cursor-pointer",
+                      location === item.href
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                        : "hover:bg-accent hover:text-accent-foreground"
+                    )}
+                  >
+                    {item.icon}
+                    {item.name}
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
       
-      <div className="px-3 py-2">
+      {/* Logout button - always visible at bottom */}
+      <div className="mt-auto px-3 py-4 sticky bottom-0 bg-white border-t">
         <div className="space-y-1">
           <div
-            className="flex items-center rounded-md px-4 py-2 text-sm font-medium cursor-pointer hover:bg-accent hover:text-accent-foreground"
+            className="flex items-center rounded-md px-4 py-3 text-sm font-medium cursor-pointer hover:bg-accent hover:text-accent-foreground"
             onClick={handleSignOut}
           >
             <LogOut className="mr-2" size={16} />
@@ -796,14 +800,14 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       {/* Sidebar for both mobile and desktop */}
       <div
         className={cn(
-          "fixed top-0 left-0 z-50 h-screen w-72 bg-white shadow-lg transition-transform duration-300 ease-in-out md:z-0 overflow-hidden",
+          "fixed top-0 left-0 z-50 h-screen w-72 bg-white shadow-lg transition-transform duration-300 ease-in-out md:z-0",
           isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
         <div className="flex h-16 items-center px-6 py-4 border-b">
           <h1 className="text-lg font-bold">Rich Habits</h1>
         </div>
-        <div className="overflow-y-auto h-[calc(100vh-4rem)]">
+        <div className="overflow-y-auto h-[calc(100vh-4rem)] pb-20 flex flex-col">
           {user && groupedMenuItems}
         </div>
       </div>

@@ -3,8 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { db } from "./db";
-import { sql, eq, or } from "drizzle-orm";
-import { setupAuth, hashPassword } from "./auth";
+import { sql, eq, or, and } from "drizzle-orm";
+import { setupAuth, hashPassword, isAuthenticated } from "./auth";
 import { hasPermission } from '../shared/permissions';
 import { 
   leads,
@@ -19,6 +19,7 @@ import {
   feedback,
   feedbackComments,
   feedbackVotes,
+  outlookIntegrations,
   insertLeadSchema, 
   insertOrderSchema, 
   insertMessageSchema,
@@ -34,6 +35,8 @@ import {
   insertFeedbackVoteSchema,
   ROLES,
   PERMISSIONS,
+  type User,
+  type Organization,
   type Permission
 } from "@shared/schema";
 import { isAdmin, hasRequiredPermission } from "./auth";

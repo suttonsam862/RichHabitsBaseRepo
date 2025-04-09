@@ -868,8 +868,8 @@ export default function OrganizationsPage() {
                                   </div>
                                   <div className="flex items-center">
                                     <Phone className="h-3.5 w-3.5 mr-1.5 text-gray-500" />
-                                    <a href={`tel:${contact.phone}`} className="text-blue-600 hover:underline">
-                                      {contact.phone}
+                                    <a href={`tel:${contact?.phone || ''}`} className="text-blue-600 hover:underline">
+                                      {contact?.phone || 'No Phone'}
                                     </a>
                                   </div>
                                 </div>

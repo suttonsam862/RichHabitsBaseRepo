@@ -477,7 +477,7 @@ export default function Orders() {
                                       className="flex items-center justify-between p-2 border rounded-md hover:bg-gray-50"
                                     >
                                       <div className="flex-1">
-                                        <div className="font-medium">{product.name}</div>
+                                        <div className="font-medium">{product.item || product.name}</div>
                                         <div className="text-sm text-gray-500">
                                           {product.sport} • SKU: {product.sku} • {product.wholesalePrice}
                                         </div>
@@ -540,7 +540,7 @@ export default function Orders() {
                                       const product = productsData?.find((p: any) => p.id.toString() === id);
                                       return product ? (
                                         <span key={id}>
-                                          {product.name}
+                                          {product.item || product.name} ({product.sport})
                                           {index < selectedProducts.length - 1 ? ', ' : ''}
                                         </span>
                                       ) : null;

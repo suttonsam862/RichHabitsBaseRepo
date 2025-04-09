@@ -458,6 +458,7 @@ export default function Orders() {
                           <FormControl>
                             <Input placeholder="Custom Jersey Set" {...field} />
                           </FormControl>
+                          <p className="text-xs text-gray-500 mt-1">This is the custom name for the order, distinct from the product selection below.</p>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -496,7 +497,7 @@ export default function Orders() {
                                     >
                                       <div className="flex-1">
                                         <div className="font-medium">
-                                          {product.name}
+                                          Product: {product.name}
                                         </div>
                                         <div className="text-sm text-gray-500">
                                           {product.sport} • SKU: {product.sku} • {product.wholesalePrice}
@@ -554,7 +555,7 @@ export default function Orders() {
                               
                               {selectedProducts.length > 0 && (
                                 <div className="border rounded-md p-3 bg-gray-50">
-                                  <h4 className="font-medium text-sm mb-2">Selected Products ({selectedProducts.length})</h4>
+                                  <h4 className="font-medium text-sm mb-2">Selected Products - Not Item Name ({selectedProducts.length})</h4>
                                   <div className="text-sm text-gray-600">
                                     {selectedProducts.map((id, index) => {
                                       const product = productsData?.find((p: any) => p.id.toString() === id);

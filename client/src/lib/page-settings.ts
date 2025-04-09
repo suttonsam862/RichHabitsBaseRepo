@@ -58,6 +58,12 @@ export const AVAILABLE_PAGES = [
     category: "Communication",
   },
   {
+    id: "outlook",
+    name: "Outlook",
+    description: "Outlook email integration",
+    category: "Communication",
+  },
+  {
     id: "analytics",
     name: "Analytics",
     description: "Business analytics and metrics",
@@ -140,37 +146,37 @@ export const PAGE_ACCESS_TEMPLATES = {
   MANAGER: [
     "dashboard", "messages", "profile", "settings",
     "leads", "orders", "design", "manufacturing",
-    "catalog", "analytics", "reports", "user-management",
+    "catalog", "analytics", "reports", "user-management", "outlook",
     "design-communication", "production-communication", "feedback"
   ],
   SALES: [
     "dashboard", "messages", "profile", 
-    "leads", "orders", "catalog", "analytics", 
+    "leads", "orders", "catalog", "analytics", "outlook",
     "feedback"
   ],
   DESIGNER: [
     "dashboard", "messages", "profile",
-    "design", "design-communication", "catalog", 
+    "design", "design-communication", "catalog", "outlook",
     "orders", "feedback"
   ],
   MANUFACTURER: [
     "dashboard", "messages", "profile",
-    "manufacturing", "production-communication", 
+    "manufacturing", "production-communication", "outlook",
     "catalog", "orders", "feedback"
   ],
   CUSTOMER: [
     "dashboard", "messages", "profile", 
-    "orders", "catalog", "feedback"
+    "orders", "catalog", "outlook", "feedback"
   ],
   MINIMAL: [
-    "dashboard", "messages", "profile", "feedback"
+    "dashboard", "messages", "profile", "outlook", "feedback"
   ]
 };
 
 // Returns default visible pages based on the user's role
 export function getDefaultVisiblePages(role: string): string[] {
   // Default pages for everyone
-  const defaultPages = ["dashboard", "messages", "profile"];
+  const defaultPages = ["dashboard", "messages", "profile", "outlook"];
 
   // Role-specific pages
   switch (role) {

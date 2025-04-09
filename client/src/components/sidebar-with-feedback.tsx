@@ -177,6 +177,12 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               icon: <MessageSquare className="mr-2" size={16} />,
             },
             {
+              name: "Outlook",
+              href: "/outlook",
+              icon: <MessageCircle className="mr-2" size={16} />,
+              id: "outlook",
+            },
+            {
               name: "Order Tracking",
               href: "/order-tracking",
               icon: <ShoppingBag className="mr-2" size={16} />,
@@ -651,6 +657,12 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               name: "Messages",
               href: "/messages",
               icon: <MessageSquare className="mr-2" size={16} />,
+            },
+            {
+              name: "Outlook",
+              href: "/outlook",
+              icon: <MessageCircle className="mr-2" size={16} />,
+              id: "outlook",
             },
             {
               name: "Analytics",

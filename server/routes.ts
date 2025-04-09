@@ -666,6 +666,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
+  
+  // Outlook integration endpoints
+  app.post("/api/outlook/connect", isAuthenticated, async (req, res) => {
+    try {
+      // This would redirect to Microsoft OAuth endpoint in a real implementation
+      // For now, we're just showing how to save the tokens once received from OAuth flow
+      
+      const user = req.user as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
+      // Simulating a successful authentication with Microsoft
+      // This would normally happen via an OAuth redirect flow
+      // We're just demonstrating the saving of tokens part
+      res.json({
+        success: true,
+        message: "Please continue with Microsoft OAuth to connect your Outlook account",
+        authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=YOUR_CLIENT_ID&response_type=code&redirect_uri=YOUR_REDIRECT_URI&scope=openid profile email offline_access Mail.Read Mail.Send",
+      });
+    } catch (error: any) {
+      console.error("Error starting Outlook connection:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/outlook/save-connection", isAuthenticated, async (req, res) => {
+    try {
+      const { accessToken, refreshToken, email } = req.body;
+      
+      if (!accessToken || !refreshToken || !email) {
+        return res.status(400).json({ error: "Missing required connection details" });
+      }
+      
+      const user = req.user as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
+      // Calculate token expiry (typically 1 hour for Microsoft Graph API tokens)
+      const tokenExpiry = new Date();
+      tokenExpiry.setHours(tokenExpiry.getHours() + 1);
+      
+      // Save the Outlook connection
+      const outlookIntegration = await db.insert(outlookIntegrations).values({
+        userId: user.id,
+        accessToken,
+        refreshToken,
+        tokenExpiry,
+        email,
+      }).returning();
+      
+      // In a real implementation, we would also store the tokens securely
+      // For production, encrypt sensitive data like tokens before storing them
+      
+      res.json({
+        success: true,
+        message: "Outlook account connected successfully",
+        integration: {
+          email,
+          connected: true,
+        },
+      });
+    } catch (error: any) {
+      console.error("Error saving Outlook connection:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/outlook/connection", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
+      // Get the user's Outlook integration
+      const [integration] = await db.select()
+        .from(outlookIntegrations)
+        .where(eq(outlookIntegrations.userId, user.id));
+      
+      if (!integration) {
+        return res.json({
+          connected: false,
+        });
+      }
+      
+      // Check if token needs refresh (would happen in a real implementation)
+      // Here we would use the refresh token to get a new access token if needed
+      
+      res.json({
+        connected: true,
+        email: integration.email,
+      });
+    } catch (error: any) {
+      console.error("Error checking Outlook connection:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.delete("/api/outlook/connection", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
+      // Delete the Outlook integration
+      await db.delete(outlookIntegrations)
+        .where(eq(outlookIntegrations.userId, user.id));
+      
+      res.json({
+        success: true,
+        message: "Outlook account disconnected successfully",
+      });
+    } catch (error: any) {
+      console.error("Error disconnecting Outlook account:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   // User Management endpoints
   // Get all users - Admin only

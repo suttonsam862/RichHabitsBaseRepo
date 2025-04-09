@@ -407,6 +407,27 @@ export type DesignVersion = typeof designVersions.$inferSelect;
 export type DesignRevision = typeof designRevisions.$inferSelect;
 export type DesignMessage = typeof designMessages.$inferSelect;
 
+// Outlook integrations for users
+export const outlookIntegrations = pgTable('outlook_integrations', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  accessToken: text('access_token').notNull(),
+  refreshToken: text('refresh_token').notNull(),
+  tokenExpiry: timestamp('token_expiry').notNull(),
+  email: text('email').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const insertOutlookIntegrationSchema = createInsertSchema(outlookIntegrations).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
+});
+
+export type InsertOutlookIntegration = z.infer<typeof insertOutlookIntegrationSchema>;
+export type OutlookIntegration = typeof outlookIntegrations.$inferSelect;
+
 // Define types for feedback
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 export type InsertFeedbackComment = z.infer<typeof insertFeedbackCommentSchema>;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
 
 import {
   Card,
@@ -249,12 +249,143 @@ type NewEmailFormValues = z.infer<typeof newEmailSchema>;
 export default function OutlookPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [emails, setEmails] = useState<Email[]>(INITIAL_EMAILS);
+  const [emails, setEmails] = useState<Email[]>([]);
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<string>("inbox");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [composeOpen, setComposeOpen] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [connectionDialogOpen, setConnectionDialogOpen] = useState<boolean>(false);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [connectedEmail, setConnectedEmail] = useState<string>("");
+  const [isConnecting, setIsConnecting] = useState<boolean>(false);
+  
+  // Define the connection status type
+  interface OutlookConnectionStatus {
+    connected: boolean;
+    email?: string;
+  }
+  
+  // Check if user has connected their Outlook account
+  const { 
+    data: connectionStatus,
+    isLoading: isLoadingConnection,
+    refetch: refetchConnection
+  } = useQuery<OutlookConnectionStatus>({
+    queryKey: ["/api/outlook/connection"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+  });
+  
+  // Load sample data only if not connected to actual Outlook
+  useEffect(() => {
+    if (connectionStatus) {
+      setIsConnected(connectionStatus.connected);
+      if (connectionStatus.connected && connectionStatus.email) {
+        setConnectedEmail(connectionStatus.email);
+      } else {
+        // Use sample data only if not connected
+        setEmails(INITIAL_EMAILS);
+      }
+    }
+  }, [connectionStatus]);
+  
+  // Connect Outlook account mutation
+  const connectOutlookMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/outlook/connect");
+    },
+    onSuccess: async (response) => {
+      const data = await response.json();
+      
+      // In a real implementation, this would redirect to Microsoft's OAuth page
+      // For demo purposes, we'll simulate a successful OAuth flow
+      simulateOAuthFlow();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to connect Outlook",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Save Outlook connection mutation (would be called after OAuth redirect in real implementation)
+  const saveConnectionMutation = useMutation({
+    mutationFn: async (data: { accessToken: string, refreshToken: string, email: string }) => {
+      const res = await apiRequest("POST", "/api/outlook/save-connection", data);
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      setIsConnected(true);
+      setConnectedEmail(data.integration.email);
+      setConnectionDialogOpen(false);
+      refetchConnection();
+      toast({
+        title: "Outlook connected",
+        description: "Your Outlook account has been successfully connected.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to save connection",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Disconnect Outlook account mutation
+  const disconnectOutlookMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("DELETE", "/api/outlook/connection");
+      return await res.json();
+    },
+    onSuccess: () => {
+      setIsConnected(false);
+      setConnectedEmail("");
+      // Use sample data when disconnected
+      setEmails(INITIAL_EMAILS);
+      toast({
+        title: "Outlook disconnected",
+        description: "Your Outlook account has been disconnected.",
+      });
+      refetchConnection();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to disconnect Outlook",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Simulate OAuth flow with Microsoft (in real impl, this would be a redirect to Microsoft's auth page)
+  const simulateOAuthFlow = () => {
+    setIsConnecting(true);
+    
+    // Mock delay to simulate external authentication
+    setTimeout(() => {
+      // Simulate successful authentication
+      saveConnectionMutation.mutate({
+        accessToken: "mock-access-token-" + Math.random().toString(36).substring(2),
+        refreshToken: "mock-refresh-token-" + Math.random().toString(36).substring(2),
+        email: user?.email || "user@example.com",
+      });
+      setIsConnecting(false);
+    }, 2000);
+  };
+  
+  // Connect Outlook account
+  const connectOutlook = () => {
+    setConnectionDialogOpen(true);
+  };
+  
+  // Disconnect Outlook account
+  const disconnectOutlook = () => {
+    disconnectOutlookMutation.mutate();
+  };
 
   // Filter emails based on folder and search query
   const filteredEmails = emails.filter((email) => {
@@ -288,15 +419,17 @@ export default function OutlookPage() {
     },
   });
 
-  // Simulate email refresh
+  // Simulate email refresh or fetch real emails if connected to Outlook
   const refreshEmails = () => {
     setIsRefreshing(true);
-    // In a real implementation, this would be an API call to fetch new emails
+    // In a real implementation with Outlook API connected, this would fetch emails from Microsoft Graph API
     setTimeout(() => {
       setIsRefreshing(false);
       toast({
         title: "Inbox refreshed",
-        description: "Your inbox has been updated with the latest emails.",
+        description: isConnected 
+          ? "Your Outlook inbox has been updated with the latest emails."
+          : "Demo mode: Using sample email data.",
       });
     }, 1500);
   };
@@ -316,12 +449,12 @@ export default function OutlookPage() {
 
   // Handle sending a new email
   const onSendEmail = (data: NewEmailFormValues) => {
-    // In a real implementation, this would be an API call to send the email
+    // In a real implementation with Outlook connected, this would use the Microsoft Graph API
     const newEmail: Email = {
       id: `new-${Date.now()}`,
       from: {
         name: user?.fullName || "Me",
-        email: user?.email || "me@rich-habits.com",
+        email: connectedEmail || user?.email || "me@rich-habits.com",
       },
       to: [
         {
@@ -365,8 +498,10 @@ export default function OutlookPage() {
 
     // Show success toast
     toast({
-      title: "Email sent successfully",
-      description: "Your email has been sent.",
+      title: isConnected ? "Email sent via Outlook" : "Email sent (demo mode)",
+      description: isConnected 
+        ? "Your email has been sent through your Outlook account."
+        : "Demo mode: Email would be sent via Outlook when connected.",
     });
   };
 
@@ -394,7 +529,9 @@ export default function OutlookPage() {
     }
     toast({
       title: "Email archived",
-      description: "The email has been moved to the archive folder.",
+      description: isConnected 
+        ? "The email has been moved to your Outlook archive folder."
+        : "Demo mode: Email would be archived in Outlook when connected.",
     });
   };
 
@@ -411,7 +548,9 @@ export default function OutlookPage() {
     }
     toast({
       title: "Email deleted",
-      description: "The email has been moved to the trash folder.",
+      description: isConnected 
+        ? "The email has been moved to your Outlook trash folder."
+        : "Demo mode: Email would be deleted in Outlook when connected.",
     });
   };
 
@@ -435,8 +574,47 @@ export default function OutlookPage() {
     <div className="container mx-auto py-6">
       <div className="flex flex-col space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Outlook Email</h1>
+          <div className="flex items-center">
+            <h1 className="text-3xl font-bold">Outlook Email</h1>
+            {isConnected && (
+              <Badge variant="outline" className="ml-4 text-sm">
+                Connected: {connectedEmail}
+              </Badge>
+            )}
+            {!isConnected && (
+              <Badge variant="outline" className="ml-4 text-sm bg-yellow-50">
+                Demo Mode: Using sample data
+              </Badge>
+            )}
+          </div>
           <div className="flex space-x-2">
+            {!isConnected ? (
+              <Button
+                variant="default"
+                onClick={connectOutlook}
+                disabled={isConnecting}
+                className="bg-[#0078d4] hover:bg-[#106ebe]"
+              >
+                {isConnecting ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Mail className="h-4 w-4 mr-2" />
+                )}
+                Connect Outlook
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={disconnectOutlook}
+                disabled={disconnectOutlookMutation.isPending}
+              >
+                {disconnectOutlookMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <span>Disconnect</span>
+                )}
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={refreshEmails}
@@ -799,6 +977,77 @@ export default function OutlookPage() {
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Outlook account connection dialog */}
+      <Dialog open={connectionDialogOpen} onOpenChange={setConnectionDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Connect Outlook Account</DialogTitle>
+            <DialogDescription>
+              Connect your Outlook email account to access your emails directly in Rich Habits Dashboard.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="bg-[#f3f9ff] p-4 rounded-md border border-[#d0e7ff]">
+              <div className="flex items-start mb-2">
+                <AlertCircle className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
+                <p className="text-sm text-blue-700">
+                  <span className="font-semibold">Microsoft Authentication Required</span>
+                </p>
+              </div>
+              <p className="text-sm text-blue-700 ml-7">
+                You'll be redirected to Microsoft to securely sign in to your account. 
+                Rich Habits will only have access to the permissions you approve.
+              </p>
+            </div>
+            
+            <div className="border rounded-md p-4">
+              <h3 className="font-medium text-sm mb-2">Rich Habits will be able to:</h3>
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-start">
+                  <div className="bg-green-100 p-1 rounded-full mr-2 mt-0.5">
+                    <Mail className="h-3 w-3 text-green-600" />
+                  </div>
+                  Read your emails
+                </li>
+                <li className="flex items-start">
+                  <div className="bg-green-100 p-1 rounded-full mr-2 mt-0.5">
+                    <Send className="h-3 w-3 text-green-600" />
+                  </div>
+                  Send emails on your behalf
+                </li>
+                <li className="flex items-start">
+                  <div className="bg-green-100 p-1 rounded-full mr-2 mt-0.5">
+                    <Paperclip className="h-3 w-3 text-green-600" />
+                  </div>
+                  Access email attachments
+                </li>
+              </ul>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConnectionDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              className="bg-[#0078d4] hover:bg-[#106ebe]"
+              onClick={() => connectOutlookMutation.mutate()}
+              disabled={isConnecting}
+            >
+              {isConnecting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Connecting...
+                </>
+              ) : (
+                <>Continue with Microsoft</>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

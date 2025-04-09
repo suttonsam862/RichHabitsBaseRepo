@@ -624,7 +624,7 @@ export default function OrderManagement() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Status</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} defaultValue={field.value || "pending"}>
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select status" />
@@ -666,7 +666,7 @@ export default function OrderManagement() {
                           <FormItem>
                             <FormLabel>Customer Email</FormLabel>
                             <FormControl>
-                              <Input {...field} type="email" />
+                              <Input {...field} type="email" value={field.value || ""} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -680,7 +680,7 @@ export default function OrderManagement() {
                           <FormItem>
                             <FormLabel>Total Amount</FormLabel>
                             <FormControl>
-                              <Input {...field} type="text" />
+                              <Input {...field} type="text" value={field.value || ""} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -693,7 +693,7 @@ export default function OrderManagement() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Priority</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} defaultValue={field.value || "medium"}>
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select priority" />
@@ -719,7 +719,7 @@ export default function OrderManagement() {
                             <FormLabel>Organization</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
-                              defaultValue={field.value || ""}
+                              defaultValue={field.value || "none"}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -727,7 +727,7 @@ export default function OrderManagement() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">No Organization</SelectItem>
+                                <SelectItem value="none">No Organization</SelectItem>
                                 {organizationsData?.map((org: any) => (
                                   <SelectItem key={org.id} value={org.id.toString()}>
                                     {org.name} ({org.type})
@@ -751,6 +751,7 @@ export default function OrderManagement() {
                                 placeholder="Enter shipping address"
                                 className="resize-none"
                                 {...field}
+                                value={field.value || ""}
                               />
                             </FormControl>
                             <FormMessage />
@@ -769,6 +770,7 @@ export default function OrderManagement() {
                                 placeholder="Add notes about this order"
                                 className="resize-none"
                                 {...field}
+                                value={field.value || ""}
                               />
                             </FormControl>
                             <FormMessage />
@@ -788,7 +790,7 @@ export default function OrderManagement() {
                             <FormLabel>Assigned Sales Representative</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
-                              defaultValue={field.value || ""}
+                              defaultValue={field.value || "unassigned"}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -796,7 +798,7 @@ export default function OrderManagement() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">Unassigned</SelectItem>
+                                <SelectItem value="unassigned">Unassigned</SelectItem>
                                 {salesTeamData?.map((rep: any) => (
                                   <SelectItem key={rep.id} value={rep.id.toString()}>
                                     {rep.name} - {rep.role}
@@ -820,7 +822,7 @@ export default function OrderManagement() {
                             <FormLabel>Assigned Designer</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
-                              defaultValue={field.value || ""}
+                              defaultValue={field.value || "unassigned"}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -828,7 +830,7 @@ export default function OrderManagement() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">Unassigned</SelectItem>
+                                <SelectItem value="unassigned">Unassigned</SelectItem>
                                 {designTeamData?.map((designer: any) => (
                                   <SelectItem key={designer.id} value={designer.id.toString()}>
                                     {designer.name} - {designer.specialization || "Designer"}
@@ -852,7 +854,7 @@ export default function OrderManagement() {
                             <FormLabel>Assigned Manufacturer</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
-                              defaultValue={field.value || ""}
+                              defaultValue={field.value || "unassigned"}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -860,7 +862,7 @@ export default function OrderManagement() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">Unassigned</SelectItem>
+                                <SelectItem value="unassigned">Unassigned</SelectItem>
                                 {manufacturersData?.map((manufacturer: any) => (
                                   <SelectItem key={manufacturer.id} value={manufacturer.id.toString()}>
                                     {manufacturer.name} - {manufacturer.specialization || "Manufacturer"}

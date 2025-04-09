@@ -101,6 +101,7 @@ export interface IStorage {
   getOrders(): Promise<Order[]>;
   getRecentOrders(limit?: number): Promise<Order[]>;
   createOrder(order: InsertOrder): Promise<Order>;
+  updateOrder(id: number, orderData: Partial<Order>): Promise<Order>;
   getOrderById(id: number): Promise<Order | undefined>;
   deleteOrder(id: number): Promise<void>;
   
@@ -356,6 +357,31 @@ export class DatabaseStorage implements IStorage {
   async getOrderById(id: number): Promise<Order | undefined> {
     const [order] = await db.select().from(orders).where(eq(orders.id, id));
     return order || undefined;
+  }
+  
+  async updateOrder(id: number, orderData: Partial<Order>): Promise<Order> {
+    try {
+      // Make sure the order exists
+      const order = await this.getOrderById(id);
+      if (!order) {
+        throw new Error("Order not found");
+      }
+      
+      // Remove id from the update data if it exists
+      const { id: _, ...updateData } = orderData;
+      
+      // Update the order
+      const [updatedOrder] = await db
+        .update(orders)
+        .set(updateData)
+        .where(eq(orders.id, id))
+        .returning();
+      
+      return updatedOrder;
+    } catch (error) {
+      console.error("Error updating order:", error);
+      throw error;
+    }
   }
   
   async deleteOrder(id: number): Promise<void> {

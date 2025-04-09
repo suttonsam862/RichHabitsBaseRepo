@@ -254,6 +254,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.patch("/api/orders/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid order ID" });
+      }
+      
+      const order = await storage.getOrderById(id);
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as any;
+      
+      // Check if user has permission to modify this order
+      // Either they need VIEW_ALL_ORDERS permission or they need to be assigned to this order
+      const canModifyOrder = hasPermission(
+        user.role,
+        user.permissions,
+        PERMISSIONS.VIEW_ALL_ORDERS
+      ) || order.assignedSalesRepId === user.id;
+      
+      if (!canModifyOrder) {
+        return res.status(403).json({ error: "Not authorized to modify this order" });
+      }
+      
+      // Update order fields
+      const updatedOrderData = {
+        ...req.body,
+      };
+      
+      // Convert string IDs to numbers where appropriate
+      if (updatedOrderData.assignedSalesRepId && updatedOrderData.assignedSalesRepId !== "unassigned") {
+        updatedOrderData.assignedSalesRepId = parseInt(updatedOrderData.assignedSalesRepId);
+      } else if (updatedOrderData.assignedSalesRepId === "unassigned") {
+        updatedOrderData.assignedSalesRepId = null;
+      }
+      
+      if (updatedOrderData.assignedDesignerId && updatedOrderData.assignedDesignerId !== "unassigned") {
+        updatedOrderData.assignedDesignerId = parseInt(updatedOrderData.assignedDesignerId);
+      } else if (updatedOrderData.assignedDesignerId === "unassigned") {
+        updatedOrderData.assignedDesignerId = null;
+      }
+      
+      if (updatedOrderData.assignedManufacturerId && updatedOrderData.assignedManufacturerId !== "unassigned") {
+        updatedOrderData.assignedManufacturerId = parseInt(updatedOrderData.assignedManufacturerId);
+      } else if (updatedOrderData.assignedManufacturerId === "unassigned") {
+        updatedOrderData.assignedManufacturerId = null;
+      }
+      
+      if (updatedOrderData.organizationId && updatedOrderData.organizationId !== "none") {
+        updatedOrderData.organizationId = parseInt(updatedOrderData.organizationId);
+      } else if (updatedOrderData.organizationId === "none") {
+        updatedOrderData.organizationId = null;
+      }
+      
+      // Set updatedAt timestamp
+      updatedOrderData.updatedAt = new Date();
+      
+      // Perform the update
+      const updatedOrder = await storage.updateOrder(id, updatedOrderData);
+      
+      // Create activity for the updated order
+      await storage.createActivity({
+        userId: user.id,
+        type: "order",
+        content: `Order ${order.orderId} was updated`,
+        relatedId: id,
+        relatedType: "order"
+      });
+      
+      res.status(200).json({ 
+        success: true,
+        data: updatedOrder
+      });
+    } catch (error: any) {
+      console.error("Error updating order:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.delete("/api/orders/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);

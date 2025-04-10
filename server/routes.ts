@@ -987,6 +987,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
+  
+  // Get sales representatives
+  app.get("/api/users/sales-reps", async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      const salesReps = users.filter(user => 
+        user.role === 'sales' || // Filter by sales role
+        (user.permissions && user.permissions.includes(PERMISSIONS.MANAGE_LEADS)) // Or has lead management permission
+      );
+      res.json({ data: salesReps });
+    } catch (error: any) {
+      console.error("Error fetching sales representatives:", error);
+      res.status(500).json({ error: "Failed to fetch sales representatives" });
+    }
+  });
 
   // Update user role - Admin only
   app.patch("/api/users/:id/role", isAdmin, async (req, res) => {

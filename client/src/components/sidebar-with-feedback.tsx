@@ -205,6 +205,12 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               id: "outlook",
             },
             {
+              name: "Sales Process Guide",
+              href: "/sales-process",
+              icon: <FileBarChart className="mr-2" size={16} />,
+              id: "sales-process",
+            },
+            {
               name: "Order Tracking",
               href: "/order-tracking",
               icon: <ShoppingBag className="mr-2" size={16} />,
@@ -356,6 +362,12 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               name: "Product Catalog",
               href: "/catalog",
               icon: <Shirt className="mr-2" size={16} />,
+            },
+            {
+              name: "Sales Process Guide",
+              href: "/sales-process",
+              icon: <FileBarChart className="mr-2" size={16} />,
+              id: "sales-process",
             },
             {
               name: "Design Communication",
@@ -690,6 +702,12 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               href: "/outlook",
               icon: <MessageCircle className="mr-2" size={16} />,
               id: "outlook",
+            },
+            {
+              name: "Sales Process Guide",
+              href: "/sales-process",
+              icon: <FileBarChart className="mr-2" size={16} />,
+              id: "sales-process",
             },
             {
               name: "Analytics",

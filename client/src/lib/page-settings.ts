@@ -142,6 +142,12 @@ export const AVAILABLE_PAGES = [
     description: "Manage product photos and measurements (Admin)",
     category: "Administration",
   },
+  {
+    id: "sales-process",
+    name: "Sales Process Guide",
+    description: "Learn about the complete sales workflow",
+    category: "Core",
+  },
 ];
 
 export const AVAILABLE_PAGES_LIST = AVAILABLE_PAGES;
@@ -154,26 +160,26 @@ export const PAGE_ACCESS_TEMPLATES = {
     "leads", "orders", "design", "manufacturing",
     "catalog", "analytics", "reports", "user-management", "outlook",
     "design-communication", "production-communication", "feedback",
-    "admin/product-management", "admin/product-creation"
+    "admin/product-management", "admin/product-creation", "sales-process"
   ],
   SALES: [
     "dashboard", "messages", "profile", 
     "leads", "orders", "catalog", "analytics", "outlook",
-    "feedback"
+    "feedback", "sales-process"
   ],
   DESIGNER: [
     "dashboard", "messages", "profile",
     "design", "design-communication", "catalog", "outlook",
-    "orders", "feedback"
+    "orders", "feedback", "sales-process"
   ],
   MANUFACTURER: [
     "dashboard", "messages", "profile",
     "manufacturing", "production-communication", "outlook",
-    "catalog", "orders", "feedback"
+    "catalog", "orders", "feedback", "sales-process"
   ],
   CUSTOMER: [
     "dashboard", "messages", "profile", 
-    "orders", "catalog", "outlook", "feedback"
+    "orders", "catalog", "outlook", "feedback", "sales-process"
   ],
   MINIMAL: [
     "dashboard", "messages", "profile", "outlook", "feedback"

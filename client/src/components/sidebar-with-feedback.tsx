@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useRoute } from "wouter";
 import { cn } from "@/lib/utils";
 import { AuthUser } from "@/types";
 import { useToast } from "@/hooks/use-toast";

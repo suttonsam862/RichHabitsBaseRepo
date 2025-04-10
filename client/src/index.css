@@ -108,4 +108,20 @@
     opacity: 1;
     transform: scale(1);
   }
+  
+  /* Page Transition Effects */
+  .page-container {
+    opacity: 1;
+    transition: opacity 0.15s ease-in-out;
+  }
+  
+  .page-transitioning .page-container {
+    opacity: 0;
+  }
+  
+  /* Force remove any transition animations when page is transitioning */
+  .page-transitioning * {
+    transition: none !important;
+    animation: none !important;
+  }
 }

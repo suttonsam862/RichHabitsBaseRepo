@@ -1076,11 +1076,11 @@ const ProductManagementPage: FC = () => {
 
               {/* Edit Product Dialog */}
               <Dialog open={editProductOpen} onOpenChange={setEditProductOpen}>
-                <DialogContent className="max-w-3xl max-h-[calc(100vh-64px)] overflow-y-auto">
+                <DialogContent className="max-w-4xl max-h-[calc(100vh-64px)] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Edit Product</DialogTitle>
                     <DialogDescription>
-                      Update the details of this product.
+                      Update the details of this product with advanced fabric specifications and images.
                     </DialogDescription>
                   </DialogHeader>
                   {selectedProduct && (
@@ -1098,6 +1098,9 @@ const ProductManagementPage: FC = () => {
                         minOrder: selectedProduct.minOrder,
                         leadTime: selectedProduct.leadTime,
                         isActive: selectedProduct.isActive,
+                        fabricDetails: selectedProduct.fabricDetails || null,
+                        measurementGrid: selectedProduct.measurementGrid || null,
+                        productImages: selectedProduct.productImages || [],
                       }}
                       onSubmit={(values) =>
                         updateProductMutation.mutate({

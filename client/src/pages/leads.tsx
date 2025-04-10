@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, Search, Filter, Inbox, UserCircle } from "lucide-react";
+import { PlusCircle, Search, Filter, Inbox, UserCircle, Archive, Plus } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -53,6 +53,8 @@ export default function Leads() {
   
   // Get user permissions
   const canViewAllLeads = user?.permissions?.includes('view_all_leads') || user?.role === 'admin';
+  // Check if user is admin (for archived leads tab)
+  const isAdmin = user?.role === 'admin';
   
   const { data, isLoading } = useQuery({
     queryKey: ['/api/leads'],
@@ -296,6 +298,14 @@ export default function Leads() {
                            lead.email.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
       return matchesSearch && matchesStatus;
+    });
+    
+  // Create filtered list for archived leads (for admin only)
+  const archivedLeads = leads.filter(lead => lead.status === "closed" || lead.status === "lost")
+    .filter(lead => {
+      const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           lead.email.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesSearch;
     });
 
   return (

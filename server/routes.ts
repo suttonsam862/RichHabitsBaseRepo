@@ -431,6 +431,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const randomNumbers = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
       const orderId = `${orderPrefix}-${randomNumbers}`;
       
+      // Determine the sales rep to assign to this order
+      let assignedSalesRepId = null;
+      
+      // First, use the sales rep who claimed the lead (highest priority)
+      if (lead.claimedById) {
+        assignedSalesRepId = lead.claimedById;
+        console.log(`Assigning order to sales rep who claimed the lead: ${lead.claimedById}`);
+      }
+      // Otherwise, if there's a sales rep assigned to the lead, use that
+      else if (lead.salesRepId) {
+        assignedSalesRepId = lead.salesRepId;
+        console.log(`Assigning order to sales rep assigned to the lead: ${lead.salesRepId}`);
+      }
+      // Default to the current user if they're a sales rep
+      else if (req.user && (req.user as User).role === ROLES.AGENT) {
+        assignedSalesRepId = (req.user as User).id;
+        console.log(`Assigning order to current user (sales rep): ${(req.user as User).id}`);
+      }
+      
+      console.log(`Lead conversion: salesRepId=${lead.salesRepId}, claimedById=${lead.claimedById}, assigned=${assignedSalesRepId}`);
+      
       const orderData = {
         userId: req.user?.id || 1,
         orderId,
@@ -438,7 +459,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customerEmail: lead.email,
         totalAmount: lead.value || 0,
         status: "pending",
-        assignedSalesRepId: lead.salesRepId || lead.claimedById,
+        assignedSalesRepId: assignedSalesRepId,
         notes: `Order created from lead: ${lead.notes || ""}`,
       };
       
@@ -525,12 +546,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = req.user as any;
       
-      // Check if user has permission to see all orders or just their assigned ones
-      const canViewAllOrders = hasPermission(
+      // Admin users and those with the explicit permission can see all orders
+      const canViewAllOrders = user.role === ROLES.ADMIN || hasPermission(
         user.role,
         user.permissions,
         PERMISSIONS.VIEW_ALL_ORDERS
       );
+      
+      console.log(`User ${user.username} requesting recent orders - Role: ${user.role}, Can view all: ${canViewAllOrders}`);
       
       if (canViewAllOrders) {
         // User has permission to view all orders
@@ -539,9 +562,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // User can only view orders assigned to them
         const recentOrders = await storage.getRecentOrders(3, user.id);
+        console.log(`Filtering recent orders for user ${user.username} (ID: ${user.id}) - Found ${recentOrders.length} orders`);
         return res.json({ data: recentOrders });
       }
     } catch (error: any) {
+      console.error("Error fetching recent orders:", error);
       res.status(500).json({ error: error.message });
     }
   });

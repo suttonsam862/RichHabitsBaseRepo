@@ -92,6 +92,7 @@ export interface IStorage {
   getRecentLeads(limit?: number): Promise<Lead[]>;
   createLead(lead: InsertLead): Promise<Lead>;
   getLeadById(id: number): Promise<Lead | undefined>;
+  updateLead(lead: Lead): Promise<Lead>;
   deleteLead(id: number): Promise<void>;
   getUnassignedLeads(): Promise<Lead[]>;
   getLeadAssignments(): Promise<any[]>;
@@ -354,6 +355,25 @@ export class DatabaseStorage implements IStorage {
   async getLeadById(id: number): Promise<Lead | undefined> {
     const [lead] = await db.select().from(leads).where(eq(leads.id, id));
     return lead || undefined;
+  }
+  
+  async updateLead(lead: Lead): Promise<Lead> {
+    try {
+      // Remove id from the lead data to avoid updating the primary key
+      const { id, ...updateData } = lead;
+      
+      // Update the lead
+      const [updatedLead] = await db
+        .update(leads)
+        .set(updateData)
+        .where(eq(leads.id, id))
+        .returning();
+      
+      return updatedLead;
+    } catch (error) {
+      console.error("Error updating lead:", error);
+      throw error;
+    }
   }
   
   async deleteLead(id: number): Promise<void> {

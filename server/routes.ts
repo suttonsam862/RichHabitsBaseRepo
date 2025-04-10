@@ -828,6 +828,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Filtered activities endpoint for client consumption
+  app.get("/api/activities/recent/filtered", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Parse query parameters with defaults
+      const userId = parseInt(req.query.userId as string) || (req.user as User).id;
+      const limit = parseInt(req.query.limit as string) || 8;
+      const includeTeam = req.query.includeTeam === 'true';
+      const includeRelated = req.query.includeRelated === 'true';
+      const includeSystem = req.query.includeSystem === 'true';
+      
+      console.log(`Getting filtered activities for user ${userId}, includeTeam: ${includeTeam}, includeRelated: ${includeRelated}, includeSystem: ${includeSystem}`);
+      
+      const activities = await storage.getRecentActivitiesFiltered(
+        limit,
+        userId,
+        includeTeam,
+        includeRelated,
+        includeSystem
+      );
+      
+      res.json({ data: activities });
+    } catch (error: any) {
+      console.error("Error fetching filtered activities:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Analytics endpoints
   app.get("/api/analytics/revenue/:timeRange", async (req, res) => {
     try {

@@ -298,8 +298,8 @@ export class DatabaseStorage implements IStorage {
       const [updatedUser] = await db
         .update(users)
         .set({ 
-          visiblePages: visiblePages as any,
-          updatedAt: new Date() 
+          visiblePages: visiblePages as any
+          // Note: updatedAt is handled automatically by the schema
         })
         .where(eq(users.id, userId))
         .returning();

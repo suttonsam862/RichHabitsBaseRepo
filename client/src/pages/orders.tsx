@@ -28,10 +28,10 @@ const formSchema = insertOrderSchema.extend({
   // Override totalAmount to make it optional in the form
   totalAmount: z.string().optional().transform(val => val || "0.00"),
   status: z.enum(["pending", "processing", "paid", "shipped", "delivered", "cancelled", "refunded"]).default("pending"),
-  organizationId: z.string().optional(),
+  organizationId: z.string().optional().transform(val => val ? parseInt(val, 10) : undefined),
   productIds: z.array(z.string()).optional(),
   itemName: z.string().optional(),
-  assignedSalesRepId: z.string().optional(),
+  assignedSalesRepId: z.string().optional().transform(val => val ? parseInt(val, 10) : undefined),
 });
 
 interface Organization {

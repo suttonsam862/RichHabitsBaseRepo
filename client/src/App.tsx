@@ -24,6 +24,7 @@ import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 import { useAuth, AuthProvider } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
+import { PageGuard } from "@/lib/page-guard"; // Import the PageGuard component
 
 // Admin pages
 import SalesTeam from "./pages/admin/sales-team";
@@ -55,10 +56,12 @@ function DashboardLayout() {
     }, 150);
   };
   
-  // Wrap all page components with a loading boundary
-  const PageLoader = ({ children }: { children: React.ReactNode }) => (
+  // Wrap all page components with a loading boundary and page guard
+  const ProtectedPageLoader = ({ children, pageId }: { children: React.ReactNode, pageId: string }) => (
     <div className="page-container w-full h-full">
-      {children}
+      <PageGuard pageId={pageId}>
+        {children}
+      </PageGuard>
     </div>
   );
   
@@ -66,84 +69,86 @@ function DashboardLayout() {
     <Layout user={user as AuthUser}>
       <Switch>
         <Route path="/">
-          <PageLoader><Dashboard /></PageLoader>
+          <ProtectedPageLoader pageId="dashboard"><Dashboard /></ProtectedPageLoader>
         </Route>
         <Route path="/dashboard">
-          <PageLoader><Dashboard /></PageLoader>
+          <ProtectedPageLoader pageId="dashboard"><Dashboard /></ProtectedPageLoader>
         </Route>
         <Route path="/leads">
-          <PageLoader><Leads /></PageLoader>
+          <ProtectedPageLoader pageId="leads"><Leads /></ProtectedPageLoader>
         </Route>
         <Route path="/orders">
-          <PageLoader><Orders /></PageLoader>
+          <ProtectedPageLoader pageId="orders"><Orders /></ProtectedPageLoader>
         </Route>
         <Route path="/design">
-          <PageLoader><Design /></PageLoader>
+          <ProtectedPageLoader pageId="design"><Design /></ProtectedPageLoader>
         </Route>
         <Route path="/manufacturing">
-          <PageLoader><Manufacturing /></PageLoader>
+          <ProtectedPageLoader pageId="manufacturing"><Manufacturing /></ProtectedPageLoader>
         </Route>
         <Route path="/organizations">
-          <PageLoader><Organizations /></PageLoader>
+          <ProtectedPageLoader pageId="organizations"><Organizations /></ProtectedPageLoader>
         </Route>
         <Route path="/messages">
-          <PageLoader><Messages /></PageLoader>
+          <ProtectedPageLoader pageId="messages"><Messages /></ProtectedPageLoader>
         </Route>
         <Route path="/reports">
-          <PageLoader><Reports /></PageLoader>
+          <ProtectedPageLoader pageId="reports"><Reports /></ProtectedPageLoader>
         </Route>
         <Route path="/analytics">
-          <PageLoader><Analytics /></PageLoader>
+          <ProtectedPageLoader pageId="analytics"><Analytics /></ProtectedPageLoader>
         </Route>
         <Route path="/user-management">
-          <PageLoader><UserManagement /></PageLoader>
+          <ProtectedPageLoader pageId="user-management"><UserManagement /></ProtectedPageLoader>
         </Route>
         <Route path="/profile">
-          <PageLoader><Profile /></PageLoader>
+          <ProtectedPageLoader pageId="profile"><Profile /></ProtectedPageLoader>
         </Route>
         <Route path="/settings">
-          <PageLoader><Settings /></PageLoader>
+          <ProtectedPageLoader pageId="settings"><Settings /></ProtectedPageLoader>
         </Route>
         <Route path="/catalog">
-          <PageLoader><Catalog /></PageLoader>
+          <ProtectedPageLoader pageId="catalog"><Catalog /></ProtectedPageLoader>
         </Route>
         <Route path="/corporate">
-          <PageLoader><Corporate /></PageLoader>
+          <ProtectedPageLoader pageId="corporate"><Corporate /></ProtectedPageLoader>
         </Route>
         <Route path="/design-communication">
-          <PageLoader><DesignCommunication /></PageLoader>
+          <ProtectedPageLoader pageId="design-communication"><DesignCommunication /></ProtectedPageLoader>
         </Route>
         <Route path="/production-communication">
-          <PageLoader><ProductionCommunication /></PageLoader>
+          <ProtectedPageLoader pageId="production-communication"><ProductionCommunication /></ProtectedPageLoader>
         </Route>
         <Route path="/feedback">
-          <PageLoader><Feedback /></PageLoader>
+          <ProtectedPageLoader pageId="feedback"><Feedback /></ProtectedPageLoader>
         </Route>
         <Route path="/outlook">
-          <PageLoader><Outlook /></PageLoader>
+          <ProtectedPageLoader pageId="outlook"><Outlook /></ProtectedPageLoader>
         </Route>
         
         {/* Admin Routes */}
         <Route path="/admin/sales-team">
-          <PageLoader><SalesTeam /></PageLoader>
+          <ProtectedPageLoader pageId="admin/sales-team"><SalesTeam /></ProtectedPageLoader>
         </Route>
         <Route path="/admin/design-team">
-          <PageLoader><DesignTeam /></PageLoader>
+          <ProtectedPageLoader pageId="admin/design-team"><DesignTeam /></ProtectedPageLoader>
         </Route>
         <Route path="/admin/manufacturing-team">
-          <PageLoader><ManufacturingTeam /></PageLoader>
+          <ProtectedPageLoader pageId="admin/manufacturing-team"><ManufacturingTeam /></ProtectedPageLoader>
         </Route>
         <Route path="/admin/product-management">
-          <PageLoader><ProductManagement /></PageLoader>
+          <ProtectedPageLoader pageId="admin/product-management"><ProductManagement /></ProtectedPageLoader>
         </Route>
         <Route path="/admin/product-creation">
-          <PageLoader><ProductCreation /></PageLoader>
+          <ProtectedPageLoader pageId="admin/product-creation"><ProductCreation /></ProtectedPageLoader>
         </Route>
         <Route path="/admin/order-management">
-          <PageLoader><OrderManagement /></PageLoader>
+          <ProtectedPageLoader pageId="admin/order-management"><OrderManagement /></ProtectedPageLoader>
         </Route>
         <Route>
-          <PageLoader><NotFound /></PageLoader>
+          <div className="page-container w-full h-full">
+            <NotFound />
+          </div>
         </Route>
       </Switch>
     </Layout>

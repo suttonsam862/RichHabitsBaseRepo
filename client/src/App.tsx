@@ -30,6 +30,7 @@ import SalesTeam from "./pages/admin/sales-team";
 import DesignTeam from "./pages/admin/design-team";
 import ManufacturingTeam from "./pages/admin/manufacturing-team";
 import ProductManagement from "./pages/admin/product-management";
+import ProductCreation from "./pages/admin/product-creation";
 import OrderManagement from "./pages/admin/order-management";
 
 // The main dashboard layout with all protected routes
@@ -134,6 +135,9 @@ function DashboardLayout() {
         </Route>
         <Route path="/admin/product-management">
           <PageLoader><ProductManagement /></PageLoader>
+        </Route>
+        <Route path="/admin/product-creation">
+          <PageLoader><ProductCreation /></PageLoader>
         </Route>
         <Route path="/admin/order-management">
           <PageLoader><OrderManagement /></PageLoader>

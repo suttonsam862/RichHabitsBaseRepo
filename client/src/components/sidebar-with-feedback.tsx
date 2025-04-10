@@ -235,6 +235,11 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               icon: <PackageOpen className="mr-2" size={16} />,
             },
             {
+              name: "Product Creation",
+              href: "/admin/product-creation",
+              icon: <Shirt className="mr-2" size={16} />,
+            },
+            {
               name: "Sales Team",
               href: "/admin/sales-team",
               icon: <BriefcaseBusiness className="mr-2" size={16} />,

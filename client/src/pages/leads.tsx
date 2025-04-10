@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import { PlusCircle, Search, Filter, Inbox, UserCircle } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,6 +27,15 @@ const formSchema = insertLeadSchema.extend({
   status: z.enum(["new", "contacted", "qualified", "proposal", "negotiation", "closed", "lost"]),
   value: z.string().optional().nullable(),
   autoClaimLead: z.boolean().optional(),
+  // Additional fields for organization creation
+  website: z.string().optional(),
+  industry: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zip: z.string().optional(),
+  country: z.string().optional().default("USA"),
+  organizationType: z.string().optional().default("client"),
 });
 
 export default function Leads() {
@@ -122,6 +132,15 @@ export default function Leads() {
       notes: "",
       value: "",
       autoClaimLead: false,
+      // Default values for organization fields
+      website: "",
+      industry: "",
+      address: "",
+      city: "",
+      state: "",
+      zip: "",
+      country: "USA",
+      organizationType: "client",
     },
   });
 
@@ -429,6 +448,159 @@ export default function Leads() {
                       </FormItem>
                     )}
                   />
+                  
+                  {/* Organization fields section */}
+                  <Separator className="my-4" />
+                  <h3 className="text-md font-medium mb-2">Organization Information</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    An organization will be automatically created with this information.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="website"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Website</FormLabel>
+                          <FormControl>
+                            <Input placeholder="https://example.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="industry"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Industry</FormLabel>
+                          <FormControl>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select industry" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Education">Education</SelectItem>
+                                <SelectItem value="Sports">Sports</SelectItem>
+                                <SelectItem value="Fitness">Fitness</SelectItem>
+                                <SelectItem value="Healthcare">Healthcare</SelectItem>
+                                <SelectItem value="Manufacturing">Manufacturing</SelectItem>
+                                <SelectItem value="Retail">Retail</SelectItem>
+                                <SelectItem value="Technology">Technology</SelectItem>
+                                <SelectItem value="Other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <FormField
+                    control={form.control}
+                    name="organizationType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Organization Type</FormLabel>
+                        <FormControl>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select organization type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="client">Client</SelectItem>
+                              <SelectItem value="school">School</SelectItem>
+                              <SelectItem value="sports_team">Sports Team</SelectItem>
+                              <SelectItem value="club">Club</SelectItem>
+                              <SelectItem value="gym">Gym</SelectItem>
+                              <SelectItem value="vendor">Vendor</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Address</FormLabel>
+                          <FormControl>
+                            <Input placeholder="123 Main St" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>City</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Anytown" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>State</FormLabel>
+                          <FormControl>
+                            <Input placeholder="CA" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="zip"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>ZIP Code</FormLabel>
+                          <FormControl>
+                            <Input placeholder="12345" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="country"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Country</FormLabel>
+                          <FormControl>
+                            <Input placeholder="USA" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <Separator className="my-4" />
                   
                   <FormField
                     control={form.control}

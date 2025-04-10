@@ -245,10 +245,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create organization with data from the lead
         const newOrganization = await storage.createOrganization({
           name: newLead.name, // Use lead name as organization name
-          type: 'client',
-          industry: 'Unspecified', // Default value, can be updated later
+          type: validatedData.organizationType || 'client',
+          industry: validatedData.industry || 'Unspecified',
           email: newLead.email,
           phone: newLead.phone || '',
+          website: validatedData.website || '',
+          address: validatedData.address || '',
+          city: validatedData.city || '',
+          state: validatedData.state || '',
+          zip: validatedData.zip || '',
+          country: validatedData.country || 'USA',
           status: 'active',
           assignedSalesRepId: newLead.salesRepId || null,
           notes: `Auto-created from lead. ${newLead.notes || ''}`,

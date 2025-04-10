@@ -97,6 +97,10 @@ export const leads = pgTable("leads", {
   notes: text("notes"),
   value: numeric("value"),
   salesRepId: integer("sales_rep_id"),
+  claimed: boolean("claimed").default(false),
+  claimedById: integer("claimed_by_id").references(() => users.id),
+  claimedAt: timestamp("claimed_at"),
+  verifiedAt: timestamp("verified_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

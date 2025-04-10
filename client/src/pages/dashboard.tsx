@@ -23,12 +23,12 @@ export default function Dashboard() {
   const isAdmin = user?.role === "admin";
   
   const { data, isLoading } = useQuery({
-    queryKey: ['/api/dashboard/stats'],
+    queryKey: ['/api/dashboard/stats', user?.id],
     refetchInterval: false,
     refetchOnWindowFocus: false,
   });
 
-  // Stats from API
+  // Stats from API - these are already user-specific based on permissions
   const stats: DashboardStats = data?.data || {
     totalLeads: 0,
     activeOrders: 0,

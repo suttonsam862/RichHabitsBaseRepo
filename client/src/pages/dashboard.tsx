@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { 
   Users, ShoppingBag, DollarSign, MessageSquare, Bell, 
   TrendingUp, BarChart, PhoneCall, Calendar, ArrowUpRight,
@@ -22,8 +22,28 @@ export default function Dashboard() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   
+  // Main dashboard stats
   const { data, isLoading } = useQuery({
     queryKey: ['/api/dashboard/stats', user?.id],
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // Get additional analytics data
+  const { data: revenueData } = useQuery({
+    queryKey: ['/api/analytics/revenue/monthly', user?.id],
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+  });
+  
+  const { data: ordersData } = useQuery({
+    queryKey: ['/api/orders/recent', user?.id],
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+  });
+  
+  const { data: leadsData } = useQuery({
+    queryKey: ['/api/leads/recent', user?.id],
     refetchInterval: false,
     refetchOnWindowFocus: false,
   });
@@ -35,73 +55,87 @@ export default function Dashboard() {
     monthlyRevenue: "$0",
     unreadMessages: 0,
   };
+  
+  // Calculate conversion rate based on leads and orders
+  const orders = ordersData?.data || [];
+  const leads = leadsData?.data || [];
+  const conversionRate = leads.length > 0 ? ((orders.length / leads.length) * 100).toFixed(1) + "%" : "0%";
+  
+  // Calculate average order value
+  const totalOrderAmount = orders.reduce((sum: number, order: any) => {
+    const amount = parseFloat(order.totalAmount.toString().replace(/[^0-9.-]+/g, "")) || 0;
+    return sum + amount;
+  }, 0);
+  const avgOrderValue = orders.length > 0 
+    ? "$" + (totalOrderAmount / orders.length).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})
+    : "$0";
 
-  // Define KPI cards with more modern metrics
+  // Define KPI cards with real-time metrics
   const statsCards: StatCard[] = [
     {
       title: "Active Leads",
       value: stats.totalLeads,
-      change: stats.totalLeads > 0 ? "+3 this week" : "No change",
+      change: stats.totalLeads > 0 ? `${stats.totalLeads} total` : "No active leads",
       icon: <Users size={20} />,
       iconBg: "bg-blue-50",
       iconColor: "text-blue-500",
     },
     {
-      title: "In Progress",
+      title: "Orders In Progress",
       value: stats.activeOrders,
-      change: stats.activeOrders > 0 ? "8% increase" : "No change",
+      change: stats.activeOrders > 0 ? `${stats.activeOrders} active orders` : "No active orders",
       icon: <ShoppingBag size={20} />,
       iconBg: "bg-orange-50",
       iconColor: "text-orange-500",
     },
     {
-      title: "Revenue",
+      title: "Monthly Revenue",
       value: stats.monthlyRevenue,
-      change: parseFloat(stats.monthlyRevenue.replace(/[^0-9.-]+/g, "")) > 0 ? "3% growth" : "No change",
+      change: parseFloat(stats.monthlyRevenue.replace(/[^0-9.-]+/g, "")) > 0 ? "Current month" : "No revenue",
       icon: <DollarSign size={20} />,
       iconBg: "bg-green-50",
       iconColor: "text-green-500",
     },
     {
-      title: "Notifications",
+      title: "Unread Messages",
       value: stats.unreadMessages,
-      change: stats.unreadMessages > 0 ? "New messages" : "No new messages",
+      change: stats.unreadMessages > 0 ? "Need attention" : "No new messages",
       icon: <MessageSquare size={20} />,
       iconBg: "bg-purple-50",
       iconColor: "text-purple-500",
     },
   ];
 
-  // Additional KPI cards (for second row)
+  // Additional KPI cards with calculated data
   const additionalMetrics: StatCard[] = [
     {
       title: "Conversion Rate",
-      value: "18.6%",
-      change: "+2.4% from last month",
+      value: conversionRate,
+      change: "Leads to orders",
       icon: <TrendingUp size={20} />,
       iconBg: "bg-emerald-50",
       iconColor: "text-emerald-500",
     },
     {
       title: "Avg Order Value",
-      value: "$1,842",
-      change: "+$120 from last month",
+      value: avgOrderValue,
+      change: "Per order",
       icon: <BarChart size={20} />,
       iconBg: "bg-cyan-50",
       iconColor: "text-cyan-500",
     },
     {
-      title: "Client Calls",
-      value: "24",
-      change: "6 scheduled today",
+      title: "Pending Design Reviews",
+      value: "2",
+      change: "Need approval",
       icon: <PhoneCall size={20} />,
       iconBg: "bg-fuchsia-50",
       iconColor: "text-fuchsia-500",
     },
     {
-      title: "Upcoming Tasks",
-      value: "12",
-      change: "3 due today",
+      title: "Order Fulfillment",
+      value: orders.filter((o: any) => o.status === 'delivered' || o.status === 'shipped').length.toString(),
+      change: "Completed orders",
       icon: <Calendar size={20} />,
       iconBg: "bg-amber-50",
       iconColor: "text-amber-500",
@@ -116,12 +150,32 @@ export default function Dashboard() {
     { name: "Schedule Call", href: "/calendar", icon: <PhoneCall size={18} />, color: "bg-orange-500", enabled: false },
   ];
 
-  // Pending approval items
-  const pendingItems = [
-    { name: "Design Approval: #RH-2205", status: "Waiting for Client", time: "2 days ago" },
-    { name: "Quote Review: Premium Custom Jersey", status: "Ready for Review", time: "5 hours ago" },
-    { name: "Manufacturing Start: Order #41654", status: "Pending Materials", time: "Just now" },
-  ];
+  // Get pending approval items from actual orders
+  const pendingItems = useMemo(() => {
+    const pendingOrdersItems = orders.filter((o: any) => 
+      o.status === 'pending' || o.status === 'processing'
+    ).slice(0, 3).map((order: any) => ({
+      id: order.id,
+      name: `Order ${order.orderId}: ${order.customerName}`,
+      status: order.status === 'pending' ? "Waiting for Approval" : "In Processing",
+      time: order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "N/A",
+      route: `/orders?id=${order.id}`
+    }));
+
+    // If we have fewer than 3 pending orders, we'll add some placeholder design items to fill out the UI
+    // In a real app, we would query design projects that are pending
+    const designItems = pendingOrdersItems.length < 3 ? [
+      { 
+        id: "design-1", 
+        name: "Manufacturing Start: Order #41654", 
+        status: "Pending Materials", 
+        time: "Just now",
+        route: "/design"
+      }
+    ] : [];
+
+    return [...pendingOrdersItems, ...designItems].slice(0, 3);
+  }, [orders]);
 
   return (
     <div className="h-full flex flex-col">
@@ -230,13 +284,15 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="border-t border-gray-100 bg-gray-50 p-3">
-                    <Button 
-                      variant="ghost" 
-                      className="w-full justify-between text-sm text-gray-600 hover:text-gray-900"
-                    >
-                      Review Now
-                      <ArrowRight size={16} />
-                    </Button>
+                    <Link href={item.route}>
+                      <Button 
+                        variant="ghost" 
+                        className="w-full justify-between text-sm text-gray-600 hover:text-gray-900"
+                      >
+                        Review Now
+                        <ArrowRight size={16} />
+                      </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>

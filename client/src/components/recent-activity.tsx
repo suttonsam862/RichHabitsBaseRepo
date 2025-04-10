@@ -18,12 +18,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function RecentActivity() {
+  const { user } = useAuth();
+  
+  // Use filtered activities endpoint if user is not an admin
+  const isAdmin = user?.role === 'admin';
+  const queryEndpoint = isAdmin 
+    ? '/api/activities/recent'
+    : `/api/activities/recent/filtered?userId=${user?.id}&includeTeam=true&includeRelated=true`;
+
   const { data, isLoading } = useQuery({
-    queryKey: ['/api/activities/recent'],
+    queryKey: [queryEndpoint],
     refetchInterval: false,
     refetchOnWindowFocus: false,
+    // Only run the query when we have a user object
+    enabled: !!user,
   });
 
   // Process API data with icon mapping

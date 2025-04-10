@@ -286,12 +286,31 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateUserVisiblePages(userId: number, visiblePages: string[]): Promise<User> {
-    const [updatedUser] = await db
-      .update(users)
-      .set({ visiblePages: visiblePages as any })
-      .where(eq(users.id, userId))
-      .returning();
-    return updatedUser;
+    try {
+      // Make sure the visiblePages is an array and convert it correctly
+      if (!Array.isArray(visiblePages)) {
+        throw new Error("visiblePages must be an array");
+      }
+      
+      console.log(`Updating visible pages for user ${userId}:`, visiblePages);
+      
+      // Ensure proper SQL JSON array formatting for PostgreSQL
+      const [updatedUser] = await db
+        .update(users)
+        .set({ 
+          visiblePages: visiblePages as any,
+          updatedAt: new Date() 
+        })
+        .where(eq(users.id, userId))
+        .returning();
+      
+      console.log(`User ${userId} pages updated successfully:`, updatedUser.visiblePages);
+      
+      return updatedUser;
+    } catch (error) {
+      console.error(`Error updating visible pages for user ${userId}:`, error);
+      throw error;
+    }
   }
   
   async updateUserSettings(userId: number, settingType: string, settings: any): Promise<void> {

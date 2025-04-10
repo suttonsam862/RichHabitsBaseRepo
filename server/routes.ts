@@ -240,6 +240,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertLeadSchema.parse(req.body);
       const newLead = await storage.createLead(validatedData);
       
+      // Automatically create an organization from lead data
+      try {
+        // Create organization with data from the lead
+        const newOrganization = await storage.createOrganization({
+          name: newLead.name, // Use lead name as organization name
+          type: 'client',
+          industry: 'Unspecified', // Default value, can be updated later
+          email: newLead.email,
+          phone: newLead.phone || '',
+          status: 'active',
+          assignedSalesRepId: newLead.salesRepId || null,
+          notes: `Auto-created from lead. ${newLead.notes || ''}`,
+        });
+        
+        console.log(`Auto-created organization ${newOrganization.name} from lead`);
+        
+        // Create activity for the new organization
+        await storage.createActivity({
+          userId: validatedData.userId,
+          type: "organization",
+          content: `New organization ${newOrganization.name} automatically created from lead`,
+          relatedId: newOrganization.id,
+          relatedType: "organization"
+        });
+      } catch (orgError: any) {
+        console.error("Failed to auto-create organization from lead:", orgError.message);
+        // We don't fail the whole request if organization creation fails
+      }
+      
       // Create activity for the new lead
       await storage.createActivity({
         userId: validatedData.userId,

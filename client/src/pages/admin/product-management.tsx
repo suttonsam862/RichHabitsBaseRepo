@@ -88,6 +88,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { FileUpload } from "@/components/ui/file-upload";
+import { MultipleImageUpload } from "@/components/ui/multiple-image-upload";
+import { MeasurementGrid, type MeasurementGridItem } from "@/components/ui/measurement-grid";
 import { Separator } from "@/components/ui/separator";
 
 const sportOptions = [
@@ -148,6 +151,9 @@ const ProductForm: FC<ProductFormProps> = ({
       category: "",
       gender: "",
       imageUrl: "",
+      productImages: [],
+      measurementGrid: [],
+      fabricDetails: {},
       price: "",
       minOrder: 1,
       leadTime: 14,
@@ -351,12 +357,58 @@ const ProductForm: FC<ProductFormProps> = ({
           name="imageUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Image URL</FormLabel>
+              <FormLabel>Main Product Image</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com/image.jpg" {...field} />
+                <FileUpload
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  disabled={isSubmitting}
+                />
               </FormControl>
               <FormDescription>
-                Enter a URL for the product image
+                Upload the main product image
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="productImages"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Additional Product Images</FormLabel>
+              <FormControl>
+                <MultipleImageUpload
+                  value={field.value || []}
+                  onChange={field.onChange}
+                  disabled={isSubmitting}
+                />
+              </FormControl>
+              <FormDescription>
+                Upload additional product images (up to 5)
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="measurementGrid"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Measurement Grid</FormLabel>
+              <FormControl>
+                <MeasurementGrid
+                  value={field.value || []}
+                  onChange={field.onChange}
+                  disabled={isSubmitting}
+                />
+              </FormControl>
+              <FormDescription>
+                Add size and measurement information
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -518,12 +570,16 @@ const FabricOptionForm: FC<FabricOptionFormProps> = ({
           name="imageUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Image URL</FormLabel>
+              <FormLabel>Fabric Swatch Image</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com/image.jpg" {...field} />
+                <FileUpload
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  disabled={isSubmitting}
+                />
               </FormControl>
               <FormDescription>
-                Enter a URL for the fabric swatch image
+                Upload a swatch image of the fabric
               </FormDescription>
               <FormMessage />
             </FormItem>

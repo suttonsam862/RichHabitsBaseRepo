@@ -33,8 +33,8 @@ const ProductCreationPage: FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [sportFilter, setSportFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [sportFilter, setSportFilter] = useState("all");
   const [productTasks, setProductTasks] = useState<ProductTask[]>([]);
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -103,8 +103,8 @@ const ProductCreationPage: FC = () => {
       product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.sku?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = categoryFilter === "" || product.category === categoryFilter;
-    const matchesSport = sportFilter === "" || product.sport === sportFilter;
+    const matchesCategory = categoryFilter === "all" || categoryFilter === "" || product.category === categoryFilter;
+    const matchesSport = sportFilter === "all" || sportFilter === "" || product.sport === sportFilter;
     
     return matchesSearch && matchesCategory && matchesSport;
   });
@@ -168,10 +168,10 @@ const ProductCreationPage: FC = () => {
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
+                    <SelectItem key={category} value={category || "unknown"}>
+                      {category || "Uncategorized"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -181,10 +181,10 @@ const ProductCreationPage: FC = () => {
                   <SelectValue placeholder="Sport" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Sports</SelectItem>
+                  <SelectItem value="all">All Sports</SelectItem>
                   {sports.map((sport) => (
-                    <SelectItem key={sport} value={sport}>
-                      {sport}
+                    <SelectItem key={sport} value={sport || "unknown"}>
+                      {sport || "Uncategorized"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -195,8 +195,8 @@ const ProductCreationPage: FC = () => {
               className="flex items-center gap-2"
               onClick={() => {
                 setSearchTerm("");
-                setCategoryFilter("");
-                setSportFilter("");
+                setCategoryFilter("all");
+                setSportFilter("all");
               }}
             >
               <RefreshCw className="w-4 h-4" /> Clear Filters
@@ -219,7 +219,7 @@ const ProductCreationPage: FC = () => {
               <Info className="w-4 h-4" />
               <AlertTitle>No incomplete products found</AlertTitle>
               <AlertDescription>
-                {searchTerm || categoryFilter || sportFilter
+                {searchTerm || (categoryFilter !== "all") || (sportFilter !== "all")
                   ? "Try adjusting your search or filters."
                   : "All products have complete information."}
               </AlertDescription>

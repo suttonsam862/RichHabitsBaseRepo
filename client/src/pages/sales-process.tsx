@@ -6,12 +6,14 @@ import { Info, CheckCircle, Users, Package, PenTool, Factory, CheckCheck, BarCha
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function SalesProcessPage() {
   const [_, setLocation] = useLocation();
+  const { user } = useAuth();
 
   return (
-    <Layout>
+    <Layout user={user}>
       <div className="container mx-auto py-6">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -105,7 +107,7 @@ export default function SalesProcessPage() {
                             variant="outline" 
                             size="sm" 
                             className="mt-2"
-                            onClick={() => navigate("/design")}
+                            onClick={() => setLocation("/design")}
                           >
                             Go to Design
                           </Button>
@@ -126,7 +128,7 @@ export default function SalesProcessPage() {
                             variant="outline" 
                             size="sm" 
                             className="mt-2"
-                            onClick={() => navigate("/manufacturing")}
+                            onClick={() => setLocation("/manufacturing")}
                           >
                             Go to Manufacturing
                           </Button>
@@ -147,7 +149,7 @@ export default function SalesProcessPage() {
                             variant="outline" 
                             size="sm" 
                             className="mt-2"
-                            onClick={() => navigate("/dashboard")}
+                            onClick={() => setLocation("/dashboard")}
                           >
                             Go to Dashboard
                           </Button>

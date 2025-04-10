@@ -113,6 +113,13 @@ export interface IStorage {
   
   // Activity methods
   getRecentActivities(limit?: number): Promise<Activity[]>;
+  getRecentActivitiesFiltered(
+    limit: number, 
+    userId: number, 
+    includeTeam?: boolean, 
+    includeRelated?: boolean,
+    includeSystem?: boolean
+  ): Promise<Activity[]>;
   createActivity(activity: InsertActivity): Promise<Activity>;
   
   // Product methods
@@ -556,6 +563,88 @@ export class DatabaseStorage implements IStorage {
   // Activity methods
   async getRecentActivities(limit: number = 5): Promise<Activity[]> {
     return db.select().from(activities).orderBy(desc(activities.createdAt)).limit(limit);
+  }
+  
+  async getRecentActivitiesFiltered(
+    limit: number = 5, 
+    userId: number, 
+    includeTeam: boolean = false, 
+    includeRelated: boolean = false,
+    includeSystem: boolean = false
+  ): Promise<Activity[]> {
+    try {
+      // Start building the query with basic filters
+      let query = db.select().from(activities);
+      
+      // Filter conditions array
+      const conditions = [];
+      
+      // Direct user activities (always included)
+      conditions.push(eq(activities.userId, userId));
+      
+      // Activities related to the user (if requested)
+      if (includeRelated) {
+        conditions.push(
+          and(
+            eq(activities.relatedType, 'user'),
+            eq(activities.relatedId, userId)
+          )
+        );
+        
+        // Include activities for leads assigned to this user
+        conditions.push(
+          and(
+            eq(activities.relatedType, 'lead'),
+            sql`EXISTS (SELECT 1 FROM leads WHERE leads.id = activities.related_id AND leads.user_id = ${userId})`
+          )
+        );
+        
+        // Include activities for orders assigned to this user
+        conditions.push(
+          and(
+            eq(activities.relatedType, 'order'),
+            sql`EXISTS (SELECT 1 FROM orders WHERE orders.id = activities.related_id AND orders.assigned_sales_rep_id = ${userId})`
+          )
+        );
+      }
+      
+      // Team activities (only if requested)
+      if (includeTeam) {
+        conditions.push(
+          and(
+            eq(activities.type, 'team'),
+            or(
+              isNull(activities.relatedId),
+              activities.relatedId > 0
+            )
+          )
+        );
+      }
+      
+      // System activities (only if requested)
+      if (includeSystem) {
+        conditions.push(
+          and(
+            eq(activities.type, 'system'),
+            or(
+              isNull(activities.relatedId),
+              activities.relatedId > 0
+            )
+          )
+        );
+      }
+      
+      // Apply the conditions
+      query = query.where(or(...conditions));
+      
+      // Order by created date and limit results
+      query = query.orderBy(desc(activities.createdAt)).limit(limit);
+      
+      return await query;
+    } catch (error) {
+      console.error("Error in getRecentActivitiesFiltered:", error);
+      return []; // Return empty array on error
+    }
   }
   
   async createActivity(activity: InsertActivity): Promise<Activity> {

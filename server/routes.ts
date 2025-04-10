@@ -768,7 +768,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Activities endpoints
   app.get("/api/activities/recent", async (req, res) => {
     try {
-      const activities = await storage.getRecentActivities(4);
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as User;
+      
+      // Check user permissions for different content types
+      const canViewAllLeads = hasPermission(
+        user.role,
+        user.permissions,
+        PERMISSIONS.VIEW_ALL_LEADS
+      );
+      
+      const canViewAllOrders = hasPermission(
+        user.role,
+        user.permissions,
+        PERMISSIONS.VIEW_ALL_ORDERS
+      );
+      
+      // Filter activities based on user's role and permissions
+      let activities;
+      
+      if (user.role === ROLES.ADMIN) {
+        // Admin can see all activities
+        activities = await storage.getRecentActivities(8);
+      } else if (user.role === ROLES.MANAGER) {
+        // Managers can see all activities except sensitive admin ones
+        activities = await storage.getRecentActivitiesFiltered(
+          8,
+          user.id,
+          true, // Include team activities
+          true, // Include related items
+          true  // Include system activities
+        );
+      } else if (user.role === ROLES.AGENT) {
+        // Sales agents see their own activities, open leads, and their orders
+        activities = await storage.getRecentActivitiesFiltered(
+          8, 
+          user.id, 
+          false, // No team activities
+          true,  // Include related items
+          false  // No system activities
+        );
+      } else {
+        // Other users only see activities directly related to them
+        activities = await storage.getRecentActivitiesFiltered(
+          8, 
+          user.id, 
+          false, // No team activities
+          false, // No related items
+          false  // No system activities
+        );
+      }
+      
       res.json({ data: activities });
     } catch (error: any) {
       res.status(500).json({ error: error.message });

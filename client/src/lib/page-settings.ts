@@ -136,6 +136,12 @@ export const AVAILABLE_PAGES = [
     description: "Product catalog management (Admin)",
     category: "Administration",
   },
+  {
+    id: "admin/product-creation",
+    name: "Product Creation",
+    description: "Manage product photos and measurements (Admin)",
+    category: "Administration",
+  },
 ];
 
 export const AVAILABLE_PAGES_LIST = AVAILABLE_PAGES;
@@ -147,7 +153,8 @@ export const PAGE_ACCESS_TEMPLATES = {
     "dashboard", "messages", "profile", "settings",
     "leads", "orders", "design", "manufacturing",
     "catalog", "analytics", "reports", "user-management", "outlook",
-    "design-communication", "production-communication", "feedback"
+    "design-communication", "production-communication", "feedback",
+    "admin/product-management", "admin/product-creation"
   ],
   SALES: [
     "dashboard", "messages", "profile", 

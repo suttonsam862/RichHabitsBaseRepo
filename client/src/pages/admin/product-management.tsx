@@ -2,7 +2,7 @@ import { FC, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import Layout from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,16 @@ import {
   ShoppingBag,
   Trash,
   Upload,
+  ImagePlus,
+  X,
+  Camera,
+  Ruler,
+  Grid,
+  AlignJustify,
+  Scissors,
+  Pencil,
+  ArrowRight,
+  MoreHorizontal,
 } from "lucide-react";
 import { CSVImportDialog } from "@/components/products/csv-import-dialog";
 import {
@@ -66,7 +76,7 @@ import {
   insertFabricCutSchema,
   insertCustomizationOptionSchema,
 } from "@shared/schema";
-import { MoreHorizontal } from "lucide-react";
+
 import {
   DropdownMenu,
   DropdownMenuContent,

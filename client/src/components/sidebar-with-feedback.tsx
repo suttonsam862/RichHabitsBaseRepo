@@ -829,7 +829,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
         <div className="flex h-16 items-center px-6 py-4 border-b">
           <h1 className="text-lg font-bold">Rich Habits</h1>
         </div>
-        <div className="overflow-y-auto h-[calc(100vh-4rem)] pb-20 flex flex-col">
+        <div className="overflow-y-auto h-[calc(100vh-4rem)] pb-28 flex flex-col">
           {user && groupedMenuItems}
         </div>
       </div>

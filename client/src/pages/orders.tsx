@@ -31,6 +31,7 @@ const formSchema = insertOrderSchema.extend({
   organizationId: z.string().optional(),
   productIds: z.array(z.string()).optional(),
   itemName: z.string().optional(),
+  assignedSalesRepId: z.string().optional(),
 });
 
 interface Organization {
@@ -79,6 +80,12 @@ export default function Orders() {
     },
   });
   
+  // Query for sales representatives
+  const { data: salesRepsData, isLoading: isLoadingSalesReps } = useQuery({
+    queryKey: ['/api/users/sales-reps'],
+    select: (data: any) => data?.data || [],
+  });
+  
   // Query for products
   const { data: productsData, isLoading: isLoadingProducts } = useQuery<Product[]>({
     queryKey: ['/api/products'],
@@ -100,61 +107,8 @@ export default function Orders() {
     );
   }, [productsData, productSearchTerm]);
 
-  // Sample data - would normally come from the API
-  const sampleOrders: Order[] = [
-    {
-      id: 1,
-      userId: 1,
-      orderId: "#67890",
-      customerName: "John Smith",
-      amount: "$2,500.00",
-      status: "paid",
-      notes: "Premium package",
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 2,
-      userId: 1,
-      orderId: "#67889",
-      customerName: "Emma Davis",
-      amount: "$1,200.00",
-      status: "processing",
-      notes: "Basic package with add-ons",
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 3,
-      userId: 1,
-      orderId: "#67888",
-      customerName: "Michael Brown",
-      amount: "$3,750.00",
-      status: "refunded",
-      notes: "Enterprise solution - customer requested refund",
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 4,
-      userId: 1,
-      orderId: "#67887",
-      customerName: "Sarah Johnson",
-      amount: "$950.00",
-      status: "shipped",
-      notes: "Standard package",
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 5,
-      userId: 1,
-      orderId: "#67886",
-      customerName: "David Lee",
-      amount: "$1,850.00",
-      status: "delivered",
-      notes: "Premium package with coaching sessions",
-      createdAt: new Date().toISOString(),
-    },
-  ];
-
-  const orders = data?.data || sampleOrders;
+  // Only use real data from the API
+  const orders = data?.data || [];
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -170,6 +124,7 @@ export default function Orders() {
       organizationId: undefined,
       productIds: [],
       itemName: "",
+      assignedSalesRepId: undefined,
     },
   });
 

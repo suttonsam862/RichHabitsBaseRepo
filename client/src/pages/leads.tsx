@@ -726,14 +726,8 @@ export default function Leads() {
             </div>
           </CardHeader>
           <CardContent className="bg-white">
-            <Tabs defaultValue={canViewAllLeads ? "all-leads" : "unclaimed"} className="w-full">
-              <TabsList className={`grid w-full ${canViewAllLeads ? 'grid-cols-3' : 'grid-cols-2'} mb-6`}>
-                {canViewAllLeads && (
-                  <TabsTrigger value="all-leads" className="flex items-center">
-                    <Filter className="h-4 w-4 mr-2" />
-                    All Leads
-                  </TabsTrigger>
-                )}
+            <Tabs defaultValue="unclaimed" className="w-full">
+              <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'} mb-6`}>
                 <TabsTrigger value="unclaimed" className="flex items-center">
                   <Inbox className="h-4 w-4 mr-2" />
                   Unclaimed Leads
@@ -742,6 +736,12 @@ export default function Leads() {
                   <UserCircle className="h-4 w-4 mr-2" />
                   My Leads
                 </TabsTrigger>
+                {isAdmin && (
+                  <TabsTrigger value="archived-leads" className="flex items-center">
+                    <Archive className="h-4 w-4 mr-2" />
+                    Archived Leads
+                  </TabsTrigger>
+                )}
               </TabsList>
               
               <TabsContent value="unclaimed" className="mt-2">
@@ -915,75 +915,91 @@ export default function Leads() {
                 </div>
               </TabsContent>
               
-              {canViewAllLeads && (
-                <TabsContent value="all-leads" className="mt-2">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-gray-200">
-                          <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                          <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                          <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                          <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
-                          <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                          <th className="text-right p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {filteredLeads.length > 0 ? (
-                          filteredLeads.map((lead) => (
-                            <tr key={lead.id} className="hover:bg-gray-50">
-                              <td className="p-4 text-sm text-gray-900">{lead.name}</td>
-                              <td className="p-4 text-sm text-gray-600">{lead.email}</td>
-                              <td className="p-4 text-sm text-gray-600">{lead.phone}</td>
-                              <td className="p-4 text-sm text-gray-600">{lead.source}</td>
-                              <td className="p-4">
-                                <Badge className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(lead.status as LeadStatus)}`}>
-                                  {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
-                                </Badge>
-                              </td>
-                              <td className="p-4 text-right">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="mr-2" 
-                                  onClick={() => {
-                                    setSelectedLead(lead);
-                                    setOpenViewDialog(true);
-                                  }}
-                                >
-                                  View
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => {
-                                    form.reset({
-                                      name: lead.name,
-                                      email: lead.email,
-                                      phone: lead.phone || "",
-                                      source: lead.source,
-                                      status: lead.status as any,
-                                      notes: lead.notes || ""
-                                    });
-                                    setSelectedLeadId(lead.id);
-                                    setOpenEditDialog(true);
-                                  }}
-                                >
-                                  Edit
-                                </Button>
+              {isAdmin && (
+                <TabsContent value="archived-leads" className="mt-2">
+                  <div className="p-4 bg-gray-50 border border-gray-100 rounded-lg">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-lg font-medium">Archived Leads</h3>
+                      <p className="text-sm text-gray-500">
+                        {archivedLeads.length} {archivedLeads.length === 1 ? 'lead' : 'leads'} archived
+                      </p>
+                    </div>
+                  
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                            <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                            <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                            <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Date Archived</th>
+                            <th className="text-right p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 bg-white">
+                          {archivedLeads.length > 0 ? (
+                            archivedLeads.map((lead) => (
+                              <tr key={lead.id} className="hover:bg-gray-50">
+                                <td className="p-4 text-sm text-gray-900">{lead.name}</td>
+                                <td className="p-4 text-sm text-gray-600">{lead.email}</td>
+                                <td className="p-4 text-sm text-gray-600">{lead.phone}</td>
+                                <td className="p-4 text-sm text-gray-600">{lead.source}</td>
+                                <td className="p-4">
+                                  <Badge className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(lead.status as LeadStatus)}`}>
+                                    {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
+                                  </Badge>
+                                </td>
+                                <td className="p-4 text-sm text-gray-600">{formatDate(lead.updatedAt || lead.createdAt)}</td>
+                                <td className="p-4 text-right">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="mr-2" 
+                                    onClick={() => {
+                                      setSelectedLead(lead);
+                                      setOpenViewDialog(true);
+                                    }}
+                                  >
+                                    View
+                                  </Button>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => {
+                                      form.reset({
+                                        name: lead.name,
+                                        email: lead.email,
+                                        phone: lead.phone || "",
+                                        source: lead.source,
+                                        status: lead.status as any,
+                                        notes: lead.notes || "",
+                                        value: lead.value || ""
+                                      });
+                                      setSelectedLeadId(lead.id);
+                                      setOpenEditDialog(true);
+                                    }}
+                                  >
+                                    Edit
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={7} className="p-4 text-center text-gray-500">
+                                <div className="py-8">
+                                  <Archive className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                  <h3 className="text-lg font-medium text-gray-900 mb-1">No archived leads found</h3>
+                                  <p className="text-sm text-gray-500">Leads marked as "closed" or "lost" will appear here</p>
+                                </div>
                               </td>
                             </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={6} className="p-4 text-center text-gray-500">
-                              No leads found matching your criteria.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </TabsContent>
               )}

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { PlusCircle, Search, Filter, Download, Trash2, AlertTriangle, Loader2, Plus, Minus, ShoppingBag } from "lucide-react";
@@ -152,6 +152,7 @@ export default function Orders() {
         organizationId: undefined,
         productIds: [],
         itemName: "",
+        assignedSalesRepId: undefined,
       });
     },
     onError: (error) => {
@@ -782,6 +783,52 @@ export default function Orders() {
                               </SelectContent>
                             </Select>
                           </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    {/* Assigned Sales Rep Field */}
+                    <FormField
+                      control={form.control}
+                      name="assignedSalesRepId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Assigned Sales Representative</FormLabel>
+                          <FormControl>
+                            <Select 
+                              onValueChange={field.onChange} 
+                              value={field.value}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a sales rep" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {isLoadingSalesReps ? (
+                                  <div className="flex items-center justify-center py-2">
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    <span>Loading sales representatives...</span>
+                                  </div>
+                                ) : salesRepsData?.length > 0 ? (
+                                  salesRepsData.map((rep: any) => (
+                                    <SelectItem 
+                                      key={rep.id} 
+                                      value={rep.id.toString()}
+                                    >
+                                      {rep.fullName || rep.username}
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <SelectItem value="no-rep" disabled>
+                                    No sales representatives available
+                                  </SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormDescription>
+                            The sales representative assigned to handle this order
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

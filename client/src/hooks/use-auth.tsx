@@ -167,10 +167,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     console.log("Raw user data for mapping:", userFromDb);
     
-    // For 'admin' role, make all pages visible by default by returning null for visiblePages
-    // This ensures the sidebar filtering function will show all pages to admin users
-    let visiblePages = null;
-    
     // Get user role from DB or default to 'user' if missing
     // Important: ensure consistency in role casing
     const userRole = (userFromDb.role || 'user').toLowerCase();
@@ -181,12 +177,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ? userRole as UserRole 
       : 'user';
     
-    // Special handling for admin role - always use null visiblePages to show all
-    if (role !== 'admin') {
-      visiblePages = Array.isArray(userFromDb.visiblePages) 
-        ? userFromDb.visiblePages 
-        : [];
-    }
+    // Get visiblePages from the user data
+    // For admins, the sidebar component will handle showing all pages
+    const visiblePages = Array.isArray(userFromDb.visiblePages) 
+      ? userFromDb.visiblePages 
+      : [];
     
     // Always log the role for debugging
     console.log("MAPPED USER ROLE:", role);

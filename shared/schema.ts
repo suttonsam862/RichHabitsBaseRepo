@@ -177,7 +177,7 @@ export const products = pgTable('products', {
   fabricOptions: text('fabric_options').notNull(),
   cogs: text('cogs').notNull(),
   wholesalePrice: text('wholesale_price').notNull(),
-  price: numeric('price').notNull(),
+  price: numeric('price'),
   minOrder: integer('min_order').default(1),
   leadTime: integer('lead_time').default(14),
   imageUrl: text('image_url'),

@@ -331,6 +331,154 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
+  
+  // Claim a lead - marks the lead as claimed by the current user with a 3-day verification period
+  app.post("/api/leads/:id/claim", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid lead ID" });
+      }
+      
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as User;
+      
+      const lead = await storage.getLeadById(id);
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      
+      // Check if lead is already claimed
+      if (lead.claimed) {
+        return res.status(400).json({ 
+          error: "Lead already claimed", 
+          claimedById: lead.claimedById 
+        });
+      }
+      
+      // Update lead with claim information
+      const updatedLead = await storage.updateLead({
+        ...lead,
+        claimed: true,
+        claimedById: user.id,
+        claimedAt: new Date(),
+        salesRepId: user.id,
+        status: "claimed"
+      });
+      
+      // Create activity for the lead claim
+      await storage.createActivity({
+        userId: user.id,
+        type: "lead",
+        content: `Lead ${lead.name} claimed by ${user.fullName || user.username}`,
+        relatedId: lead.id,
+        relatedType: "lead"
+      });
+      
+      // Schedule verification after 3 days
+      // This is where you would typically set up a cron job or scheduled task
+      // For now, we'll just log that verification would be scheduled
+      console.log(`Scheduled verification for lead ${lead.id} on ${new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)}`);
+      
+      return res.status(200).json({ 
+        success: true,
+        message: "Lead claimed successfully",
+        leadId: updatedLead.id,
+        verificationDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+      });
+    } catch (error: any) {
+      console.error("Error claiming lead:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Convert a lead to an order - requires the lead to be claimed and verification period passed
+  app.post("/api/leads/:id/convert-to-order", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid lead ID" });
+      }
+      
+      const lead = await storage.getLeadById(id);
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      
+      // Check if the lead is claimed and verified (after 3-day period)
+      const now = new Date();
+      const claimedAt = lead.claimedAt ? new Date(lead.claimedAt) : null;
+      const threesDaysMs = 3 * 24 * 60 * 60 * 1000; // 3 days in milliseconds
+      const isVerificationPeriodOver = claimedAt && (now.getTime() - claimedAt.getTime() >= threesDaysMs);
+      
+      // Only admin can bypass verification period
+      const isAdmin = (req.user as User)?.role === ROLES.ADMIN;
+      
+      if (lead.claimed && !isVerificationPeriodOver && !isAdmin) {
+        return res.status(403).json({ 
+          error: "Cannot convert lead to order yet. Verification period of 3 days has not passed.",
+          claimedAt: lead.claimedAt,
+          verificationDate: new Date(claimedAt!.getTime() + threesDaysMs)
+        });
+      }
+      
+      // Generate a unique order ID
+      const orderPrefix = "RH";
+      const randomNumbers = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
+      const orderId = `${orderPrefix}-${randomNumbers}`;
+      
+      const orderData = {
+        userId: req.user?.id || 1,
+        orderId,
+        customerName: lead.name,
+        customerEmail: lead.email,
+        totalAmount: lead.value || 0,
+        status: "pending",
+        assignedSalesRepId: lead.salesRepId || lead.claimedById,
+        notes: `Order created from lead: ${lead.notes || ""}`,
+      };
+      
+      // Create new order
+      const newOrder = await storage.createOrder(orderData);
+      
+      // Update lead status and verification status
+      await storage.updateLead({
+        ...lead,
+        status: "converted",
+        verifiedAt: now
+      });
+      
+      // Create activity for order creation
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "lead",
+        content: `Lead ${lead.name} converted to order ${orderId}`,
+        relatedId: lead.id,
+        relatedType: "lead"
+      });
+      
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "order",
+        content: `New order ${orderId} created from lead ${lead.name}`,
+        relatedId: newOrder.id,
+        relatedType: "order"
+      });
+      
+      return res.status(200).json({ 
+        success: true,
+        message: "Lead converted to order successfully",
+        orderId: newOrder.orderId
+      });
+    } catch (error: any) {
+      console.error("Error converting lead to order:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   // Orders endpoints
   app.get("/api/orders", async (req, res) => {

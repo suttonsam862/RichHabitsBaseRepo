@@ -219,7 +219,37 @@ export default function Leads() {
     }
   };
 
-  // Create a mutation to convert a lead into an order
+  // Create a mutation to claim a lead by the current user
+  const claimLeadMutation = useMutation({
+    mutationFn: async (leadId: number) => {
+      return await apiRequest("POST", `/api/leads/${leadId}/claim`, {});
+    },
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+      toast({
+        title: "Lead claimed",
+        description: "Lead has been successfully claimed. You'll be able to convert it to an order after the 3-day verification period.",
+      });
+    },
+    onError: (error: any) => {
+      // Check if the error is because lead is already claimed
+      if (error.message?.includes("already claimed")) {
+        toast({
+          title: "Lead already claimed",
+          description: "This lead has already been claimed by another sales representative.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to claim lead",
+          variant: "destructive",
+        });
+      }
+    },
+  });
+  
+  // Create a mutation to convert a lead into an order (after verification period)
   const convertToOrderMutation = useMutation({
     mutationFn: async (leadId: number) => {
       return await apiRequest("POST", `/api/leads/${leadId}/convert-to-order`, {});
@@ -232,12 +262,21 @@ export default function Leads() {
         description: "Lead has been successfully converted to an order",
       });
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to convert lead to order",
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      // Check if error is related to verification period
+      if (error.message?.includes("verification period")) {
+        toast({
+          title: "Verification period not complete",
+          description: "The 3-day verification period has not been completed yet. Please wait until verification is complete to convert this lead.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to convert lead to order",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -270,9 +309,9 @@ export default function Leads() {
   function onSubmit(values: z.infer<typeof formSchema>) {
     addLeadMutation.mutate(values, {
       onSuccess: (data) => {
-        // If autoClaimLead is true, convert the newly created lead to an order
+        // If autoClaimLead is true, claim the newly created lead
         if (values.autoClaimLead && data.data?.id) {
-          convertToOrderMutation.mutate(data.data.id);
+          claimLeadMutation.mutate(data.data.id);
         }
       }
     });
@@ -819,11 +858,11 @@ export default function Leads() {
                                 className="flex items-center justify-center bg-brand-600 hover:bg-brand-700 text-white"
                                 size="sm"
                                 onClick={() => {
-                                  // Claim this lead by converting to order
-                                  convertToOrderMutation.mutate(lead.id);
+                                  // Claim this lead with 3-day verification
+                                  claimLeadMutation.mutate(lead.id);
                                 }}
                               >
-                                Claim
+                                Claim Lead
                               </Button>
                             </div>
                           </div>

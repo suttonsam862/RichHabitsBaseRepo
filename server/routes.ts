@@ -992,11 +992,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users/sales-reps", async (req, res) => {
     try {
       const users = await storage.getAllUsers();
+      
+      // Users with sales role or lead management permission
       const salesReps = users.filter(user => 
         user.role === 'sales' || // Filter by sales role
-        (user.permissions && user.permissions.includes(PERMISSIONS.MANAGE_LEADS)) // Or has lead management permission
+        (user.permissions && Array.isArray(user.permissions) && 
+         user.permissions.includes(PERMISSIONS.VIEW_LEADS)) // Or has lead management permission
       );
-      res.json({ data: salesReps });
+      
+      // Map to ensure we only return safe fields
+      const mappedSalesReps = salesReps.map(rep => ({
+        id: rep.id,
+        username: rep.username,
+        fullName: rep.fullName,
+        email: rep.email,
+        role: rep.role
+      }));
+      
+      res.json({ data: mappedSalesReps });
     } catch (error: any) {
       console.error("Error fetching sales representatives:", error);
       res.status(500).json({ error: "Failed to fetch sales representatives" });

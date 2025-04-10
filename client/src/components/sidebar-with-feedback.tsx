@@ -50,9 +50,31 @@ interface MenuGroup {
 }
 
 export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const { logoutMutation } = useAuth();
+  
+  // Function to handle page transitions smoothly
+  const handleNavigate = (path: string, event: React.MouseEvent) => {
+    event.preventDefault();
+    
+    // Add transitioning class to prevent flashes
+    document.body.classList.add('page-transitioning');
+    
+    // First close the sidebar on mobile
+    onClose();
+    
+    // Small delay to ensure the sidebar closing animation has started
+    setTimeout(() => {
+      // Navigate to the new route
+      setLocation(path);
+      
+      // Remove the transitioning class after a short delay
+      setTimeout(() => {
+        document.body.classList.remove('page-transitioning');
+      }, 150);
+    }, 50);
+  };
   
   // Debug output for role detection
   console.log("SIDEBAR USER OBJECT:", user);
@@ -752,7 +774,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
                 <Link 
                   key={`item-${groupIndex}-${itemIndex}`}
                   href={item.href}
-                  onClick={onClose}
+                  onClick={(event) => handleNavigate(item.href, event)}
                 >
                   <div
                     className={cn(

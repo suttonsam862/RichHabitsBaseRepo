@@ -420,6 +420,14 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  async getOrdersByUserId(userId: number): Promise<Order[]> {
+    // This is specifically for filtering by the assigned sales rep
+    return db.select()
+      .from(orders)
+      .where(eq(orders.assignedSalesRepId, userId))
+      .orderBy(desc(orders.createdAt));
+  }
+  
   async getRecentOrders(limit: number = 5, userId?: number): Promise<Order[]> {
     if (userId) {
       // If userId is provided, filter by assigned sales rep

@@ -490,12 +490,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = req.user as any;
       
-      // Check if user has permission to see all orders or just their assigned ones
-      const canViewAllOrders = hasPermission(
+      // Admin users and those with the explicit permission can see all orders
+      const canViewAllOrders = user.role === ROLES.ADMIN || hasPermission(
         user.role,
         user.permissions,
         PERMISSIONS.VIEW_ALL_ORDERS
       );
+      
+      // Always log user role and permissions for debugging
+      console.log(`User ${user.username} requesting orders - Role: ${user.role}, Can view all: ${canViewAllOrders}`);
       
       if (canViewAllOrders) {
         // User has permission to view all orders
@@ -503,10 +506,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ data: orders });
       } else {
         // User can only view orders assigned to them
-        const orders = await storage.getOrders(user.id);
+        const orders = await storage.getOrdersByUserId(user.id);
+        console.log(`Filtering orders for user ${user.username} (ID: ${user.id}) - Found ${orders.length} orders`);
         return res.json({ data: orders });
       }
     } catch (error: any) {
+      console.error("Error fetching orders:", error);
       res.status(500).json({ error: error.message });
     }
   });

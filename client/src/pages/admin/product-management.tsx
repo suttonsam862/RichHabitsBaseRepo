@@ -2,7 +2,7 @@ import { FC, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import Layout from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,21 @@ import {
   Pencil,
   ArrowRight,
   MoreHorizontal,
+  RefreshCw,
+  Archive,
+  CheckCircle,
+  AlertTriangle,
+  ClipboardList,
+  Tags,
+  Package,
+  Layers,
+  Settings,
+  Copy,
+  PackageCheck,
+  Palette,
+  MessageSquare,
+  Tag,
+  Shirt,
 } from "lucide-react";
 import { CSVImportDialog } from "@/components/products/csv-import-dialog";
 import {
@@ -92,8 +107,18 @@ import { FileUpload } from "@/components/ui/file-upload";
 import { MultipleImageUpload } from "@/components/ui/multiple-image-upload";
 import { MeasurementGrid, type MeasurementGridItem } from "@/components/ui/measurement-grid";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from "@/components/ui/label";
+import { 
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const sportOptions = [
+  "All",
   "Football",
   "Baseball",
   "Basketball",
@@ -109,6 +134,7 @@ const sportOptions = [
 ];
 
 const categoryOptions = [
+  "All",
   "Jersey",
   "Pants",
   "Shorts",
@@ -121,7 +147,7 @@ const categoryOptions = [
   "Other",
 ];
 
-const genderOptions = ["Men", "Women", "Unisex", "Youth"];
+const genderOptions = ["All", "Men", "Women", "Unisex", "Youth"];
 
 // Product Form
 const productFormSchema = insertProductSchema.extend({
@@ -726,17 +752,26 @@ const FabricCutForm: FC<FabricCutFormProps> = ({
 const ProductManagementPage: FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("products");
   const [addProductOpen, setAddProductOpen] = useState(false);
   const [editProductOpen, setEditProductOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [addFabricOpen, setAddFabricOpen] = useState(false);
-  const [editFabricOpen, setEditFabricOpen] = useState(false);
-  const [selectedFabric, setSelectedFabric] = useState<FabricOption | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterSport, setFilterSport] = useState("All");
+  const [filterCategory, setFilterCategory] = useState("All");
+  const [filterGender, setFilterGender] = useState("All");
+  const [importOpen, setImportOpen] = useState(false);
+  const [clearAllProductsDialog, setClearAllProductsDialog] = useState(false);
+  
+  // Fabric options dialog state
+  const [addFabricOptionOpen, setAddFabricOptionOpen] = useState(false);
+  const [editFabricOptionOpen, setEditFabricOptionOpen] = useState(false);
+  const [selectedFabricOption, setSelectedFabricOption] = useState<FabricOption | null>(null);
+
+  // Fabric cuts dialog state
   const [addCutOpen, setAddCutOpen] = useState(false);
   const [editCutOpen, setEditCutOpen] = useState(false);
   const [selectedCut, setSelectedCut] = useState<FabricCut | null>(null);
-  const [csvImportOpen, setCsvImportOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("products");
   
   // Products Query
   const {
@@ -901,6 +936,31 @@ const ProductManagementPage: FC = () => {
     },
   });
 
+  // Clear all products mutation
+  const clearAllProductsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/data/clear-all-products');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/fabric-options'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/fabric-cuts'] });
+      setClearAllProductsDialog(false);
+      toast({
+        title: "Products cleared",
+        description: "All products, fabric options, and cutting patterns have been deleted.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to clear products",
+        description: error.message || "An error occurred. Please try again.",
+      });
+    },
+  });
+
   // Fabric Cut Mutations
   const createCutMutation = useMutation({
     mutationFn: async (data: FabricCutFormValues) => {
@@ -1030,6 +1090,50 @@ const ProductManagementPage: FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">Product Catalog</h2>
                 <div className="flex space-x-2">
+                  <Dialog open={clearAllProductsDialog} onOpenChange={setClearAllProductsDialog}>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 border-red-200 hover:bg-red-50 gap-1"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Clear All
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle className="text-red-600">Clear All Products</DialogTitle>
+                        <DialogDescription>
+                          This action will delete ALL products, fabric options, and cutting patterns.
+                          This cannot be undone. Are you sure you want to proceed?
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter className="flex items-center justify-end space-x-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => setClearAllProductsDialog(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          variant="destructive"
+                          onClick={() => clearAllProductsMutation.mutate()}
+                          disabled={clearAllProductsMutation.isPending}
+                        >
+                          {clearAllProductsMutation.isPending ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Clearing...
+                            </>
+                          ) : (
+                            "Yes, Delete Everything"
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                
                   <Button 
                     variant="outline" 
                     className="gap-1"

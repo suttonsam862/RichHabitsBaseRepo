@@ -10,8 +10,9 @@ if (!process.env.SESSION_SECRET) {
 }
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// Increase size limits for JSON and URL-encoded data to handle larger payloads (like image uploads)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
 // Add CORS headers for better compatibility with Replit webview
 app.use((req, res, next) => {

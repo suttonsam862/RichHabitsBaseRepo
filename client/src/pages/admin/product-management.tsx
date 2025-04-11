@@ -475,7 +475,6 @@ const FabricOptionForm: FC<FabricOptionFormProps> = ({
       materialType: "",
       weight: "",
       colors: [],
-      priceModifier: 0,
       imageUrl: "",
       isActive: true,
     },
@@ -547,24 +546,7 @@ const FabricOptionForm: FC<FabricOptionFormProps> = ({
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="priceModifier"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Price Modifier ($)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+
         </div>
 
         <FormField

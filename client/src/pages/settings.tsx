@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -13,6 +13,17 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // Company Settings Schema
 const companySchema = z.object({
@@ -213,6 +224,31 @@ export default function Settings() {
       toast({
         title: "Error",
         description: error.message || "Failed to clear example data",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Clear All Products
+  const clearAllProducts = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/data/clear-all-products", {});
+    },
+    onSuccess: () => {
+      // Invalidate product-related queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/fabric-options'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/fabric-cuts'] });
+      
+      toast({
+        title: "Products deleted",
+        description: "All products, fabric options, and cutting patterns have been deleted successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete all products",
         variant: "destructive",
       });
     },

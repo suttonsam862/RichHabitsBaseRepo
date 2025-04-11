@@ -31,6 +31,7 @@ import { ROLES } from "@shared/schema";
 // Salesperson pages
 import SalespersonDashboard from "./pages/salesperson/dashboard";
 import NotificationCenter from "./pages/salesperson/notification-center";
+import UnclaimedLeads from "./pages/salesperson/leads";
 
 // Admin pages
 import SalesTeam from "./pages/admin/sales-team";
@@ -193,7 +194,7 @@ function SalespersonDashboardLayout() {
           <ProtectedPageLoader pageId="dashboard"><SalespersonDashboard /></ProtectedPageLoader>
         </Route>
         <Route path="/leads">
-          <ProtectedPageLoader pageId="leads"><Leads /></ProtectedPageLoader>
+          <ProtectedPageLoader pageId="leads"><UnclaimedLeads /></ProtectedPageLoader>
         </Route>
         <Route path="/orders">
           <ProtectedPageLoader pageId="orders"><Orders /></ProtectedPageLoader>

@@ -743,6 +743,7 @@ const ProductManagementPage: FC = () => {
   const [filterCategory, setFilterCategory] = useState("All");
   const [filterGender, setFilterGender] = useState("All");
   const [importOpen, setImportOpen] = useState(false);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
   const [clearAllProductsDialog, setClearAllProductsDialog] = useState(false);
   
   // Fabric options dialog state

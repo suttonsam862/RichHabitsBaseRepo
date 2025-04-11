@@ -19,9 +19,12 @@ interface MeasurementGridProps {
 }
 
 export function MeasurementGrid({ value = [], onChange, disabled }: MeasurementGridProps) {
+  // Ensure value is always an array of MeasurementGridItem
+  const safeValue: MeasurementGridItem[] = Array.isArray(value) ? value : [];
+  
   const [measurements, setMeasurements] = useState<string[]>(
-    value.length > 0 && value[0].measurements
-      ? Object.keys(value[0].measurements)
+    safeValue.length > 0 && safeValue[0]?.measurements
+      ? Object.keys(safeValue[0].measurements)
       : ["Chest", "Waist", "Length"]
   );
 
@@ -36,23 +39,23 @@ export function MeasurementGrid({ value = [], onChange, disabled }: MeasurementG
       newMeasurement.measurements[measurement] = "";
     });
     
-    onChange([...value, newMeasurement]);
+    onChange([...safeValue, newMeasurement]);
   };
 
   const handleRemoveSize = (index: number) => {
-    const newValue = [...value];
+    const newValue = [...safeValue];
     newValue.splice(index, 1);
     onChange(newValue);
   };
 
   const handleSizeChange = (index: number, size: string) => {
-    const newValue = [...value];
+    const newValue = [...safeValue];
     newValue[index].size = size;
     onChange(newValue);
   };
 
   const handleMeasurementChange = (sizeIndex: number, measurement: string, measurementValue: string) => {
-    const newValue = [...value];
+    const newValue = [...safeValue];
     newValue[sizeIndex].measurements[measurement] = measurementValue;
     onChange(newValue);
   };
@@ -62,7 +65,7 @@ export function MeasurementGrid({ value = [], onChange, disabled }: MeasurementG
     setMeasurements([...measurements, newMeasurement]);
     
     // Add the new measurement to all existing sizes
-    const newValue = value.map(item => ({
+    const newValue = safeValue.map(item => ({
       ...item,
       measurements: {
         ...item.measurements,
@@ -78,7 +81,7 @@ export function MeasurementGrid({ value = [], onChange, disabled }: MeasurementG
     setMeasurements(newMeasurements);
     
     // Remove the measurement from all sizes
-    const newValue = value.map(item => {
+    const newValue = safeValue.map(item => {
       const { [measurement]: _, ...rest } = item.measurements;
       return {
         ...item,
@@ -94,7 +97,7 @@ export function MeasurementGrid({ value = [], onChange, disabled }: MeasurementG
     setMeasurements(newMeasurements);
     
     // Update the measurement name in all sizes
-    const newValue = value.map(item => {
+    const newValue = safeValue.map(item => {
       const { [oldName]: measurementValue, ...rest } = item.measurements;
       return {
         ...item,

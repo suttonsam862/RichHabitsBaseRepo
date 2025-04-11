@@ -101,7 +101,7 @@ export function FileUpload({
 
       {error && <p className="text-sm text-red-500">{error}</p>}
 
-      {value && value.startsWith("data:image/") && (
+      {value && typeof value === 'string' && value.startsWith("data:image/") && (
         <div className="relative mt-2 h-40 w-40 overflow-hidden rounded-md border border-border">
           <img
             src={value}
@@ -111,7 +111,7 @@ export function FileUpload({
         </div>
       )}
 
-      {value && !value.startsWith("data:image/") && value.startsWith("http") && (
+      {value && typeof value === 'string' && !value.startsWith("data:image/") && value.startsWith("http") && (
         <div className="relative mt-2 h-40 w-40 overflow-hidden rounded-md border border-border">
           <img
             src={value}

@@ -22,6 +22,8 @@ export function MultipleImageUpload({
   className,
   disabled,
 }: MultipleImageUploadProps) {
+  // Ensure value is always an array
+  const safeValue = Array.isArray(value) ? value : [];
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -32,7 +34,7 @@ export function MultipleImageUpload({
 
     if (!files || files.length === 0) return;
 
-    if (files.length + value.length > maxFiles) {
+    if (files.length + safeValue.length > maxFiles) {
       setError(`You can only upload a maximum of ${maxFiles} images`);
       return;
     }
@@ -59,7 +61,7 @@ export function MultipleImageUpload({
         processed++;
         
         if (processed === files.length) {
-          onChange([...value, ...newUrls]);
+          onChange([...safeValue, ...newUrls]);
           setIsUploading(false);
         }
       };
@@ -70,7 +72,7 @@ export function MultipleImageUpload({
         
         if (processed === files.length) {
           if (newUrls.length > 0) {
-            onChange([...value, ...newUrls]);
+            onChange([...safeValue, ...newUrls]);
           }
           setIsUploading(false);
         }
@@ -86,7 +88,7 @@ export function MultipleImageUpload({
   };
 
   const handleRemoveImage = (index: number) => {
-    const newValue = [...value];
+    const newValue = [...safeValue];
     newValue.splice(index, 1);
     onChange(newValue);
   };
@@ -99,7 +101,7 @@ export function MultipleImageUpload({
           variant="outline"
           size="sm"
           onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading || disabled || value.length >= maxFiles}
+          disabled={isUploading || disabled || safeValue.length >= maxFiles}
           className="gap-2"
         >
           {isUploading ? (
@@ -110,7 +112,7 @@ export function MultipleImageUpload({
           Upload Images
         </Button>
         <span className="text-xs text-muted-foreground">
-          {value.length} of {maxFiles} images
+          {safeValue.length} of {maxFiles} images
         </span>
       </div>
 
@@ -120,15 +122,15 @@ export function MultipleImageUpload({
         accept={accept}
         onChange={handleFileChange}
         className="hidden"
-        disabled={disabled || isUploading || value.length >= maxFiles}
+        disabled={disabled || isUploading || safeValue.length >= maxFiles}
         multiple
       />
 
       {error && <p className="text-sm text-red-500">{error}</p>}
 
-      {value.length > 0 && (
+      {safeValue.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {value.map((url, index) => (
+          {safeValue.map((url, index) => (
             <div key={index} className="relative group">
               <div className="relative h-32 w-full overflow-hidden rounded-md border border-border">
                 <img
@@ -152,7 +154,7 @@ export function MultipleImageUpload({
         </div>
       )}
 
-      {value.length === 0 && (
+      {safeValue.length === 0 && (
         <div className="h-32 w-full border border-dashed border-border rounded-md flex flex-col items-center justify-center text-muted-foreground">
           <ImagePlus className="h-8 w-8 mb-2 opacity-20" />
           <p className="text-sm">No images uploaded</p>

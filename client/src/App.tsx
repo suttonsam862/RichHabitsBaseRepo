@@ -3,6 +3,7 @@ import { AuthUser } from "./types";
 import Layout from "./components/layout";
 import { SalespersonLayout } from "./components/salesperson-layout";
 import { DesignerLayout } from "./components/designer/designer-layout";
+import { ManufacturerLayout } from "./components/manufacturer/manufacturer-layout";
 import Dashboard from "./pages/dashboard";
 import Leads from "./pages/leads";
 import Orders from "./pages/orders";

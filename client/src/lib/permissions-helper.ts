@@ -49,6 +49,21 @@ export function getDefaultVisiblePages(role: string): string[] {
         "profile",
         "design-process-guide"
       ];
+    case 'manufacturer':
+      return [
+        "dashboard",
+        "manufacturing-orders",
+        "order-detail",
+        "cost-input",
+        "status-update",
+        "shipping",
+        "order-history",
+        "metrics",
+        "notifications",
+        "profile",
+        "settings",
+        "manufacturing-guide"
+      ];
     default:
       return ["dashboard", "profile"];
   }

@@ -16,7 +16,7 @@ export function FileUpload({
   onChange,
   value,
   accept = "image/*",
-  maxSize = 5 * 1024 * 1024, // 5MB
+  maxSize = 20 * 1024 * 1024, // 20MB
   className,
   disabled,
 }: FileUploadProps) {

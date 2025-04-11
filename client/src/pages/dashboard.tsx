@@ -73,20 +73,20 @@ export default function Dashboard() {
   // Define KPI cards with real-time metrics
   const statsCards: StatCard[] = [
     {
-      title: "Active Leads",
-      value: stats.totalLeads,
-      change: stats.totalLeads > 0 ? `${stats.totalLeads} total` : "No active leads",
-      icon: <Users size={20} />,
-      iconBg: "bg-blue-50",
-      iconColor: "text-blue-500",
-    },
-    {
       title: "Orders In Progress",
       value: stats.activeOrders,
       change: stats.activeOrders > 0 ? `${stats.activeOrders} active orders` : "No active orders",
       icon: <ShoppingBag size={20} />,
       iconBg: "bg-orange-50",
       iconColor: "text-orange-500",
+    },
+    {
+      title: "Active Leads",
+      value: stats.totalLeads,
+      change: stats.totalLeads > 0 ? `${stats.totalLeads} total` : "No active leads",
+      icon: <Users size={20} />,
+      iconBg: "bg-blue-50",
+      iconColor: "text-blue-500",
     },
     {
       title: "Monthly Revenue",

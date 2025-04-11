@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC, useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -149,6 +149,25 @@ const categoryOptions = [
 
 const genderOptions = ["All", "Men", "Women", "Unisex", "Youth"];
 
+// Utility function to generate a random SKU
+const generateRandomSku = (category?: string, sport?: string): string => {
+  // Create prefix from category or default to "PROD"
+  const categoryPrefix = category && category !== "All" 
+    ? category.substring(0, 4).toUpperCase() 
+    : "PROD";
+  
+  // Add sport code if available (first 2 letters)
+  const sportCode = sport && sport !== "All"
+    ? `-${sport.substring(0, 2).toUpperCase()}`
+    : "";
+  
+  // Generate random 3-digit number
+  const randomNum = Math.floor(Math.random() * 900) + 100;
+  
+  // Combine parts to create SKU
+  return `${categoryPrefix}${sportCode}-${randomNum}`;
+};
+
 // Product Form
 const productFormSchema = insertProductSchema.extend({
   price: z.string().min(1, "Price is required"),
@@ -211,9 +230,30 @@ const ProductForm: FC<ProductFormProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>SKU</FormLabel>
-                <FormControl>
-                  <Input placeholder="JERSY-001" {...field} />
-                </FormControl>
+                <div className="flex gap-2">
+                  <FormControl>
+                    <Input placeholder="JERSY-001" {...field} />
+                  </FormControl>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center gap-1" 
+                    onClick={() => {
+                      // Generate a random SKU based on the selected category and sport
+                      const category = form.getValues("category");
+                      const sport = form.getValues("sport");
+                      const newSku = generateRandomSku(category, sport);
+                      field.onChange(newSku);
+                    }}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Generate
+                  </Button>
+                </div>
+                <FormDescription>
+                  Click "Generate" to create a unique SKU automatically
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

@@ -862,6 +862,46 @@ export default function Settings() {
                         </div>
                       </div>
                     </div>
+                    
+                    <div className="border rounded-lg p-4">
+                      <div className="flex flex-col gap-2">
+                        <h3 className="text-lg font-medium">Delete All Products</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Remove all products, fabric options, and cutting patterns from the system.
+                          This action cannot be undone.
+                        </p>
+                        <div className="flex items-center mt-2">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                variant="destructive"
+                                disabled={clearAllProducts.isPending}
+                              >
+                                {clearAllProducts.isPending ? "Deleting..." : "Delete All Products"}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action will permanently delete all products, fabric options, and cutting patterns from the system.
+                                  This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => clearAllProducts.mutate()}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete All Products
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

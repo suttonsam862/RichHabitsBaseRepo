@@ -9,7 +9,7 @@ import {
   Clock,
   CheckCircle,
   FileUp,
-  Rotate,
+  RotateCcw,
   Award,
   Palette,
   Mail,
@@ -142,7 +142,7 @@ export default function DesignProcessGuide() {
               number={5}
               title="Review & Revision"
               description="Address any feedback or revision requests promptly. You have 24 hours to complete revision requests."
-              icon={<Rotate className="h-5 w-5 text-pink-500" />}
+              icon={<RotateCcw className="h-5 w-5 text-pink-500" />}
               color="bg-pink-500"
             />
             

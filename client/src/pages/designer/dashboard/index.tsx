@@ -326,109 +326,110 @@ export default function DesignerDashboard() {
       {/* Earnings and completed designs */}
       <Card>
         <CardHeader>
-          <Tabs defaultValue="completed">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Recent Activity</CardTitle>
-              <TabsList>
-                <TabsTrigger value="completed">Completed Designs</TabsTrigger>
-                <TabsTrigger value="earnings">Earnings</TabsTrigger>
-              </TabsList>
-            </div>
-          </Tabs>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Recent Activity</CardTitle>
+          </div>
         </CardHeader>
         <CardContent>
-          <TabsContent value="completed" className="mt-0">
-            {isLoadingCompleted ? (
-              <div className="text-center py-6">Loading your completed designs...</div>
-            ) : completedDesigns?.data?.length > 0 ? (
-              <div className="space-y-4">
-                {completedDesigns.data.map((design: any) => (
-                  <div 
-                    key={design.id} 
-                    className="border rounded-lg p-4 hover:border-primary/50 transition-colors"
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium">{design.orderName}</h3>
-                          <Badge className="bg-green-100 text-green-800">Completed</Badge>
+          <Tabs defaultValue="completed">
+            <TabsList className="mb-4">
+              <TabsTrigger value="completed">Completed Designs</TabsTrigger>
+              <TabsTrigger value="earnings">Earnings</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="completed">
+              {isLoadingCompleted ? (
+                <div className="text-center py-6">Loading your completed designs...</div>
+              ) : completedDesigns?.data?.length > 0 ? (
+                <div className="space-y-4">
+                  {completedDesigns.data.map((design: any) => (
+                    <div 
+                      key={design.id} 
+                      className="border rounded-lg p-4 hover:border-primary/50 transition-colors"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium">{design.orderName}</h3>
+                            <Badge className="bg-green-100 text-green-800">Completed</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Order #{design.orderId} • Completed on {format(new Date(design.completedAt), 'MMM d, yyyy')}
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          Order #{design.orderId} • Completed on {format(new Date(design.completedAt), 'MMM d, yyyy')}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">${design.payout.toFixed(2)}</div>
-                        <div className="text-xs text-muted-foreground">
-                          Turnaround: {design.turnaroundHours}h
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {design.feedback && (
-                      <div className="mt-3 bg-slate-50 p-3 rounded-md">
-                        <div className="flex items-start gap-2">
-                          <ThumbsUp className="h-4 w-4 text-green-500 mt-0.5" />
-                          <div>
-                            <div className="text-sm font-medium">Client Feedback</div>
-                            <p className="text-sm text-muted-foreground">{design.feedback}</p>
+                        <div className="text-right">
+                          <div className="font-medium">${design.payout.toFixed(2)}</div>
+                          <div className="text-xs text-muted-foreground">
+                            Turnaround: {design.turnaroundHours}h
                           </div>
                         </div>
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                <h3 className="font-medium">No completed designs yet</h3>
-                <p className="text-sm text-muted-foreground">
-                  Your completed design jobs will appear here.
-                </p>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="earnings" className="mt-0">
-            <div className="space-y-4">
-              <div className="border rounded-lg p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-medium">Current Month Earnings</h3>
-                  <div className="text-2xl font-bold">${stats.totalEarningsThisMonth.toFixed(2)}</div>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center text-sm">
-                    <div className="flex items-center">
-                      <TrendingUp className="h-4 w-4 mr-2 text-green-500" />
-                      <span>Designs Completed</span>
+                      
+                      {design.feedback && (
+                        <div className="mt-3 bg-slate-50 p-3 rounded-md">
+                          <div className="flex items-start gap-2">
+                            <ThumbsUp className="h-4 w-4 text-green-500 mt-0.5" />
+                            <div>
+                              <div className="text-sm font-medium">Client Feedback</div>
+                              <p className="text-sm text-muted-foreground">{design.feedback}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <span>{stats.designsCompleted}</span>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                  <h3 className="font-medium">No completed designs yet</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Your completed design jobs will appear here.
+                  </p>
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="earnings">
+              <div className="space-y-4">
+                <div className="border rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-medium">Current Month Earnings</h3>
+                    <div className="text-2xl font-bold">${stats.totalEarningsThisMonth.toFixed(2)}</div>
                   </div>
                   
-                  <div className="flex justify-between items-center text-sm">
-                    <div className="flex items-center">
-                      <DollarSign className="h-4 w-4 mr-2 text-green-500" />
-                      <span>Pending Payout</span>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-sm">
+                      <div className="flex items-center">
+                        <TrendingUp className="h-4 w-4 mr-2 text-green-500" />
+                        <span>Designs Completed</span>
+                      </div>
+                      <span>{stats.designsCompleted}</span>
                     </div>
-                    <span>${stats.payoutPending.toFixed(2)}</span>
+                    
+                    <div className="flex justify-between items-center text-sm">
+                      <div className="flex items-center">
+                        <DollarSign className="h-4 w-4 mr-2 text-green-500" />
+                        <span>Pending Payout</span>
+                      </div>
+                      <span>${stats.payoutPending.toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Payment Schedule</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      Payouts are processed on the 1st and 15th of each month for all completed and approved designs.
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Payment Schedule</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Payouts are processed on the 1st and 15th of each month for all completed and approved designs.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>

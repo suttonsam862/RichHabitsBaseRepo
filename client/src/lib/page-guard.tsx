@@ -3,6 +3,7 @@ import { Redirect } from 'wouter';
 import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 import NotFound from '@/pages/not-found';
+import { hasPermission } from './permissions-helper';
 
 interface PageGuardProps {
   pageId: string;
@@ -41,14 +42,12 @@ export function PageGuard({ pageId, children }: PageGuardProps) {
     return <>{children}</>;
   }
   
-  // Check if the page ID is in the user's visiblePages
-  if (user.visiblePages && Array.isArray(user.visiblePages)) {
-    const hasAccess = user.visiblePages.includes(pageId);
-    console.log(`PageGuard: User ${user.username} ${hasAccess ? 'has' : 'does not have'} access to ${pageId}`);
-    
-    if (hasAccess) {
-      return <>{children}</>;
-    }
+  // Check if the user has permission using our helper
+  const userHasPermission = hasPermission(user, pageId);
+  console.log(`PageGuard: User ${user.username} ${userHasPermission ? 'has' : 'does not have'} access to ${pageId}`);
+  
+  if (userHasPermission) {
+    return <>{children}</>;
   }
   
   // If not authorized to view this page, show not found

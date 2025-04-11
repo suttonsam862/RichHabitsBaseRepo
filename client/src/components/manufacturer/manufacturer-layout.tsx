@@ -12,7 +12,7 @@ export function ManufacturerLayout({ children, user }: { children: ReactNode; us
   
   useEffect(() => {
     // Check if the user has the required role for this layout
-    if (user.role !== "manufacturer" && user.role !== ROLES.MANUFACTURING) {
+    if (user.role !== "manufacturer" && user.role !== ROLES.MANUFACTURER) {
       toast({
         title: "Access Restricted",
         description: "You do not have permission to access the manufacturing area.",

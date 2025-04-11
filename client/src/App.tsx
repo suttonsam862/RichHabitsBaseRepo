@@ -36,6 +36,11 @@ import OrderCreation from "./pages/salesperson/orders/create";
 import SalespersonOrders from "./pages/salesperson/orders";
 import SizeRequests from "./pages/salesperson/size-requests";
 
+// Designer pages
+import DesignerDashboard from "./pages/designer/dashboard";
+import UnclaimedDesigns from "./pages/designer/unclaimed-designs";
+import DesignJobDetail from "./pages/designer/design-job";
+
 // Admin pages
 import SalesTeam from "./pages/admin/sales-team";
 import DesignTeam from "./pages/admin/design-team";

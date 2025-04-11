@@ -455,7 +455,8 @@ const ProductForm: FC<ProductFormProps> = ({
                     type="number"
                     min={1}
                     {...field}
-                    onChange={(e) => field.onChange(parseInt(e.target.value))}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : '')}
                   />
                 </FormControl>
                 <FormMessage />
@@ -474,7 +475,8 @@ const ProductForm: FC<ProductFormProps> = ({
                     type="number"
                     min={1}
                     {...field}
-                    onChange={(e) => field.onChange(parseInt(e.target.value))}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : '')}
                   />
                 </FormControl>
                 <FormMessage />

@@ -147,7 +147,7 @@ export function MeasurementGrid({ value = [], onChange, disabled }: MeasurementG
             </Button>
           </div>
 
-          {value.length > 0 && (
+          {safeValue.length > 0 && (
             <div className="border rounded-md">
               <Table>
                 <TableHeader>
@@ -179,7 +179,7 @@ export function MeasurementGrid({ value = [], onChange, disabled }: MeasurementG
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {value.map((item, rowIndex) => (
+                  {safeValue.map((item, rowIndex) => (
                     <TableRow key={rowIndex}>
                       <TableCell>
                         <Input
@@ -207,7 +207,7 @@ export function MeasurementGrid({ value = [], onChange, disabled }: MeasurementG
                           variant="ghost"
                           size="icon"
                           onClick={() => handleRemoveSize(rowIndex)}
-                          disabled={disabled || value.length <= 1}
+                          disabled={disabled || safeValue.length <= 1}
                           className="h-8 w-8"
                         >
                           <Trash className="h-4 w-4" />
@@ -220,7 +220,7 @@ export function MeasurementGrid({ value = [], onChange, disabled }: MeasurementG
             </div>
           )}
           
-          {value.length === 0 && (
+          {safeValue.length === 0 && (
             <div className="border rounded-md p-8 flex flex-col items-center justify-center text-muted-foreground">
               <Grid className="h-12 w-12 mb-2 opacity-20" />
               <p>No sizes added yet</p>

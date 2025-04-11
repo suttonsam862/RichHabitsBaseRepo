@@ -22,8 +22,8 @@ export function MultipleImageUpload({
   className,
   disabled,
 }: MultipleImageUploadProps) {
-  // Ensure value is always an array
-  const safeValue = Array.isArray(value) ? value : [];
+  // Ensure value is always an array of strings
+  const safeValue = Array.isArray(value) ? value.filter(item => typeof item === 'string') : [];
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);

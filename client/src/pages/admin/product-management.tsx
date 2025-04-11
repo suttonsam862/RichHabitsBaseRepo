@@ -516,7 +516,9 @@ const ProductForm: FC<ProductFormProps> = ({
               <FormLabel>Additional Product Images</FormLabel>
               <FormControl>
                 <MultipleImageUpload
-                  value={Array.isArray(field.value) ? field.value : undefined}
+                  value={Array.isArray(field.value) ? 
+                    field.value.filter(item => typeof item === 'string') as string[] : 
+                    undefined}
                   onChange={field.onChange}
                   disabled={isSubmitting}
                 />
@@ -537,7 +539,7 @@ const ProductForm: FC<ProductFormProps> = ({
               <FormLabel>Measurement Grid</FormLabel>
               <FormControl>
                 <MeasurementGrid
-                  value={Array.isArray(field.value) ? field.value : []}
+                  value={Array.isArray(field.value) ? field.value.filter(item => typeof item === 'object') : []}
                   onChange={field.onChange}
                   disabled={isSubmitting}
                 />

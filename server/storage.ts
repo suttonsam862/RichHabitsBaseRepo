@@ -1049,19 +1049,28 @@ export class DatabaseStorage implements IStorage {
   async clearExampleData(): Promise<void> {
     // We'll preserve the admin user only (id=1), but clear all other data
     try {
+      // Clear all tables in the correct order to handle foreign key constraints
+      // Start with tables that reference other tables
+      await db.delete(feedbackVotes);
+      await db.delete(feedbackComments);
+      await db.delete(feedback);
+      await db.delete(designVersions);
+      await db.delete(designProjects);
+      await db.delete(customizationOptions);
+      await db.delete(activities);
+      await db.delete(messages);
+      await db.delete(orders);
+      await db.delete(leads);
+      await db.delete(fabricCuts);
+      await db.delete(fabricOptions);
+      await db.delete(products);
+      await db.delete(organizations);
+      
+      // Clear the sales team members table before deleting users
+      await db.delete(salesTeamMembers);
+      
       // Keep user 1 (admin) but delete all other users
       await db.delete(users).where(sql`id != 1`);
-      
-      // Clear all other tables completely
-      await db.delete(leads);
-      await db.delete(orders);
-      await db.delete(messages);
-      await db.delete(activities);
-      await db.delete(products);
-      await db.delete(fabricOptions);
-      await db.delete(fabricCuts);
-      await db.delete(customizationOptions);
-      await db.delete(organizations);
       
       console.log("Example data cleared successfully");
     } catch (error) {

@@ -20,6 +20,7 @@ import DesignCommunication from "./pages/design-communication";
 import ProductionCommunication from "./pages/production-communication";
 import Feedback from "./pages/feedback";
 import Outlook from "./pages/outlook";
+import SalesProcessGuide from "./pages/sales-process-guide";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 import { useAuth, AuthProvider } from "@/hooks/use-auth";
@@ -124,6 +125,9 @@ function DashboardLayout() {
         </Route>
         <Route path="/outlook">
           <ProtectedPageLoader pageId="outlook"><Outlook /></ProtectedPageLoader>
+        </Route>
+        <Route path="/sales-process-guide">
+          <ProtectedPageLoader pageId="sales-process-guide"><SalesProcessGuide /></ProtectedPageLoader>
         </Route>
         
         {/* Admin Routes */}

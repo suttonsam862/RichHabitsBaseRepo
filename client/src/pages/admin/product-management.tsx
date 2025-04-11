@@ -515,7 +515,7 @@ const ProductForm: FC<ProductFormProps> = ({
               <FormLabel>Additional Product Images</FormLabel>
               <FormControl>
                 <MultipleImageUpload
-                  value={field.value || []}
+                  value={Array.isArray(field.value) ? field.value : []}
                   onChange={field.onChange}
                   disabled={isSubmitting}
                 />
@@ -613,7 +613,7 @@ const FabricOptionForm: FC<FabricOptionFormProps> = ({
               <FormItem>
                 <FormLabel>Material Type</FormLabel>
                 <FormControl>
-                  <Input placeholder="100% Polyester" {...field} />
+                  <Input placeholder="100% Polyester" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -648,7 +648,7 @@ const FabricOptionForm: FC<FabricOptionFormProps> = ({
               <FormItem>
                 <FormLabel>Weight</FormLabel>
                 <FormControl>
-                  <Input placeholder="160 gsm" {...field} />
+                  <Input placeholder="160 gsm" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -751,7 +751,7 @@ const FabricCutForm: FC<FabricCutFormProps> = ({
             <FormItem>
               <FormLabel>Cutting Pattern Title</FormLabel>
               <FormControl>
-                <Input placeholder="Standard Jersey Pattern" {...field} />
+                <Input placeholder="Standard Jersey Pattern" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormDescription>
                 Enter a descriptive name for this cutting pattern

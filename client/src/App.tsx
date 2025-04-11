@@ -2,6 +2,7 @@ import { Switch, Route, Redirect, useLocation } from "wouter";
 import { AuthUser } from "./types";
 import Layout from "./components/layout";
 import { SalespersonLayout } from "./components/salesperson-layout";
+import { DesignerLayout } from "./components/designer/designer-layout";
 import Dashboard from "./pages/dashboard";
 import Leads from "./pages/leads";
 import Orders from "./pages/orders";
@@ -238,6 +239,66 @@ function SalespersonDashboardLayout() {
   );
 }
 
+// Designer dashboard layout with role-specific routes
+function DesignerDashboardLayout() {
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  
+  // Wrap all page components with a loading boundary and page guard
+  const ProtectedPageLoader = ({ children, pageId }: { children: React.ReactNode, pageId: string }) => (
+    <div className="page-container w-full h-full">
+      <PageGuard pageId={pageId}>
+        {children}
+      </PageGuard>
+    </div>
+  );
+  
+  return (
+    <DesignerLayout user={user as AuthUser}>
+      <Switch>
+        <Route path="/">
+          <ProtectedPageLoader pageId="dashboard"><DesignerDashboard /></ProtectedPageLoader>
+        </Route>
+        <Route path="/dashboard">
+          <ProtectedPageLoader pageId="dashboard"><DesignerDashboard /></ProtectedPageLoader>
+        </Route>
+        <Route path="/unclaimed-designs">
+          <ProtectedPageLoader pageId="unclaimed-designs"><UnclaimedDesigns /></ProtectedPageLoader>
+        </Route>
+        <Route path="/design-jobs">
+          <ProtectedPageLoader pageId="design-jobs"><UnclaimedDesigns /></ProtectedPageLoader>
+        </Route>
+        <Route path="/design-job/:id">
+          <ProtectedPageLoader pageId="design-job"><DesignJobDetail /></ProtectedPageLoader>
+        </Route>
+        <Route path="/design-submission">
+          <ProtectedPageLoader pageId="design-submission"><DesignJobDetail /></ProtectedPageLoader>
+        </Route>
+        <Route path="/revisions">
+          <ProtectedPageLoader pageId="revisions"><UnclaimedDesigns /></ProtectedPageLoader>
+        </Route>
+        <Route path="/customer-input">
+          <ProtectedPageLoader pageId="customer-input"><UnclaimedDesigns /></ProtectedPageLoader>
+        </Route>
+        <Route path="/notifications">
+          <ProtectedPageLoader pageId="notifications"><NotificationCenter /></ProtectedPageLoader>
+        </Route>
+        <Route path="/design-process-guide">
+          <ProtectedPageLoader pageId="design-process-guide"><SalesProcessGuide /></ProtectedPageLoader>
+        </Route>
+        <Route path="/profile">
+          <ProtectedPageLoader pageId="profile"><Profile /></ProtectedPageLoader>
+        </Route>
+        <Route>
+          <div className="page-container w-full h-full">
+            <NotFound />
+          </div>
+        </Route>
+      </Switch>
+    </DesignerLayout>
+  );
+}
+
 function AppContent() {
   const { user, isLoading } = useAuth();
   
@@ -260,6 +321,8 @@ function AppContent() {
   // Role-based routing
   if (user.role === ROLES.AGENT) {
     return <SalespersonDashboardLayout />;
+  } else if (user.role === "designer") {
+    return <DesignerDashboardLayout />;
   }
   
   // For all other roles (admin, manager, etc.), show the default dashboard

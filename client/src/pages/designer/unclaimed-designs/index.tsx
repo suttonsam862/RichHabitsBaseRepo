@@ -35,7 +35,7 @@ import {
   Filter,
   X,
   PenTool,
-  HandGrab,
+  Hammer,
   Eye,
   Sparkles,
   Timer,
@@ -300,7 +300,7 @@ export default function UnclaimedDesigns() {
                           className="h-8"
                           onClick={() => handleOpenClaimDialog(design)}
                         >
-                          <HandGrab className="h-3 w-3 mr-1" />
+                          <Hammer className="h-3 w-3 mr-1" />
                           Claim Job
                         </Button>
                       </div>
@@ -345,7 +345,7 @@ export default function UnclaimedDesigns() {
             <div className="bg-slate-50 p-4 rounded-lg">
               <div className="flex items-center mb-2">
                 <div className="bg-primary/10 w-8 h-8 rounded-full flex items-center justify-center mr-2">
-                  <HandGrab className="h-4 w-4 text-primary" />
+                  <Hammer className="h-4 w-4 text-primary" />
                 </div>
                 <h3 className="font-medium">1. Claim a Design Job</h3>
               </div>
@@ -486,7 +486,7 @@ export default function UnclaimedDesigns() {
                 </span>
               ) : (
                 <span className="flex items-center">
-                  <HandGrab className="h-4 w-4 mr-2" />
+                  <Hammer className="h-4 w-4 mr-2" />
                   Claim Design Job
                 </span>
               )}

@@ -206,9 +206,9 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             },
             {
               name: "Sales Process Guide",
-              href: "/sales-process",
+              href: "/sales-process-guide",
               icon: <FileBarChart className="mr-2" size={16} />,
-              id: "sales-process",
+              id: "sales-process-guide",
             },
             {
               name: "Order Tracking",
@@ -365,9 +365,9 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             },
             {
               name: "Sales Process Guide",
-              href: "/sales-process",
+              href: "/sales-process-guide",
               icon: <FileBarChart className="mr-2" size={16} />,
-              id: "sales-process",
+              id: "sales-process-guide",
             },
             {
               name: "Design Communication",
@@ -705,9 +705,9 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             },
             {
               name: "Sales Process Guide",
-              href: "/sales-process",
+              href: "/sales-process-guide",
               icon: <FileBarChart className="mr-2" size={16} />,
-              id: "sales-process",
+              id: "sales-process-guide",
             },
             {
               name: "Analytics",

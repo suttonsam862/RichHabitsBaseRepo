@@ -4,7 +4,6 @@ import Layout from "./components/layout";
 import Dashboard from "./pages/dashboard";
 import Leads from "./pages/leads";
 import Orders from "./pages/orders";
-import Messages from "./pages/messages";
 import Reports from "./pages/reports";
 import Analytics from "./pages/analytics";
 import Profile from "./pages/profile";
@@ -89,9 +88,6 @@ function DashboardLayout() {
         </Route>
         <Route path="/organizations">
           <ProtectedPageLoader pageId="organizations"><Organizations /></ProtectedPageLoader>
-        </Route>
-        <Route path="/messages">
-          <ProtectedPageLoader pageId="messages"><Messages /></ProtectedPageLoader>
         </Route>
         <Route path="/reports">
           <ProtectedPageLoader pageId="reports"><Reports /></ProtectedPageLoader>

@@ -193,11 +193,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               href: "/organizations",
               icon: <Building2 className="mr-2" size={16} />,
             },
-            {
-              name: "Messages",
-              href: "/messages",
-              icon: <MessageSquare className="mr-2" size={16} />,
-            },
+            
             {
               name: "Outlook",
               href: "/outlook",
@@ -379,11 +375,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               href: "/production-communication",
               icon: <Factory className="mr-2" size={16} />,
             },
-            {
-              name: "Messages",
-              href: "/messages",
-              icon: <MessageSquare className="mr-2" size={16} />,
-            },
+            
           ],
         },
         {
@@ -461,11 +453,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               href: "/design-communication",
               icon: <Palette className="mr-2" size={16} />,
             },
-            {
-              name: "Messages",
-              href: "/messages",
-              icon: <MessageSquare className="mr-2" size={16} />,
-            },
+            
           ],
         },
         {
@@ -543,11 +531,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               href: "/production-communication",
               icon: <Factory className="mr-2" size={16} />,
             },
-            {
-              name: "Messages",
-              href: "/messages",
-              icon: <MessageSquare className="mr-2" size={16} />,
-            },
+            
           ],
         },
         {
@@ -620,11 +604,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               href: "/catalog",
               icon: <Shirt className="mr-2" size={16} />,
             },
-            {
-              name: "Messages",
-              href: "/messages",
-              icon: <MessageSquare className="mr-2" size={16} />,
-            },
+            
           ],
         },
         {
@@ -692,11 +672,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               href: "/catalog",
               icon: <Shirt className="mr-2" size={16} />,
             },
-            {
-              name: "Messages",
-              href: "/messages",
-              icon: <MessageSquare className="mr-2" size={16} />,
-            },
+            
             {
               name: "Outlook",
               href: "/outlook",
@@ -750,11 +726,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             href: "/dashboard",
             icon: <LayoutDashboard className="mr-2" size={16} />,
           },
-          {
-            name: "Messages",
-            href: "/messages",
-            icon: <MessageSquare className="mr-2" size={16} />,
-          },
+          
         ],
       },
       {

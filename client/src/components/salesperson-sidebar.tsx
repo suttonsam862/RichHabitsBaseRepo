@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { FeedbackDialog } from "@/components/feedback-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -168,12 +168,27 @@ export function SalespersonSidebar({ user }: { user: AuthUser }) {
             Logout
           </Button>
           
-          <FeedbackDialog>
-            <Button variant="outline" className="w-full justify-start bg-white">
-              <FileText className="mr-2" size={16} />
-              Send Feedback
-            </Button>
-          </FeedbackDialog>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full justify-start bg-white">
+                <FileText className="mr-2" size={16} />
+                Send Feedback
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Send Feedback</DialogTitle>
+                <DialogDescription>
+                  Share your thoughts or report issues to help us improve the platform.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <p className="text-sm text-gray-500">
+                  Please use this form to submit feedback about your experience with the platform.
+                </p>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>

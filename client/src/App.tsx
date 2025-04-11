@@ -1,6 +1,7 @@
 import { Switch, Route, Redirect, useLocation } from "wouter";
 import { AuthUser } from "./types";
 import Layout from "./components/layout";
+import { SalespersonLayout } from "./components/salesperson-layout";
 import Dashboard from "./pages/dashboard";
 import Leads from "./pages/leads";
 import Orders from "./pages/orders";
@@ -25,6 +26,11 @@ import { Loader2 } from "lucide-react";
 import { useAuth, AuthProvider } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageGuard } from "@/lib/page-guard"; // Import the PageGuard component
+import { ROLES } from "@shared/schema";
+
+// Salesperson pages
+import SalespersonDashboard from "./pages/salesperson/dashboard";
+import NotificationCenter from "./pages/salesperson/notification-center";
 
 // Admin pages
 import SalesTeam from "./pages/admin/sales-team";
@@ -163,6 +169,66 @@ function App() {
   );
 }
 
+// Salesperson dashboard layout with role-specific routes
+function SalespersonDashboardLayout() {
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  
+  // Wrap all page components with a loading boundary and page guard
+  const ProtectedPageLoader = ({ children, pageId }: { children: React.ReactNode, pageId: string }) => (
+    <div className="page-container w-full h-full">
+      <PageGuard pageId={pageId}>
+        {children}
+      </PageGuard>
+    </div>
+  );
+  
+  return (
+    <SalespersonLayout user={user as AuthUser}>
+      <Switch>
+        <Route path="/">
+          <ProtectedPageLoader pageId="dashboard"><SalespersonDashboard /></ProtectedPageLoader>
+        </Route>
+        <Route path="/dashboard">
+          <ProtectedPageLoader pageId="dashboard"><SalespersonDashboard /></ProtectedPageLoader>
+        </Route>
+        <Route path="/leads">
+          <ProtectedPageLoader pageId="leads"><Leads /></ProtectedPageLoader>
+        </Route>
+        <Route path="/orders">
+          <ProtectedPageLoader pageId="orders"><Orders /></ProtectedPageLoader>
+        </Route>
+        <Route path="/orders/create">
+          <ProtectedPageLoader pageId="orders/create"><Orders /></ProtectedPageLoader>
+        </Route>
+        <Route path="/orders/history">
+          <ProtectedPageLoader pageId="orders/history"><Orders /></ProtectedPageLoader>
+        </Route>
+        <Route path="/size-requests">
+          <ProtectedPageLoader pageId="size-requests"><Orders /></ProtectedPageLoader>
+        </Route>
+        <Route path="/notifications">
+          <ProtectedPageLoader pageId="notifications"><NotificationCenter /></ProtectedPageLoader>
+        </Route>
+        <Route path="/profile">
+          <ProtectedPageLoader pageId="profile"><Profile /></ProtectedPageLoader>
+        </Route>
+        <Route path="/catalog">
+          <ProtectedPageLoader pageId="catalog"><Catalog /></ProtectedPageLoader>
+        </Route>
+        <Route path="/sales-process-guide">
+          <ProtectedPageLoader pageId="sales-process-guide"><SalesProcessGuide /></ProtectedPageLoader>
+        </Route>
+        <Route>
+          <div className="page-container w-full h-full">
+            <NotFound />
+          </div>
+        </Route>
+      </Switch>
+    </SalespersonLayout>
+  );
+}
+
 function AppContent() {
   const { user, isLoading } = useAuth();
   
@@ -182,7 +248,12 @@ function AppContent() {
     return <AuthPage />;
   }
   
-  // If authenticated, show the dashboard
+  // Role-based routing
+  if (user.role === ROLES.AGENT) {
+    return <SalespersonDashboardLayout />;
+  }
+  
+  // For all other roles (admin, manager, etc.), show the default dashboard
   return <DashboardLayout />;
 }
 

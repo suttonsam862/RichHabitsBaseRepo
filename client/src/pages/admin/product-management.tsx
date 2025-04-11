@@ -275,6 +275,7 @@ const ProductForm: FC<ProductFormProps> = ({
                   placeholder="Product description"
                   className="min-h-32"
                   {...field}
+                  value={field.value ?? ''}
                 />
               </FormControl>
               <FormMessage />
@@ -291,7 +292,7 @@ const ProductForm: FC<ProductFormProps> = ({
                 <FormLabel>Sport</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  defaultValue={field.value ?? ""}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -319,7 +320,7 @@ const ProductForm: FC<ProductFormProps> = ({
                 <FormLabel>Category</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  defaultValue={field.value ?? ""}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -347,7 +348,7 @@ const ProductForm: FC<ProductFormProps> = ({
                 <FormLabel>Gender</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  defaultValue={field.value ?? ""}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -631,6 +632,7 @@ const FabricOptionForm: FC<FabricOptionFormProps> = ({
                   placeholder="Fabric description"
                   className="min-h-32"
                   {...field}
+                  value={field.value ?? ''}
                 />
               </FormControl>
               <FormMessage />
@@ -770,6 +772,7 @@ const FabricCutForm: FC<FabricCutFormProps> = ({
                   placeholder="Detailed description of the cutting pattern"
                   className="min-h-32"
                   {...field}
+                  value={field.value ?? ''}
                 />
               </FormControl>
               <FormMessage />

@@ -516,7 +516,7 @@ const ProductForm: FC<ProductFormProps> = ({
               <FormLabel>Additional Product Images</FormLabel>
               <FormControl>
                 <MultipleImageUpload
-                  value={Array.isArray(field.value) ? field.value : []}
+                  value={Array.isArray(field.value) ? field.value : undefined}
                   onChange={field.onChange}
                   disabled={isSubmitting}
                 />
@@ -1417,9 +1417,9 @@ const ProductManagementPage: FC = () => {
                             <div className="text-muted-foreground">No image</div>
                           </div>
                         )}
-                        {fabric.priceModifier > 0 && (
+                        {fabric.priceModifier && parseFloat(fabric.priceModifier) > 0 && (
                           <Badge className="absolute top-2 right-2 bg-primary">
-                            +${fabric.priceModifier.toFixed(2)}
+                            +${parseFloat(fabric.priceModifier).toFixed(2)}
                           </Badge>
                         )}
                       </div>
@@ -1577,9 +1577,9 @@ const ProductManagementPage: FC = () => {
                             <div className="text-muted-foreground">No image</div>
                           </div>
                         )}
-                        {cut.priceModifier > 0 && (
+                        {cut.priceModifier && parseFloat(cut.priceModifier) > 0 && (
                           <Badge className="absolute top-2 right-2 bg-primary">
-                            +${cut.priceModifier.toFixed(2)}
+                            +${parseFloat(cut.priceModifier).toFixed(2)}
                           </Badge>
                         )}
                       </div>

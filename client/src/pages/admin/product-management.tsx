@@ -171,6 +171,7 @@ const generateRandomSku = (category?: string, sport?: string): string => {
 // Product Form
 const productFormSchema = insertProductSchema.extend({
   price: z.string().min(1, "Price is required"),
+  id: z.number().optional(),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -536,7 +537,7 @@ const ProductForm: FC<ProductFormProps> = ({
               <FormLabel>Measurement Grid</FormLabel>
               <FormControl>
                 <MeasurementGrid
-                  value={field.value || []}
+                  value={Array.isArray(field.value) ? field.value : []}
                   onChange={field.onChange}
                   disabled={isSubmitting}
                 />
@@ -561,7 +562,9 @@ const ProductForm: FC<ProductFormProps> = ({
 };
 
 // Fabric Option Form
-const fabricOptionFormSchema = insertFabricOptionSchema.extend({});
+const fabricOptionFormSchema = insertFabricOptionSchema.extend({
+  id: z.number().optional(),
+});
 type FabricOptionFormValues = z.infer<typeof fabricOptionFormSchema>;
 
 interface FabricOptionFormProps {
@@ -717,6 +720,7 @@ const FabricOptionForm: FC<FabricOptionFormProps> = ({
 // Fabric Cut Form
 const fabricCutFormSchema = insertFabricCutSchema.extend({
   pdfUrl: z.string().optional(),
+  id: z.number().optional(),
 });
 type FabricCutFormValues = z.infer<typeof fabricCutFormSchema>;
 

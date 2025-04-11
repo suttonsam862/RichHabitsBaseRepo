@@ -1334,6 +1334,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.post("/api/data/clear-all-products", isAdmin, async (req, res) => {
+    try {
+      await storage.clearAllProducts();
+      res.json({ success: true, message: "All products have been deleted successfully" });
+    } catch (error: any) {
+      console.error("Error clearing products:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
   // Sales team management endpoints
   // Get all sales team members - Admin only
   // Organizations endpoints

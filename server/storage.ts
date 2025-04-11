@@ -171,6 +171,7 @@ export interface IStorage {
   
   // Data management
   clearExampleData(): Promise<void>;
+  clearAllProducts(): Promise<void>;
   
   // Feedback system
   getFeedback(options?: { status?: string; type?: string; limit?: number }): Promise<Feedback[]>;
@@ -1065,6 +1066,21 @@ export class DatabaseStorage implements IStorage {
       console.log("Example data cleared successfully");
     } catch (error) {
       console.error("Error clearing example data:", error);
+      throw error;
+    }
+  }
+  
+  async clearAllProducts(): Promise<void> {
+    try {
+      // Delete all products and related data
+      await db.delete(customizationOptions);
+      await db.delete(fabricCuts);
+      await db.delete(fabricOptions);
+      await db.delete(products);
+      
+      console.log("All products have been deleted successfully");
+    } catch (error) {
+      console.error("Error deleting products:", error);
       throw error;
     }
   }

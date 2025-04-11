@@ -32,6 +32,9 @@ import { ROLES } from "@shared/schema";
 import SalespersonDashboard from "./pages/salesperson/dashboard";
 import NotificationCenter from "./pages/salesperson/notification-center";
 import UnclaimedLeads from "./pages/salesperson/leads";
+import OrderCreation from "./pages/salesperson/orders/create";
+import SalespersonOrders from "./pages/salesperson/orders";
+import SizeRequests from "./pages/salesperson/size-requests";
 
 // Admin pages
 import SalesTeam from "./pages/admin/sales-team";
@@ -197,16 +200,16 @@ function SalespersonDashboardLayout() {
           <ProtectedPageLoader pageId="leads"><UnclaimedLeads /></ProtectedPageLoader>
         </Route>
         <Route path="/orders">
-          <ProtectedPageLoader pageId="orders"><Orders /></ProtectedPageLoader>
+          <ProtectedPageLoader pageId="orders"><SalespersonOrders /></ProtectedPageLoader>
         </Route>
         <Route path="/orders/create">
-          <ProtectedPageLoader pageId="orders/create"><Orders /></ProtectedPageLoader>
+          <ProtectedPageLoader pageId="orders/create"><OrderCreation /></ProtectedPageLoader>
         </Route>
         <Route path="/orders/history">
-          <ProtectedPageLoader pageId="orders/history"><Orders /></ProtectedPageLoader>
+          <ProtectedPageLoader pageId="orders/history"><SalespersonOrders /></ProtectedPageLoader>
         </Route>
         <Route path="/size-requests">
-          <ProtectedPageLoader pageId="size-requests"><Orders /></ProtectedPageLoader>
+          <ProtectedPageLoader pageId="size-requests"><SizeRequests /></ProtectedPageLoader>
         </Route>
         <Route path="/notifications">
           <ProtectedPageLoader pageId="notifications"><NotificationCenter /></ProtectedPageLoader>

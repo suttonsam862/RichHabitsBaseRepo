@@ -195,6 +195,10 @@ const ProductForm: FC<ProductFormProps> = ({
       sport: "",
       category: "",
       gender: "",
+      item: "",  // Add missing required field from schema
+      fabricOptions: "", // Add missing required field from schema
+      cogs: "", // Add missing required field from schema
+      wholesalePrice: "", // Add missing required field from schema
       imageUrl: "",
       productImages: [],
       measurementGrid: [],
@@ -358,6 +362,67 @@ const ProductForm: FC<ProductFormProps> = ({
                     ))}
                   </SelectContent>
                 </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        
+        {/* Additional required fields */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="item"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Item Type</FormLabel>
+                <FormControl>
+                  <Input placeholder="Jersey" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="fabricOptions"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Fabric Options</FormLabel>
+                <FormControl>
+                  <Input placeholder="Cotton, Polyester, Blend" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="cogs"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Cost of Goods Sold</FormLabel>
+                <FormControl>
+                  <Input placeholder="12.99" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="wholesalePrice"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Wholesale Price</FormLabel>
+                <FormControl>
+                  <Input placeholder="19.99" {...field} />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

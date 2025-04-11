@@ -748,8 +748,11 @@ const ProductManagementPage: FC = () => {
   
   // Fabric options dialog state
   const [addFabricOptionOpen, setAddFabricOptionOpen] = useState(false);
+  const [addFabricOpen, setAddFabricOpen] = useState(false);
   const [editFabricOptionOpen, setEditFabricOptionOpen] = useState(false);
+  const [editFabricOpen, setEditFabricOpen] = useState(false);
   const [selectedFabricOption, setSelectedFabricOption] = useState<FabricOption | null>(null);
+  const [selectedFabric, setSelectedFabric] = useState<FabricOption | null>(null);
 
   // Fabric cuts dialog state
   const [addCutOpen, setAddCutOpen] = useState(false);
@@ -1575,5 +1578,7 @@ const ProductManagementPage: FC = () => {
     </Layout>
   );
 };
+
+
 
 export default ProductManagementPage;

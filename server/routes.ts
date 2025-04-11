@@ -953,12 +953,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Settings endpoints
   app.post("/api/settings/:type", async (req, res) => {
     try {
-      const settingType = req.params.type;
-      const userId = req.body.userId;
-      
-      if (!userId) {
-        return res.status(400).json({ error: "User ID is required" });
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
       }
+      
+      const settingType = req.params.type;
+      const userId = req.user.id;
       
       await storage.updateUserSettings(userId, settingType, req.body);
       res.json({ success: true, message: `${settingType} settings updated successfully` });

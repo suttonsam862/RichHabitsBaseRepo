@@ -1054,6 +1054,8 @@ export class DatabaseStorage implements IStorage {
       await db.delete(feedbackVotes);
       await db.delete(feedbackComments);
       await db.delete(feedback);
+      await db.delete(designMessages);
+      await db.delete(designRevisions);
       await db.delete(designVersions);
       await db.delete(designProjects);
       await db.delete(customizationOptions);
@@ -1066,8 +1068,8 @@ export class DatabaseStorage implements IStorage {
       await db.delete(products);
       await db.delete(organizations);
       
-      // Clear the sales team members table before deleting users
-      await db.delete(salesTeamMembers);
+      // First delete sales_team_members where user_id is not 1 (not admin)
+      await db.delete(salesTeamMembers).where(sql`user_id != 1 OR user_id IS NULL`);
       
       // Keep user 1 (admin) but delete all other users
       await db.delete(users).where(sql`id != 1`);

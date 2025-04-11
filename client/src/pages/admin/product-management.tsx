@@ -646,7 +646,9 @@ const FabricOptionForm: FC<FabricOptionFormProps> = ({
 };
 
 // Fabric Cut Form
-const fabricCutFormSchema = insertFabricCutSchema.extend({});
+const fabricCutFormSchema = insertFabricCutSchema.extend({
+  pdfUrl: z.string().optional(),
+});
 type FabricCutFormValues = z.infer<typeof fabricCutFormSchema>;
 
 interface FabricCutFormProps {
@@ -665,8 +667,6 @@ const FabricCutForm: FC<FabricCutFormProps> = ({
     defaultValues: defaultValues || {
       name: "",
       description: "",
-      priceModifier: 0,
-      applicationMethod: "",
       imageUrl: "",
       isActive: true,
     },
@@ -675,35 +675,22 @@ const FabricCutForm: FC<FabricCutFormProps> = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Cut Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Athletic Fit" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="applicationMethod"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Application Method</FormLabel>
-                <FormControl>
-                  <Input placeholder="Machine cut" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Cutting Pattern Title</FormLabel>
+              <FormControl>
+                <Input placeholder="Standard Jersey Pattern" {...field} />
+              </FormControl>
+              <FormDescription>
+                Enter a descriptive name for this cutting pattern
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}
@@ -713,28 +700,9 @@ const FabricCutForm: FC<FabricCutFormProps> = ({
               <FormLabel>Description</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Cut description"
+                  placeholder="Detailed description of the cutting pattern"
                   className="min-h-32"
                   {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="priceModifier"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Price Modifier ($)</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
                 />
               </FormControl>
               <FormMessage />
@@ -747,12 +715,17 @@ const FabricCutForm: FC<FabricCutFormProps> = ({
           name="imageUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Image URL</FormLabel>
+              <FormLabel>PDF Cutting Pattern</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com/image.jpg" {...field} />
+                <FileUpload
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  disabled={isSubmitting}
+                  accept=".pdf"
+                />
               </FormControl>
               <FormDescription>
-                Enter a URL for the cut pattern image
+                Upload a PDF file with the detailed cutting pattern (max 20MB)
               </FormDescription>
               <FormMessage />
             </FormItem>

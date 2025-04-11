@@ -4,6 +4,7 @@ import { AuthUser } from "@/types";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { ROLES } from "@shared/schema";
 
 export function ManufacturerLayout({ children, user }: { children: ReactNode; user: AuthUser }) {
   const { toast } = useToast();
@@ -11,7 +12,7 @@ export function ManufacturerLayout({ children, user }: { children: ReactNode; us
   
   useEffect(() => {
     // Check if the user has the required role for this layout
-    if (user.role !== "manufacturer") {
+    if (user.role !== "manufacturer" && user.role !== ROLES.MANUFACTURING) {
       toast({
         title: "Access Restricted",
         description: "You do not have permission to access the manufacturing area.",

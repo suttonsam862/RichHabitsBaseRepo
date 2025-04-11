@@ -42,6 +42,13 @@ import SizeRequests from "./pages/salesperson/size-requests";
 import DesignerDashboard from "./pages/designer/dashboard";
 import UnclaimedDesigns from "./pages/designer/unclaimed-designs";
 import DesignJobDetail from "./pages/designer/design-job";
+import DesignProcessGuide from "./pages/design-process-guide";
+
+// Manufacturer pages
+import ManufacturerDashboard from "./pages/manufacturer/dashboard";
+import ManufacturingOrders from "./pages/manufacturer/orders";
+import OrderDetail from "./pages/manufacturer/order-detail";
+import ManufacturingGuide from "./pages/manufacturing-guide";
 
 // Admin pages
 import SalesTeam from "./pages/admin/sales-team";
@@ -285,7 +292,7 @@ function DesignerDashboardLayout() {
           <ProtectedPageLoader pageId="notifications"><NotificationCenter /></ProtectedPageLoader>
         </Route>
         <Route path="/design-process-guide">
-          <ProtectedPageLoader pageId="design-process-guide"><SalesProcessGuide /></ProtectedPageLoader>
+          <ProtectedPageLoader pageId="design-process-guide"><DesignProcessGuide /></ProtectedPageLoader>
         </Route>
         <Route path="/profile">
           <ProtectedPageLoader pageId="profile"><Profile /></ProtectedPageLoader>
@@ -297,6 +304,81 @@ function DesignerDashboardLayout() {
         </Route>
       </Switch>
     </DesignerLayout>
+  );
+}
+
+// Manufacturer dashboard layout with role-specific routes
+function ManufacturerDashboardLayout() {
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  
+  // Wrap all page components with a loading boundary and page guard
+  const ProtectedPageLoader = ({ children, pageId }: { children: React.ReactNode, pageId: string }) => (
+    <div className="page-container w-full h-full">
+      <PageGuard pageId={pageId}>
+        {children}
+      </PageGuard>
+    </div>
+  );
+  
+  return (
+    <ManufacturerLayout user={user as AuthUser}>
+      <Switch>
+        <Route path="/">
+          <ProtectedPageLoader pageId="dashboard"><ManufacturerDashboard /></ProtectedPageLoader>
+        </Route>
+        <Route path="/dashboard">
+          <ProtectedPageLoader pageId="dashboard"><ManufacturerDashboard /></ProtectedPageLoader>
+        </Route>
+        <Route path="/manufacturing-orders">
+          <ProtectedPageLoader pageId="manufacturing-orders"><ManufacturingOrders /></ProtectedPageLoader>
+        </Route>
+        <Route path="/order-detail/:id">
+          <ProtectedPageLoader pageId="order-detail"><OrderDetail /></ProtectedPageLoader>
+        </Route>
+        <Route path="/cost-input">
+          <ProtectedPageLoader pageId="cost-input"><ManufacturingOrders /></ProtectedPageLoader>
+        </Route>
+        <Route path="/cost-input/:id">
+          <ProtectedPageLoader pageId="cost-input"><OrderDetail /></ProtectedPageLoader>
+        </Route>
+        <Route path="/status-update">
+          <ProtectedPageLoader pageId="status-update"><ManufacturingOrders /></ProtectedPageLoader>
+        </Route>
+        <Route path="/status-update/:id">
+          <ProtectedPageLoader pageId="status-update"><OrderDetail /></ProtectedPageLoader>
+        </Route>
+        <Route path="/shipping">
+          <ProtectedPageLoader pageId="shipping"><ManufacturingOrders /></ProtectedPageLoader>
+        </Route>
+        <Route path="/shipping/:id">
+          <ProtectedPageLoader pageId="shipping"><OrderDetail /></ProtectedPageLoader>
+        </Route>
+        <Route path="/order-history">
+          <ProtectedPageLoader pageId="order-history"><ManufacturingOrders /></ProtectedPageLoader>
+        </Route>
+        <Route path="/metrics">
+          <ProtectedPageLoader pageId="metrics"><ManufacturerDashboard /></ProtectedPageLoader>
+        </Route>
+        <Route path="/notifications">
+          <ProtectedPageLoader pageId="notifications"><NotificationCenter /></ProtectedPageLoader>
+        </Route>
+        <Route path="/manufacturing-guide">
+          <ProtectedPageLoader pageId="manufacturing-guide"><ManufacturingGuide /></ProtectedPageLoader>
+        </Route>
+        <Route path="/profile">
+          <ProtectedPageLoader pageId="profile"><Profile /></ProtectedPageLoader>
+        </Route>
+        <Route path="/settings">
+          <ProtectedPageLoader pageId="settings"><Settings /></ProtectedPageLoader>
+        </Route>
+        <Route>
+          <div className="page-container w-full h-full">
+            <NotFound />
+          </div>
+        </Route>
+      </Switch>
+    </ManufacturerLayout>
   );
 }
 
@@ -324,6 +406,8 @@ function AppContent() {
     return <SalespersonDashboardLayout />;
   } else if (user.role === "designer") {
     return <DesignerDashboardLayout />;
+  } else if (user.role === "manufacturer" || user.role === ROLES.MANUFACTURER) {
+    return <ManufacturerDashboardLayout />;
   }
   
   // For all other roles (admin, manager, etc.), show the default dashboard

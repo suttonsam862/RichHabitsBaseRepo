@@ -198,15 +198,31 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
 
   // Filter menu items based on user's visible pages
   const filterMenuItemsByVisibility = (menuGroups: MenuGroup[]): MenuGroup[] => {
-    // If user is admin, don't filter anything - show all menu items
+    // If user is admin, still apply visibility filtering, but with a note
     if (user?.role === 'admin') {
-      console.log("Admin user - no visibility filtering applied");
-      return menuGroups;
+      console.log("Admin user - visibility filtering still applied for non-admins with admin pages");
+      // We don't return early, continue with normal visibility filtering
     }
     
-    // If visiblePages is not defined or empty, return all menu items
+    // If visiblePages is not defined or empty, apply different logic based on role
     if (!user?.visiblePages || user.visiblePages.length === 0) {
-      console.log("No visible pages filter applied for user:", user?.username);
+      console.log("No visible pages array found for user:", user?.username, "with role:", user?.role);
+      
+      // For non-admin roles with no visiblePages, show only essential pages
+      if (user?.role !== 'admin') {
+        console.log("Non-admin user with no visiblePages - showing only essential pages");
+        return menuGroups.map(group => ({
+          ...group,
+          items: group.items.filter(item => 
+            item.href === '/profile' || 
+            item.href === '/settings' || 
+            item.href === '/dashboard'
+          )
+        })).filter(group => group.items.length > 0);
+      }
+      
+      // For admin roles with no visiblePages, show all pages
+      console.log("Admin user with no visiblePages - showing all pages");
       return menuGroups;
     }
 
@@ -222,6 +238,14 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
         
         // If the item has an id, check if it's in the user's visiblePages
         if (item.id) {
+          // For admin/* paths, we need to check if the full path is included
+          if (item.id.startsWith('admin/')) {
+            const isVisible = user.visiblePages?.includes(item.id) ?? true;
+            console.log(`Checking admin page with ID ${item.id}: ${isVisible ? 'visible' : 'hidden'}`);
+            return isVisible;
+          }
+          
+          // For regular pages, check direct id match
           const isVisible = user.visiblePages?.includes(item.id) ?? true;
           console.log(`Checking page with ID ${item.id}: ${isVisible ? 'visible' : 'hidden'}`);
           return isVisible;
@@ -229,6 +253,15 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
         
         // For items without an id, extract the id from the href (remove leading slash)
         const pageId = item.href.replace(/^\//, '');
+        
+        // Special case for admin pages to handle nested paths
+        if (pageId.startsWith('admin/')) {
+          const adminSubPath = pageId;
+          const isVisible = user.visiblePages?.includes(adminSubPath) ?? true;
+          console.log(`Checking admin page ${item.name} (${adminSubPath}): ${isVisible ? 'visible' : 'hidden'}`);
+          return isVisible;
+        }
+        
         const isVisible = user.visiblePages?.includes(pageId) ?? true;
         console.log(`Checking page ${item.name} (${pageId}): ${isVisible ? 'visible' : 'hidden'}`);
         return isVisible;

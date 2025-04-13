@@ -3183,6 +3183,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create settings object with user's visiblePages
       let settingsData = navSettings?.settings || {};
+      
+      // Generate a complete list of admin pages if not already present
+      if (user.role === 'admin' || user.role === 'designer' || user.role === 'sales' || user.role === 'hybrid') {
+        // Make sure we have a complete list of visible pages
+        const defaultPages = [
+          'dashboard', 'profile', 'settings',
+          'orders', 'leads', 'organizations',
+          'catalog', 'messages', 'design', 'manufacturing'
+        ];
+        
+        // Add admin pages for admins and specific admin pages for other roles
+        if (user.role === 'admin') {
+          defaultPages.push(
+            'admin/product-management', 'admin/sales-team', 
+            'admin/design-team', 'admin/manufacturing-team',
+            'corporate', 'admin/reports', 'user-management'
+          );
+        }
+        
+        if (user.role === 'designer' || user.role === 'hybrid') {
+          defaultPages.push('admin/design-team');
+        }
+        
+        if (user.role === 'sales' || user.role === 'hybrid') {
+          defaultPages.push('admin/sales-team');
+        }
+        
+        if (!user.visiblePages || user.visiblePages.length === 0) {
+          // If user doesn't have visiblePages, set them
+          await storage.updateVisiblePages(userId, defaultPages);
+          user.visiblePages = defaultPages;
+        }
+      }
+      
+      // Ensure the user has visiblePages
+      if (!user.visiblePages) {
+        user.visiblePages = [];
+      }
+      
+      // Always sync the visiblePages from the user record to the settings
       settingsData.visiblePages = user.visiblePages;
       
       // Update the settings

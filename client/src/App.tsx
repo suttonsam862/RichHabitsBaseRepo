@@ -1,5 +1,6 @@
 import { Switch, Route, Redirect, useLocation } from "wouter";
 import { AuthUser } from "./types";
+import { ROLES } from "@shared/schema";
 import Layout from "./components/layout";
 import { SalespersonLayout } from "./components/salesperson-layout";
 import { DesignerLayout } from "./components/designer/designer-layout";
@@ -29,7 +30,6 @@ import { Loader2 } from "lucide-react";
 import { useAuth, AuthProvider } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageGuard } from "@/lib/page-guard"; // Import the PageGuard component
-import { ROLES } from "@shared/schema";
 
 // Salesperson pages
 import SalespersonDashboard from "./pages/salesperson/dashboard";
@@ -157,6 +157,11 @@ function DashboardLayout() {
           <ProtectedPageLoader pageId="sales-process-guide"><SalesProcessGuide /></ProtectedPageLoader>
         </Route>
         
+        {/* Events Routes */}
+        <Route path="/events/calendar">
+          <ProtectedPageLoader pageId="events/calendar"><EventCalendar /></ProtectedPageLoader>
+        </Route>
+        
         {/* Admin Routes */}
         <Route path="/admin/sales-team">
           <ProtectedPageLoader pageId="admin/sales-team"><SalesTeam /></ProtectedPageLoader>
@@ -243,6 +248,9 @@ function SalespersonDashboardLayout() {
         </Route>
         <Route path="/sales-process-guide">
           <ProtectedPageLoader pageId="sales-process-guide"><SalesProcessGuide /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/calendar">
+          <ProtectedPageLoader pageId="events/calendar"><EventCalendar /></ProtectedPageLoader>
         </Route>
         <Route>
           <div className="page-container w-full h-full">
@@ -472,6 +480,11 @@ function HybridDashboardLayout() {
         </Route>
         <Route path="/production-communication">
           <ProtectedPageLoader pageId="production-communication"><ProductionCommunication /></ProtectedPageLoader>
+        </Route>
+        
+        {/* Events Routes */}
+        <Route path="/events/calendar">
+          <ProtectedPageLoader pageId="events/calendar"><EventCalendar /></ProtectedPageLoader>
         </Route>
         
         <Route>

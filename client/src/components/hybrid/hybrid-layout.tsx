@@ -4,6 +4,7 @@ import { AuthUser } from "@/types";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { ROLES } from "@shared/schema";
 
 export function HybridLayout({ children, user }: { children: ReactNode; user: AuthUser }) {
   const { toast } = useToast();
@@ -11,7 +12,7 @@ export function HybridLayout({ children, user }: { children: ReactNode; user: Au
   
   useEffect(() => {
     // Check if the user has the required role for this layout
-    if (user.role !== "hybrid" && user.role !== "admin") {
+    if (user.role !== ROLES.HYBRID && user.role !== ROLES.ADMIN) {
       toast({
         title: "Access Restricted",
         description: "You do not have permission to access the hybrid role area.",

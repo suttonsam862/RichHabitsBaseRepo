@@ -153,7 +153,76 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       const savedGroups = localStorage.getItem('sidebarGroups');
       if (savedGroups) {
         console.log('Loading sidebar groups from localStorage (server settings not available)');
-        const parsedGroups = JSON.parse(savedGroups);
+        let parsedGroups = JSON.parse(savedGroups);
+        
+        // Special handling for Charlie - ensure we add his admin section if it doesn't exist
+        const isCharlie = user?.username === 'charliereeves' || user?.email === 'charliereeves@rich-habits.com';
+        if (isCharlie) {
+          console.log('Applying special handling for Charlie to ensure admin pages are present');
+          
+          // Check if we need to add an "Admin" section
+          let adminGroup = parsedGroups.find((g: any) => g.title === 'ADMIN' || g.id === 'admin');
+          
+          if (!adminGroup) {
+            // Create a new admin group
+            adminGroup = {
+              id: 'admin',
+              title: 'ADMIN',
+              collapsed: false,
+              items: []
+            };
+            parsedGroups.push(adminGroup);
+            console.log('Added missing ADMIN group for Charlie');
+          }
+          
+          // Make sure it has all the admin pages that Charlie should see
+          const requiredAdminPages = [
+            { id: 'product-management', name: 'Product Management' },
+            { id: 'sales-team', name: 'Sales Management' },
+            { id: 'design-team', name: 'Design Management' },
+            { id: 'manufacturing-team', name: 'Manufacturing Management' },
+            { id: 'product-creation', name: 'Product Creation' }
+          ];
+          
+          // Add any missing admin pages
+          requiredAdminPages.forEach(page => {
+            const existingPage = adminGroup.items.find((item: any) => 
+              item.id === page.id || item.id === `admin/${page.id}`
+            );
+            
+            if (!existingPage) {
+              adminGroup.items.push({
+                id: page.id,
+                name: page.name,
+                enabled: true
+              });
+              console.log(`Added missing admin page ${page.name} for Charlie`);
+            }
+          });
+          
+          // Also ensure we have main section items
+          let mainGroup = parsedGroups.find((g: any) => g.title === 'MAIN' || g.id === 'main');
+          if (mainGroup) {
+            const requiredMainPages = [
+              { id: 'design', name: 'Design' },
+              { id: 'manufacturing', name: 'Manufacturing' },
+              { id: 'messages', name: 'Messages' }
+            ];
+            
+            requiredMainPages.forEach(page => {
+              const existingPage = mainGroup.items.find((item: any) => item.id === page.id);
+              if (!existingPage) {
+                mainGroup.items.push({
+                  id: page.id,
+                  name: page.name,
+                  enabled: true
+                });
+                console.log(`Added missing main page ${page.name} for Charlie`);
+              }
+            });
+          }
+        }
+        
         setCustomMenuGroups(parsedGroups);
         
         // Initialize collapsed state for each group based on their settings
@@ -168,6 +237,16 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           ...prev,
           ...initialCollapsedState
         }));
+        
+        // Persist the possibly updated sidebar groups back to localStorage
+        if (isCharlie) {
+          try {
+            localStorage.setItem('sidebarGroups', JSON.stringify(parsedGroups));
+            console.log('Updated localStorage with modified sidebar groups for Charlie');
+          } catch (error) {
+            console.error('Failed to update sidebar groups in localStorage:', error);
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to load sidebar state:', error);

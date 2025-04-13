@@ -213,6 +213,9 @@ function SalespersonDashboardLayout() {
         <Route path="/leads">
           <ProtectedPageLoader pageId="leads"><UnclaimedLeads /></ProtectedPageLoader>
         </Route>
+        <Route path="/leads/unclaimed">
+          <ProtectedPageLoader pageId="leads/unclaimed"><UnclaimedLeads /></ProtectedPageLoader>
+        </Route>
         <Route path="/orders">
           <ProtectedPageLoader pageId="orders"><SalespersonOrders /></ProtectedPageLoader>
         </Route>

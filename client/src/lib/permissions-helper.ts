@@ -27,6 +27,7 @@ export function getDefaultVisiblePages(role: string): string[] {
       return [
         "dashboard",
         "leads",
+        "leads/unclaimed",
         "orders",
         "orders/create",
         "orders/history",

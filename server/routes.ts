@@ -3109,6 +3109,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
+  
+  // DEBUG ENDPOINT - Remove in production
+  app.get("/api/debug/user/:email", isAdmin, async (req, res) => {
+    try {
+      const email = req.params.email;
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Get user settings
+      const navSettings = await storage.getUserSettings(user.id, 'navigation');
+      
+      res.json({
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          permissions: user.permissions,
+          visiblePages: user.visiblePages
+        },
+        navSettings
+      });
+    } catch (error: any) {
+      console.error("Debug endpoint error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   return httpServer;
 }

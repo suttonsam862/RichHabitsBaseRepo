@@ -33,7 +33,7 @@ import { ROLES } from "@shared/schema";
 // Salesperson pages
 import SalespersonDashboard from "./pages/salesperson/dashboard";
 import NotificationCenter from "./pages/salesperson/notification-center";
-import UnclaimedLeads from "./pages/salesperson/leads";
+import UnclaimedLeads from "./pages/salesperson/leads/unclaimed";
 import OrderCreation from "./pages/salesperson/orders/create";
 import SalespersonOrders from "./pages/salesperson/orders";
 import SizeRequests from "./pages/salesperson/size-requests";

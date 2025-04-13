@@ -149,75 +149,139 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
         }
       }
       
-      // Fallback to localStorage if server settings not available
+      // Load the organizational structure from localStorage, but
+      // always filter based on server-side permissions before displaying
       const savedGroups = localStorage.getItem('sidebarGroups');
       if (savedGroups) {
-        console.log('Loading sidebar groups from localStorage (server settings not available)');
+        console.log('Loading sidebar groups from localStorage');
         let parsedGroups = JSON.parse(savedGroups);
         
-        // Special handling for Charlie - ensure we add his admin section if it doesn't exist
-        const isCharlie = user?.username === 'charliereeves' || user?.email === 'charliereeves@rich-habits.com';
-        if (isCharlie) {
-          console.log('Applying special handling for Charlie to ensure admin pages are present');
-          
-          // Check if we need to add an "Admin" section
-          let adminGroup = parsedGroups.find((g: any) => g.title === 'ADMIN' || g.id === 'admin');
-          
-          if (!adminGroup) {
-            // Create a new admin group
-            adminGroup = {
-              id: 'admin',
-              title: 'ADMIN',
-              collapsed: false,
-              items: []
-            };
-            parsedGroups.push(adminGroup);
-            console.log('Added missing ADMIN group for Charlie');
-          }
-          
-          // Make sure it has all the admin pages that Charlie should see
-          const requiredAdminPages = [
+        // Get the user's accessible pages from server
+        const accessiblePages = new Set(user?.visiblePages || []);
+        
+        // This is our master list of all possible pages grouped by their areas
+        const allPagesGroupedByArea: Record<string, Array<{id: string, name: string}>> = {
+          'MAIN': [
+            { id: 'dashboard', name: 'Dashboard' },
+            { id: 'leads', name: 'Leads' },
+            { id: 'orders', name: 'Orders' },
+            { id: 'design', name: 'Design' },
+            { id: 'manufacturing', name: 'Manufacturing' },
+            { id: 'organizations', name: 'Organizations' },
+            { id: 'messages', name: 'Messages' },
+          ],
+          'CATALOG': [
+            { id: 'catalog', name: 'Product Catalog' },
+          ],
+          'TOOLS': [
+            { id: 'outlook', name: 'Outlook' },
+            { id: 'messages', name: 'Messages' },
+          ],
+          'EVENTS': [
+            { id: 'events/calendar', name: 'Event Calendar' },
+            { id: 'events/registration', name: 'Registration' },
+            { id: 'events/attendees', name: 'Attendees' },
+            { id: 'events/management', name: 'Event Management' },
+            { id: 'feedback', name: 'Feedback' },
+          ],
+          'SETTINGS': [
+            { id: 'profile', name: 'Profile' },
+            { id: 'settings', name: 'Settings' },
+          ],
+          'COMMUNICATION': [
+            { id: 'design-communication', name: 'Design Communication' },
+            { id: 'production-communication', name: 'Production Communication' },
+          ],
+          'ADMIN': [
             { id: 'product-management', name: 'Product Management' },
             { id: 'sales-team', name: 'Sales Management' },
             { id: 'design-team', name: 'Design Management' },
             { id: 'manufacturing-team', name: 'Manufacturing Management' },
-            { id: 'product-creation', name: 'Product Creation' }
-          ];
-          
-          // Add any missing admin pages
-          requiredAdminPages.forEach(page => {
-            const existingPage = adminGroup.items.find((item: any) => 
-              item.id === page.id || item.id === `admin/${page.id}`
-            );
+            { id: 'corporate', name: 'Corporate' },
+            { id: 'reports', name: 'Reports' },
+            { id: 'user-management', name: 'User Management' },
+            { id: 'product-creation', name: 'Product Creation' },
+          ]
+        };
+        
+        // Create a map of page IDs to their names for easy lookup
+        const pageNameMap: Record<string, string> = {};
+        Object.values(allPagesGroupedByArea).flat().forEach(page => {
+          pageNameMap[page.id] = page.name;
+          // Also add admin-prefixed version
+          pageNameMap[`admin/${page.id}`] = page.name;
+        });
+        
+        // Essential pages that all users should see regardless of permissions
+        const essentialPages = new Set(['profile', 'settings', 'dashboard']);
+        
+        // Ensure each page in the user's visiblePages is present in at least one group
+        if (user?.visiblePages) {
+          // Go through each group and ensure it contains all relevant pages
+          parsedGroups.forEach((group: any) => {
+            const areaPages = allPagesGroupedByArea[group.title.toUpperCase()] || [];
             
-            if (!existingPage) {
-              adminGroup.items.push({
-                id: page.id,
-                name: page.name,
-                enabled: true
-              });
-              console.log(`Added missing admin page ${page.name} for Charlie`);
-            }
+            // For each page that belongs in this group area
+            areaPages.forEach(page => {
+              // Check if this page should be visible to the user
+              const isVisible = accessiblePages.has(page.id) || 
+                                accessiblePages.has(`admin/${page.id}`) || 
+                                essentialPages.has(page.id);
+              
+              if (isVisible) {
+                // Check if the page already exists in this group
+                const existingPage = group.items.find((item: any) => 
+                  item.id === page.id || item.id === `admin/${page.id}`
+                );
+                
+                // If the page doesn't exist in this group but should be visible, add it
+                if (!existingPage) {
+                  group.items.push({
+                    id: page.id,
+                    name: page.name,
+                    enabled: true
+                  });
+                  console.log(`Added missing page ${page.name} to ${group.title} group`);
+                }
+              }
+            });
           });
           
-          // Also ensure we have main section items
-          let mainGroup = parsedGroups.find((g: any) => g.title === 'MAIN' || g.id === 'main');
-          if (mainGroup) {
-            const requiredMainPages = [
-              { id: 'design', name: 'Design' },
-              { id: 'manufacturing', name: 'Manufacturing' },
-              { id: 'messages', name: 'Messages' }
-            ];
+          // Create a special "ADMIN" group if it doesn't exist but user has admin page access
+          const hasAdminAccess = user.visiblePages.some(page => page.startsWith('admin/'));
+          if (hasAdminAccess) {
+            let adminGroup = parsedGroups.find((g: any) => g.title === 'ADMIN' || g.id === 'admin');
             
-            requiredMainPages.forEach(page => {
-              const existingPage = mainGroup.items.find((item: any) => item.id === page.id);
-              if (!existingPage) {
-                mainGroup.items.push({
-                  id: page.id,
-                  name: page.name,
-                  enabled: true
-                });
-                console.log(`Added missing main page ${page.name} for Charlie`);
+            if (!adminGroup) {
+              adminGroup = {
+                id: 'admin',
+                title: 'ADMIN',
+                collapsed: false,
+                items: []
+              };
+              parsedGroups.push(adminGroup);
+              console.log('Added missing ADMIN group');
+            }
+            
+            // Add all accessible admin pages to the admin group
+            user.visiblePages.forEach(pageId => {
+              if (pageId.startsWith('admin/')) {
+                const simplifiedId = pageId.replace('admin/', '');
+                const pageName = pageNameMap[pageId] || pageNameMap[simplifiedId] || simplifiedId;
+                
+                // Check if the page already exists
+                const existingPage = adminGroup.items.find((item: any) => 
+                  item.id === pageId || item.id === simplifiedId
+                );
+                
+                if (!existingPage) {
+                  adminGroup.items.push({
+                    id: simplifiedId, // Use simplified ID without admin/ prefix
+                    name: pageName,
+                    enabled: true
+                  });
+                  console.log(`Added missing admin page ${pageName}`);
+                }
               }
             });
           }
@@ -238,14 +302,12 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           ...initialCollapsedState
         }));
         
-        // Persist the possibly updated sidebar groups back to localStorage
-        if (isCharlie) {
-          try {
-            localStorage.setItem('sidebarGroups', JSON.stringify(parsedGroups));
-            console.log('Updated localStorage with modified sidebar groups for Charlie');
-          } catch (error) {
-            console.error('Failed to update sidebar groups in localStorage:', error);
-          }
+        // Persist the updated sidebar groups back to localStorage
+        try {
+          localStorage.setItem('sidebarGroups', JSON.stringify(parsedGroups));
+          console.log('Updated localStorage with synchronized sidebar groups');
+        } catch (error) {
+          console.error('Failed to update sidebar groups in localStorage:', error);
         }
       }
     } catch (error) {
@@ -283,11 +345,8 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       return menuGroups;
     }
     
-    // If this is Charlie Reeves (special case), ensure we don't filter too aggressively
-    const isCharlie = user?.username === 'charliereeves' || user?.email === 'charliereeves@rich-habits.com';
-    if (isCharlie) {
-      console.log("Charlie Reeves detected - ensuring all permitted pages are visible");
-    }
+    // Log the currently logged in user for debugging
+    console.log(`User ${user?.username} (${user?.role}) - filtering sidebar menu items`);
     
     // If visiblePages is not defined or empty, apply different logic based on role
     if (!user?.visiblePages || user.visiblePages.length === 0) {
@@ -307,9 +366,6 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
 
     console.log("Filtering pages by visibility for user:", user?.username, user.visiblePages);
     
-    // Create a lookup set for easier checking
-    const visiblePagesSet = new Set(user.visiblePages);
-    
     // Log all the available menu items to help with debugging
     console.log("Available menu groups before filtering:", menuGroups.map(g => ({
       title: g.title,
@@ -320,56 +376,39 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       }))
     })));
     
-    // Special case for Charlie - make sure design and manufacturing are visible if present
+    // Process the user's accessible pages and create an expanded set
+    // that contains both regular and admin-prefixed versions
+    const expandedVisiblePagesArray = [...user.visiblePages];
+    
+    // Special handling for Charlie - he needs manufacturing and design pages
+    const isCharlie = user?.username === 'charliereeves' || user?.email === 'charliereeves@rich-habits.com';
+    
     if (isCharlie) {
-      // Main pages
-      visiblePagesSet.add('design');
-      visiblePagesSet.add('manufacturing');
-      visiblePagesSet.add('messages');
+      console.log("Adding design and manufacturing for Charlie");
+      // Make sure Charlie has access to specific pages - force add these critical ones
+      expandedVisiblePagesArray.push('design');
+      expandedVisiblePagesArray.push('manufacturing');
+      expandedVisiblePagesArray.push('messages');
       
-      // Admin pages - ensure we add both forms (with and without admin/ prefix)
-      visiblePagesSet.add('admin/design-team');
-      visiblePagesSet.add('design-team');
-      visiblePagesSet.add('admin/product-management');
-      visiblePagesSet.add('product-management');
-      visiblePagesSet.add('admin/sales-team');
-      visiblePagesSet.add('sales-team');
-      visiblePagesSet.add('admin/manufacturing-team');
-      visiblePagesSet.add('manufacturing-team');
-      
-      // For admin product creation
-      visiblePagesSet.add('admin/product-creation');
-      visiblePagesSet.add('product-creation');
-      
-      // Make sure these sections explicitly match what might be in the custom menu
-      if (customMenuGroups.length > 0) {
-        customMenuGroups.forEach(group => {
-          if (group.items) {
-            group.items.forEach((item: any) => {
-              if (item.id === 'design' || 
-                  item.id === 'manufacturing' || 
-                  item.id === 'admin/design-team' || 
-                  item.id === 'messages' ||
-                  item.id === 'product-management' ||
-                  item.id === 'sales-team' ||
-                  item.id === 'design-team' ||
-                  item.id === 'manufacturing-team' ||
-                  item.id === 'product-creation') {
-                visiblePagesSet.add(item.id);
-                
-                // Also add the admin-prefixed version
-                if (!item.id.startsWith('admin/')) {
-                  visiblePagesSet.add(`admin/${item.id}`);
-                }
-              }
-            });
-          }
-        });
-      }
-      
-      // Debug log to confirm
-      console.log("Charlie's final visible pages:", Array.from(visiblePagesSet));
+      console.log("Forced added essential pages for Charlie");
     }
+    
+    // Add bidirectional mappings (with and without admin/ prefix)
+    user.visiblePages.forEach(pageId => {
+      if (pageId.startsWith('admin/')) {
+        // If it's an admin page, also add the non-admin version
+        expandedVisiblePagesArray.push(pageId.replace('admin/', ''));
+      } else {
+        // If it's a non-admin page, also add the admin version
+        expandedVisiblePagesArray.push(`admin/${pageId}`);
+      }
+    });
+    
+    // Create a lookup set for easier checking
+    const visiblePagesSet = new Set(expandedVisiblePagesArray);
+    
+    // Debug log to confirm
+    console.log("User's expanded visible pages:", Array.from(visiblePagesSet));
     
     return menuGroups.map(group => ({
       ...group,

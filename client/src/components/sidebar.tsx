@@ -225,7 +225,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             },
             {
               name: "Events",
-              href: "/admin/events",
+              href: "/events/calendar",
               icon: <CalendarClock className="mr-2" size={16} />,
             },
             {

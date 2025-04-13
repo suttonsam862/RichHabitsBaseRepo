@@ -236,43 +236,53 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       return defaultMenuGroups;
     }
     
-    // For each default menu group, look for a matching custom group
-    return defaultMenuGroups.map(defaultGroup => {
-      // Find matching custom group by ID
-      const customGroup = customMenuGroups.find(cg => cg.id === defaultGroup.title.toLowerCase());
-      
-      if (!customGroup) {
-        return defaultGroup; // No custom settings for this group
-      }
-      
-      // Apply custom title if available
-      const title = customGroup.title || defaultGroup.title;
-      
-      // Map default items to custom ones
-      const items = defaultGroup.items.map(defaultItem => {
-        // Extract id from href if not explicitly set
-        const itemId = defaultItem.id || defaultItem.href.replace(/^\//, '');
-        
-        // Find matching custom item
-        const customItem = customGroup.items.find((ci: any) => ci.id === itemId);
-        
-        if (!customItem || customItem.enabled === false) {
-          // If no custom settings or disabled, return null (will be filtered out)
-          return customItem?.enabled === false ? null : defaultItem;
-        }
-        
-        // Apply custom name if available
-        return {
-          ...defaultItem,
-          name: customItem.name || defaultItem.name
-        };
-      }).filter(Boolean) as MenuItem[]; // Filter out null items and cast to MenuItem[]
-      
-      return {
-        title,
-        items
+    console.log('Applying custom settings to default menu:', defaultMenuGroups);
+    console.log('Custom menu groups:', customMenuGroups);
+    
+    // Create a completely new menu structure based on custom groups
+    // This ensures we use the exact structure from the settings
+    const result = customMenuGroups.map(customGroup => {
+      // Create a new group with the custom title
+      const newGroup: MenuGroup = {
+        title: customGroup.title,
+        items: []
       };
+      
+      // Add items from the custom group
+      newGroup.items = customGroup.items
+        .filter((item: any) => item.enabled !== false) // Skip disabled items
+        .map((customItem: any) => {
+          // Find matching default item to get its icon
+          const defaultGroup = defaultMenuGroups.find(dg => 
+            dg.title.toLowerCase() === customGroup.id || 
+            dg.items.some(di => di.id === customItem.id || di.href.replace(/^\//, '') === customItem.id)
+          );
+          
+          let defaultItem: MenuItem | undefined;
+          if (defaultGroup) {
+            defaultItem = defaultGroup.items.find(di => 
+              di.id === customItem.id || 
+              di.href.replace(/^\//, '') === customItem.id
+            );
+          }
+          
+          // Build the path based on the id
+          const href = customItem.id.startsWith('/') ? customItem.id : `/${customItem.id}`;
+          
+          // Return a new menu item with the custom name and default icon
+          return {
+            name: customItem.name,
+            href: defaultItem?.href || href,
+            icon: defaultItem?.icon || <User className="mr-2" size={16} />,
+            id: customItem.id
+          };
+        });
+      
+      return newGroup;
     }).filter(group => group.items.length > 0); // Filter out empty groups
+    
+    console.log('Result after applying custom settings:', result);
+    return result;
   };
 
   // Get menu items based on user role

@@ -3,7 +3,7 @@ import { User, Lead, Order as SchemaOrder, Message, Activity, Product as SchemaP
 export type { Order } from "@shared/schema";
 export type { Product } from "@shared/schema";
 
-export type UserRole = 'admin' | 'sales' | 'designer' | 'manufacturing' | 'customer' | 'user' | 'agent';
+export type UserRole = 'admin' | 'sales' | 'designer' | 'manufacturing' | 'manufacturer' | 'customer' | 'user' | 'agent';
 
 export interface AuthUser {
   id: string;

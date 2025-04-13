@@ -404,7 +404,7 @@ function AppContent() {
   // Role-based routing
   if (user.role === ROLES.AGENT) {
     return <SalespersonDashboardLayout />;
-  } else if (user.role === "designer") {
+  } else if (user.role === ROLES.DESIGNER) {
     return <DesignerDashboardLayout />;
   } else if (user.role === ROLES.MANUFACTURER) {
     return <ManufacturerDashboardLayout />;

@@ -3110,8 +3110,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // DEBUG ENDPOINT - Remove in production
-  app.get("/api/debug/user/:email", isAdmin, async (req, res) => {
+  // User lookup by email - Admin only
+  app.get("/api/users/email/:email", isAdmin, async (req, res) => {
     try {
       const email = req.params.email;
       const user = await storage.getUserByEmail(email);
@@ -3119,9 +3119,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
-      
-      // Get user settings
-      const navSettings = await storage.getUserSettings(user.id, 'navigation');
       
       res.json({
         user: {
@@ -3131,11 +3128,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
           role: user.role,
           permissions: user.permissions,
           visiblePages: user.visiblePages
-        },
-        navSettings
+        }
       });
     } catch (error: any) {
-      console.error("Debug endpoint error:", error);
+      console.error("User lookup error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Update user visible pages directly - Admin only
+  app.put("/api/users/:id/visible-pages", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      const { visiblePages } = req.body;
+      if (!Array.isArray(visiblePages)) {
+        return res.status(400).json({ error: "visiblePages must be an array" });
+      }
+      
+      const updatedUser = await storage.updateUserVisiblePages(userId, visiblePages);
+      
+      res.json({
+        success: true,
+        user: {
+          id: updatedUser.id,
+          visiblePages: updatedUser.visiblePages
+        }
+      });
+    } catch (error: any) {
+      console.error("Update visible pages error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Force sync user settings with visiblePages - Admin only
+  app.post("/api/users/:id/sync-settings", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      // Get the user to get their visiblePages
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Get current navigation settings
+      const navSettings = await storage.getUserSettings(userId, 'navigation');
+      
+      // Create settings object with user's visiblePages
+      let settingsData = navSettings?.settings || {};
+      settingsData.visiblePages = user.visiblePages;
+      
+      // Update the settings
+      await storage.updateUserSettings(userId, 'navigation', settingsData);
+      
+      res.json({ success: true, message: "User settings synchronized successfully" });
+    } catch (error: any) {
+      console.error("Sync settings error:", error);
       res.status(500).json({ error: error.message });
     }
   });

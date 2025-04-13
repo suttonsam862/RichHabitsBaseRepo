@@ -64,6 +64,7 @@ import ManufacturingTeam from "./pages/admin/manufacturing-team";
 import ProductManagement from "./pages/admin/product-management";
 import ProductCreation from "./pages/admin/product-creation";
 import OrderManagement from "./pages/admin/order-management";
+import AdminTools from "./pages/admin-tools";
 
 // The main dashboard layout with all protected routes
 function DashboardLayout() {
@@ -180,6 +181,9 @@ function DashboardLayout() {
         </Route>
         <Route path="/admin/order-management">
           <ProtectedPageLoader pageId="admin/order-management"><OrderManagement /></ProtectedPageLoader>
+        </Route>
+        <Route path="/admin/tools">
+          <ProtectedPageLoader pageId="admin/tools"><AdminTools /></ProtectedPageLoader>
         </Route>
         <Route>
           <div className="page-container w-full h-full">

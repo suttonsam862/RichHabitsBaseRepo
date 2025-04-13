@@ -214,6 +214,7 @@ export const fabricCuts = pgTable('fabric_cuts', {
   applicationMethod: text('application_method'),
   priceModifier: numeric('price_modifier').default('0'),
   imageUrl: text('image_url'),
+  pdfUrl: text('pdf_url'),
   isActive: boolean('is_active').default(true),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),

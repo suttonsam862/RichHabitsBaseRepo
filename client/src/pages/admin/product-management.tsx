@@ -1670,7 +1670,7 @@ const ProductManagementPage: FC = () => {
                         applicationMethod: selectedCut.applicationMethod || "",
                         priceModifier: selectedCut.priceModifier || "",
                         imageUrl: selectedCut.imageUrl || "",
-                        pdfUrl: selectedCut.pdfUrl || "",
+                        pdfUrl: (selectedCut as any).pdfUrl || "",
                         isActive: selectedCut.isActive || true,
                       }}
                       onSubmit={(values) =>

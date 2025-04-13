@@ -211,53 +211,572 @@ const ProductForm: FC<ProductFormProps> = ({
     },
   });
 
+  // Get fabric and cutting pattern data
+  const { data: fabricOptions = [] } = useQuery<FabricOption[]>({
+    queryKey: ['/api/fabric-options'],
+    select: (data: any) => data?.data || [],
+  });
+
+  const { data: fabricCuts = [] } = useQuery<FabricCut[]>({
+    queryKey: ['/api/fabric-cuts'],
+    select: (data: any) => data?.data || [],
+  });
+
+  // For selecting a fabric option
+  const [selectedFabricOption, setSelectedFabricOption] = useState<string | null>(null);
+  
+  // For selecting a cutting pattern
+  const [selectedCuttingPattern, setSelectedCuttingPattern] = useState<string | null>(null);
+  
+  // If we're editing, pre-select any existing fabric or cutting pattern
+  useEffect(() => {
+    if (defaultValues?.fabricDetails) {
+      const fabricDetails = defaultValues.fabricDetails as any;
+      if (fabricDetails.selectedFabricId) {
+        setSelectedFabricOption(fabricDetails.selectedFabricId.toString());
+      }
+      if (fabricDetails.selectedCutId) {
+        setSelectedCuttingPattern(fabricDetails.selectedCutId.toString());
+      }
+    }
+  }, [defaultValues]);
+
+  // Update fabric details when selections change
+  useEffect(() => {
+    const fabricDetails = {
+      selectedFabricId: selectedFabricOption ? parseInt(selectedFabricOption) : null,
+      selectedCutId: selectedCuttingPattern ? parseInt(selectedCuttingPattern) : null
+    };
+    form.setValue('fabricDetails', fabricDetails);
+  }, [selectedFabricOption, selectedCuttingPattern, form]);
+
+  // Handle generating SKU for new products
+  const isNewProduct = !defaultValues?.id;
+  useEffect(() => {
+    if (isNewProduct && !form.getValues('sku')) {
+      const newSku = generateRandomSku(
+        form.getValues("category") || "PROD", 
+        form.getValues("sport") || ""
+      );
+      form.setValue('sku', newSku);
+    }
+  }, [form, isNewProduct]);
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">Basic Information</h3>
+          </div>
+          <Separator />
+          
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Product Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Team Jersey" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="sku"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>SKU</FormLabel>
+                  <div className="flex gap-2">
+                    <FormControl>
+                      <Input placeholder="JERSY-001" {...field} />
+                    </FormControl>
+                    {isNewProduct && (
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        className="flex items-center gap-1" 
+                        onClick={() => {
+                          // Generate a random SKU based on the selected category and sport
+                          const category = form.getValues("category");
+                          const sport = form.getValues("sport");
+                          const newSku = generateRandomSku(category, sport);
+                          field.onChange(newSku);
+                        }}
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                        Generate
+                      </Button>
+                    )}
+                  </div>
+                  <FormDescription>
+                    {isNewProduct ? "A unique SKU is generated automatically" : "Product identifier code"}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
           <FormField
             control={form.control}
-            name="name"
+            name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Product Name</FormLabel>
+                <FormLabel>Description</FormLabel>
                 <FormControl>
-                  <Input placeholder="Team Jersey" {...field} />
+                  <Textarea
+                    placeholder="Product description"
+                    className="min-h-24"
+                    {...field}
+                    value={field.value ?? ''}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
 
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <FormField
+              control={form.control}
+              name="sport"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sport</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value ?? ""}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select sport" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {sportOptions.filter(option => option !== "All").map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value ?? ""}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {categoryOptions.filter(option => option !== "All").map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="gender"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Gender</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value ?? ""}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {genderOptions.filter(option => option !== "All").map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">Pricing & Ordering</h3>
+          </div>
+          <Separator />
+          
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <FormField
+              control={form.control}
+              name="cogs"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>COGS</FormLabel>
+                  <FormControl>
+                    <Input placeholder="$24.99" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Cost of goods sold
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="wholesalePrice"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Wholesale Price</FormLabel>
+                  <FormControl>
+                    <Input placeholder="$39.99" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Price for bulk orders
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="price"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Base Price</FormLabel>
+                  <FormControl>
+                    <Input placeholder="$49.99" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Retail price
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="minOrder"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Minimum Order</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="10" {...field} 
+                      onChange={(e) => {
+                        // Convert string value to number for the form
+                        const value = parseInt(e.target.value, 10);
+                        if (!isNaN(value)) {
+                          field.onChange(value);
+                        } else {
+                          field.onChange(1); // Reset to 1 if invalid
+                        }
+                      }}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Minimum quantity per order
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="leadTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Lead Time (Days)</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="14" {...field}
+                      onChange={(e) => {
+                        // Convert string value to number for the form
+                        const value = parseInt(e.target.value, 10);
+                        if (!isNaN(value)) {
+                          field.onChange(value);
+                        } else {
+                          field.onChange(14); // Reset to 14 if invalid
+                        }
+                      }}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Production time in days
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="item"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Item Type</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Jersey" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Specific type of product
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="fabricOptions"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Fabric Options</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Cotton, Polyester" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Available fabric options (comma separated)
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">Product Images</h3>
+          </div>
+          <Separator />
+          
           <FormField
             control={form.control}
-            name="sku"
+            name="imageUrl"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>SKU</FormLabel>
-                <div className="flex gap-2">
-                  <FormControl>
-                    <Input placeholder="JERSY-001" {...field} />
-                  </FormControl>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm"
-                    className="flex items-center gap-1" 
-                    onClick={() => {
-                      // Generate a random SKU based on the selected category and sport
-                      const category = form.getValues("category");
-                      const sport = form.getValues("sport");
-                      const newSku = generateRandomSku(category, sport);
-                      field.onChange(newSku);
-                    }}
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    Generate
-                  </Button>
-                </div>
+                <FormLabel>Main Product Image</FormLabel>
+                <FormControl>
+                  <FileUpload
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                    disabled={isSubmitting}
+                  />
+                </FormControl>
                 <FormDescription>
-                  Click "Generate" to create a unique SKU automatically
+                  This image will be the main product thumbnail
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="productImages"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Additional Product Images</FormLabel>
+                <FormControl>
+                  <MultipleImageUpload
+                    value={Array.isArray(field.value) ? 
+                      field.value.filter(item => typeof item === 'string') as string[] : 
+                      undefined}
+                    onChange={field.onChange}
+                    disabled={isSubmitting}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Upload additional product images (up to 5)
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">Fabric & Cutting Pattern Selection</h3>
+          </div>
+          <Separator />
+          
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div>
+              <Label className="text-base">Select Fabric</Label>
+              <p className="text-sm text-muted-foreground mb-3">
+                Choose a fabric from your fabric catalog
+              </p>
+              <div className="h-[200px] overflow-y-auto border rounded-md p-2">
+                <ScrollArea className="h-full w-full pr-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio" 
+                        id="no-fabric"
+                        name="fabric-selection"
+                        checked={!selectedFabricOption}
+                        onChange={() => setSelectedFabricOption(null)}
+                        className="h-4 w-4 border-gray-300 focus:ring-primary"
+                      />
+                      <Label htmlFor="no-fabric" className="cursor-pointer">
+                        None (No specific fabric)
+                      </Label>
+                    </div>
+                    {fabricOptions.map((fabric) => (
+                      <div key={fabric.id} className="flex items-center space-x-2">
+                        <input
+                          type="radio" 
+                          id={`fabric-${fabric.id}`}
+                          name="fabric-selection"
+                          checked={selectedFabricOption === fabric.id.toString()}
+                          onChange={() => setSelectedFabricOption(fabric.id.toString())}
+                          className="h-4 w-4 border-gray-300 focus:ring-primary"
+                        />
+                        <div className="flex items-center gap-2">
+                          {fabric.imageUrl && (
+                            <div className="h-8 w-8 overflow-hidden rounded-sm">
+                              <img 
+                                src={fabric.imageUrl} 
+                                alt={fabric.name} 
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <Label htmlFor={`fabric-${fabric.id}`} className="cursor-pointer">
+                            {fabric.name}
+                            {fabric.priceModifier && parseFloat(fabric.priceModifier.toString()) > 0 && (
+                              <Badge variant="outline" className="ml-2">
+                                +${parseFloat(fabric.priceModifier.toString()).toFixed(2)}
+                              </Badge>
+                            )}
+                          </Label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-base">Select Cutting Pattern</Label>
+              <p className="text-sm text-muted-foreground mb-3">
+                Choose a cutting pattern from your catalog
+              </p>
+              <div className="h-[200px] overflow-y-auto border rounded-md p-2">
+                <ScrollArea className="h-full w-full pr-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio" 
+                        id="no-cut"
+                        name="cut-selection"
+                        checked={!selectedCuttingPattern}
+                        onChange={() => setSelectedCuttingPattern(null)}
+                        className="h-4 w-4 border-gray-300 focus:ring-primary"
+                      />
+                      <Label htmlFor="no-cut" className="cursor-pointer">
+                        None (No specific cutting pattern)
+                      </Label>
+                    </div>
+                    {fabricCuts.map((cut) => (
+                      <div key={cut.id} className="flex items-center space-x-2">
+                        <input
+                          type="radio" 
+                          id={`cut-${cut.id}`}
+                          name="cut-selection"
+                          checked={selectedCuttingPattern === cut.id.toString()}
+                          onChange={() => setSelectedCuttingPattern(cut.id.toString())}
+                          className="h-4 w-4 border-gray-300 focus:ring-primary"
+                        />
+                        <div className="flex items-center gap-2">
+                          {cut.imageUrl && (
+                            <div className="h-8 w-8 overflow-hidden rounded-sm">
+                              <img 
+                                src={cut.imageUrl} 
+                                alt={cut.name} 
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <Label htmlFor={`cut-${cut.id}`} className="cursor-pointer">
+                            {cut.name}
+                            {cut.priceModifier && parseFloat(cut.priceModifier.toString()) > 0 && (
+                              <Badge variant="outline" className="ml-2">
+                                +${parseFloat(cut.priceModifier.toString()).toFixed(2)}
+                              </Badge>
+                            )}
+                          </Label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">Measurements</h3>
+          </div>
+          <Separator />
+          
+          <FormField
+            control={form.control}
+            name="measurementGrid"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Size & Measurement Chart</FormLabel>
+                <FormControl>
+                  <MeasurementGrid
+                    value={Array.isArray(field.value) ? field.value.filter(item => typeof item === 'object') : []}
+                    onChange={field.onChange}
+                    disabled={isSubmitting}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Add size and measurement information
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -267,294 +786,29 @@ const ProductForm: FC<ProductFormProps> = ({
 
         <FormField
           control={form.control}
-          name="description"
+          name="isActive"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm">
+              <div className="space-y-0.5">
+                <FormLabel>Active Product</FormLabel>
+                <FormDescription>
+                  Show this product in catalogs and make it available for ordering
+                </FormDescription>
+              </div>
               <FormControl>
-                <Textarea
-                  placeholder="Product description"
-                  className="min-h-32"
-                  {...field}
-                  value={field.value ?? ''}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <FormField
-            control={form.control}
-            name="sport"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Sport</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value ?? ""}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select sport" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {sportOptions.map((sport) => (
-                      <SelectItem key={sport} value={sport}>
-                        {sport}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="category"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Category</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value ?? ""}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {categoryOptions.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="gender"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Gender</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value ?? ""}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {genderOptions.map((gender) => (
-                      <SelectItem key={gender} value={gender}>
-                        {gender}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
-        {/* Additional required fields */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="item"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Item Type</FormLabel>
-                <FormControl>
-                  <Input placeholder="Jersey" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="fabricOptions"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Fabric Options</FormLabel>
-                <FormControl>
-                  <Input placeholder="Cotton, Polyester, Blend" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="cogs"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Cost of Goods Sold</FormLabel>
-                <FormControl>
-                  <Input placeholder="12.99" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="wholesalePrice"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Wholesale Price</FormLabel>
-                <FormControl>
-                  <Input placeholder="19.99" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <FormField
-            control={form.control}
-            name="price"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Base Price ($)</FormLabel>
-                <FormControl>
-                  <Input type="text" placeholder="29.99" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="minOrder"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Minimum Order</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={1}
-                    {...field}
-                    value={field.value ?? ''}
-                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : '')}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="leadTime"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Lead Time (days)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={1}
-                    {...field}
-                    value={field.value ?? ''}
-                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : '')}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="imageUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Main Product Image</FormLabel>
-              <FormControl>
-                <FileUpload
-                  value={field.value || ""}
-                  onChange={field.onChange}
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
                   disabled={isSubmitting}
                 />
               </FormControl>
-              <FormDescription>
-                Upload the main product image
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="productImages"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Additional Product Images</FormLabel>
-              <FormControl>
-                <MultipleImageUpload
-                  value={Array.isArray(field.value) ? 
-                    field.value.filter(item => typeof item === 'string') as string[] : 
-                    undefined}
-                  onChange={field.onChange}
-                  disabled={isSubmitting}
-                />
-              </FormControl>
-              <FormDescription>
-                Upload additional product images (up to 5)
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="measurementGrid"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Measurement Grid</FormLabel>
-              <FormControl>
-                <MeasurementGrid
-                  value={Array.isArray(field.value) ? field.value.filter(item => typeof item === 'object') : []}
-                  onChange={field.onChange}
-                  disabled={isSubmitting}
-                />
-              </FormControl>
-              <FormDescription>
-                Add size and measurement information
-              </FormDescription>
-              <FormMessage />
             </FormItem>
           )}
         />
 
         <DialogFooter>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {defaultValues?.id ? "Update Product" : "Add Product"}
           </Button>
         </DialogFooter>

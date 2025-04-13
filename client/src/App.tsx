@@ -210,9 +210,6 @@ function SalespersonDashboardLayout() {
         <Route path="/dashboard">
           <ProtectedPageLoader pageId="dashboard"><SalespersonDashboard /></ProtectedPageLoader>
         </Route>
-        <Route path="/leads">
-          <ProtectedPageLoader pageId="leads"><UnclaimedLeads /></ProtectedPageLoader>
-        </Route>
         <Route path="/leads/unclaimed">
           <ProtectedPageLoader pageId="leads/unclaimed"><UnclaimedLeads /></ProtectedPageLoader>
         </Route>
@@ -409,7 +406,7 @@ function AppContent() {
     return <SalespersonDashboardLayout />;
   } else if (user.role === "designer") {
     return <DesignerDashboardLayout />;
-  } else if (user.role === "manufacturer" || user.role === ROLES.MANUFACTURER) {
+  } else if (user.role === ROLES.MANUFACTURER) {
     return <ManufacturerDashboardLayout />;
   }
   

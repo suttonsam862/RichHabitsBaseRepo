@@ -59,6 +59,7 @@ import {
   Calendar as CalendarIcon2,
   CheckCircle2,
   ShieldAlert,
+  Package,
 } from "lucide-react";
 
 // Define lead types

@@ -41,9 +41,9 @@ export function SalespersonSidebar({ user }: { user: AuthUser }) {
     },
     {
       name: "Unclaimed Leads",
-      href: "/leads",
+      href: "/leads/unclaimed",
       icon: <Users className="mr-2" size={16} />,
-      id: "leads",
+      id: "leads/unclaimed",
     },
     {
       name: "My Orders",

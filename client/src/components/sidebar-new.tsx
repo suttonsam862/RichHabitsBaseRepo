@@ -239,6 +239,37 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
     console.log('Applying custom settings to default menu:', defaultMenuGroups);
     console.log('Custom menu groups:', customMenuGroups);
     
+    // Create icon map for easy lookup
+    const iconMap: Record<string, React.ReactNode> = {
+      dashboard: <LayoutDashboard className="mr-2" size={16} />,
+      leads: <Users className="mr-2" size={16} />,
+      orders: <ShoppingBag className="mr-2" size={16} />,
+      design: <Palette className="mr-2" size={16} />,
+      manufacturing: <Factory className="mr-2" size={16} />,
+      organizations: <Building2 className="mr-2" size={16} />,
+      messages: <MessageSquare className="mr-2" size={16} />,
+      catalog: <Shirt className="mr-2" size={16} />,
+      'product-management': <PackageOpen className="mr-2" size={16} />,
+      'sales-team': <BriefcaseBusiness className="mr-2" size={16} />,
+      'design-team': <PenTool className="mr-2" size={16} />,
+      'manufacturing-team': <HardHat className="mr-2" size={16} />,
+      corporate: <Building className="mr-2" size={16} />,
+      reports: <FileBarChart className="mr-2" size={16} />,
+      'user-management': <UserCog className="mr-2" size={16} />,
+      'order-tracking': <ShoppingBag className="mr-2" size={16} />,
+      'design-communication': <Palette className="mr-2" size={16} />,
+      'production-communication': <Factory className="mr-2" size={16} />,
+      profile: <User className="mr-2" size={16} />,
+      settings: <Settings className="mr-2" size={16} />,
+      outlook: <MessageCircle className="mr-2" size={16} />,
+      feedback: <MessageSquare className="mr-2" size={16} />,
+      // Events module
+      'events/calendar': <CalendarClock className="mr-2" size={16} />,
+      'events/registration': <Users className="mr-2" size={16} />,
+      'events/attendees': <Users className="mr-2" size={16} />,
+      'events/management': <CalendarClock className="mr-2" size={16} />,
+    };
+    
     // Create a completely new menu structure based on custom groups
     // This ensures we use the exact structure from the settings
     const result = customMenuGroups.map(customGroup => {
@@ -252,29 +283,18 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       newGroup.items = customGroup.items
         .filter((item: any) => item.enabled !== false) // Skip disabled items
         .map((customItem: any) => {
-          // Find matching default item to get its icon
-          const defaultGroup = defaultMenuGroups.find(dg => 
-            dg.title.toLowerCase() === customGroup.id || 
-            dg.items.some(di => di.id === customItem.id || di.href.replace(/^\//, '') === customItem.id)
-          );
-          
-          let defaultItem: MenuItem | undefined;
-          if (defaultGroup) {
-            defaultItem = defaultGroup.items.find(di => 
-              di.id === customItem.id || 
-              di.href.replace(/^\//, '') === customItem.id
-            );
-          }
+          const itemId = customItem.id;
+          const icon = iconMap[itemId] || <User className="mr-2" size={16} />;
           
           // Build the path based on the id
-          const href = customItem.id.startsWith('/') ? customItem.id : `/${customItem.id}`;
+          const href = itemId.startsWith('/') ? itemId : `/${itemId}`;
           
-          // Return a new menu item with the custom name and default icon
+          // Return a new menu item with the custom name and icon
           return {
             name: customItem.name,
-            href: defaultItem?.href || href,
-            icon: defaultItem?.icon || <User className="mr-2" size={16} />,
-            id: customItem.id
+            href: href,
+            icon: icon,
+            id: itemId
           };
         });
       

@@ -15,6 +15,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -148,57 +149,106 @@ export default function Settings() {
   });
   
   // Navigation Settings Form
-  const [navigationGroups, setNavigationGroups] = useState([
-    {
-      id: "main",
-      title: "Main",
-      collapsed: false,
-      items: [
-        { id: "dashboard", name: "Dashboard", enabled: true },
-        { id: "leads", name: "Leads", enabled: true },
-        { id: "orders", name: "Orders", enabled: true },
-        { id: "design", name: "Design", enabled: true },
-        { id: "manufacturing", name: "Manufacturing", enabled: true },
-        { id: "organizations", name: "Organizations", enabled: true },
-        { id: "messages", name: "Messages", enabled: true },
-        { id: "catalog", name: "Product Catalog", enabled: true },
-      ]
-    },
-    {
-      id: "admin",
-      title: "Admin",
-      collapsed: false,
-      items: [
-        { id: "product-management", name: "Product Management", enabled: true },
-        { id: "sales-team", name: "Sales Team", enabled: true },
-        { id: "design-team", name: "Design Team", enabled: true },
-        { id: "manufacturing-team", name: "Manufacturing Team", enabled: true },
-        { id: "corporate", name: "Corporate", enabled: true },
-        { id: "reports", name: "Reports", enabled: true },
-        { id: "user-management", name: "User Management", enabled: true },
-      ]
-    },
-    {
-      id: "camps",
-      title: "Camps & Teams",
-      collapsed: false,
-      items: [
-        { id: "order-tracking", name: "Order Tracking", enabled: true },
-        { id: "design-communication", name: "Design Communication", enabled: true },
-        { id: "production-communication", name: "Production Communication", enabled: true },
-      ]
-    },
-    {
-      id: "settings",
-      title: "Settings",
-      collapsed: false,
-      items: [
-        { id: "profile", name: "Profile", enabled: true },
-        { id: "settings", name: "Settings", enabled: true },
-      ]
+  const [navigationGroups, setNavigationGroups] = useState(() => {
+    // Try to load from localStorage first
+    const savedGroups = localStorage.getItem('sidebarGroups');
+    if (savedGroups) {
+      try {
+        return JSON.parse(savedGroups);
+      } catch (e) {
+        console.error("Error parsing saved navigation groups:", e);
+      }
     }
-  ]);
+    
+    // Default groups if nothing in localStorage
+    return [
+      {
+        id: "main",
+        title: "Main",
+        collapsed: false,
+        items: [
+          { id: "dashboard", name: "Dashboard", enabled: true },
+          { id: "leads", name: "Leads", enabled: true },
+          { id: "orders", name: "Orders", enabled: true },
+          { id: "design", name: "Design", enabled: true },
+          { id: "manufacturing", name: "Manufacturing", enabled: true },
+          { id: "organizations", name: "Organizations", enabled: true },
+          { id: "messages", name: "Messages", enabled: true },
+          { id: "catalog", name: "Product Catalog", enabled: true },
+        ]
+      },
+      {
+        id: "admin",
+        title: "Admin",
+        collapsed: false,
+        items: [
+          { id: "product-management", name: "Product Management", enabled: true },
+          { id: "sales-team", name: "Sales Team", enabled: true },
+          { id: "design-team", name: "Design Team", enabled: true },
+          { id: "manufacturing-team", name: "Manufacturing Team", enabled: true },
+          { id: "corporate", name: "Corporate", enabled: true },
+          { id: "reports", name: "Reports", enabled: true },
+          { id: "user-management", name: "User Management", enabled: true },
+        ]
+      },
+      {
+        id: "camps",
+        title: "Camps & Teams",
+        collapsed: false,
+        items: [
+          { id: "order-tracking", name: "Order Tracking", enabled: true },
+          { id: "design-communication", name: "Design Communication", enabled: true },
+          { id: "production-communication", name: "Production Communication", enabled: true },
+        ]
+      },
+      {
+        id: "settings",
+        title: "Settings",
+        collapsed: false,
+        items: [
+          { id: "profile", name: "Profile", enabled: true },
+          { id: "settings", name: "Settings", enabled: true },
+        ]
+      }
+    ];
+  });
   
+  // Handle drag and drop reordering
+  const onDragEnd = (result: any) => {
+    const { destination, source, type } = result;
+    
+    // If item was dropped outside of any droppable area
+    if (!destination) {
+      return;
+    }
+    
+    // If the item was dropped back in the same position
+    if (destination.droppableId === source.droppableId && destination.index === source.index) {
+      return;
+    }
+    
+    // Handle items being reordered within a group
+    if (type === "item" && source.droppableId === destination.droppableId) {
+      const groupId = source.droppableId;
+      const groupIndex = navigationGroups.findIndex((g: { id: string }) => g.id === groupId);
+      
+      if (groupIndex === -1) return;
+      
+      const newGroups = [...navigationGroups];
+      const group = {...newGroups[groupIndex]};
+      const items = [...group.items];
+      
+      // Remove the item from its original position and insert it at the new position
+      const [reorderedItem] = items.splice(source.index, 1);
+      items.splice(destination.index, 0, reorderedItem);
+      
+      group.items = items;
+      newGroups[groupIndex] = group;
+      
+      setNavigationGroups(newGroups);
+    }
+  };
+
   const navigationForm = useForm<NavigationFormValues>({
     resolver: zodResolver(navigationSchema),
     defaultValues: {
@@ -807,109 +857,148 @@ export default function Settings() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
-                  <Accordion type="multiple" className="w-full border rounded-md">
-                    {navigationGroups.map((group, groupIndex) => (
-                      <AccordionItem key={group.id} value={group.id}>
-                        <AccordionTrigger className="px-4">
-                          <div className="flex items-center space-x-2">
-                            <span>{group.title}</span>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="px-4 pt-2 pb-4">
-                          <div className="space-y-4">
-                            <div className="flex items-center space-x-4">
-                              <Input 
-                                value={group.title} 
-                                onChange={(e) => {
-                                  const updatedGroups = [...navigationGroups];
-                                  updatedGroups[groupIndex].title = e.target.value;
-                                  setNavigationGroups(updatedGroups);
-                                }}
-                                placeholder="Group name"
-                                className="max-w-xs"
-                              />
-                              <div className="flex items-center space-x-2">
-                                <Switch
-                                  checked={!group.collapsed}
-                                  onCheckedChange={(checked) => {
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <div className="space-y-6">
+                    <Accordion type="multiple" className="w-full border rounded-md">
+                      {navigationGroups.map((group, groupIndex) => (
+                        <AccordionItem key={group.id} value={group.id}>
+                          <AccordionTrigger className="px-4">
+                            <div className="flex items-center space-x-2">
+                              <span>{group.title}</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="px-4 pt-2 pb-4">
+                            <div className="space-y-4">
+                              <div className="flex items-center space-x-4">
+                                <Input 
+                                  value={group.title} 
+                                  onChange={(e) => {
                                     const updatedGroups = [...navigationGroups];
-                                    updatedGroups[groupIndex].collapsed = !checked;
+                                    updatedGroups[groupIndex].title = e.target.value;
                                     setNavigationGroups(updatedGroups);
                                   }}
-                                  id={`${group.id}-expanded`}
+                                  placeholder="Group name"
+                                  className="max-w-xs"
                                 />
-                                <label htmlFor={`${group.id}-expanded`} className="text-sm font-medium">
-                                  Expanded by default
-                                </label>
+                                <div className="flex items-center space-x-2">
+                                  <Switch
+                                    checked={!group.collapsed}
+                                    onCheckedChange={(checked) => {
+                                      const updatedGroups = [...navigationGroups];
+                                      updatedGroups[groupIndex].collapsed = !checked;
+                                      setNavigationGroups(updatedGroups);
+                                    }}
+                                    id={`${group.id}-expanded`}
+                                  />
+                                  <label htmlFor={`${group.id}-expanded`} className="text-sm font-medium">
+                                    Expanded by default
+                                  </label>
+                                </div>
                               </div>
+                              
+                              <Droppable droppableId={group.id} type="item">
+                                {(provided) => (
+                                  <div
+                                    {...provided.droppableProps}
+                                    ref={provided.innerRef}
+                                    className="w-full"
+                                  >
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead className="w-[5%]"></TableHead>
+                                          <TableHead className="w-[45%]">Page Name</TableHead>
+                                          <TableHead className="w-[30%]">ID</TableHead>
+                                          <TableHead className="w-[20%]">Visible</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {group.items.map((item, itemIndex) => (
+                                          <Draggable
+                                            key={item.id}
+                                            draggableId={`${group.id}-${item.id}`}
+                                            index={itemIndex}
+                                          >
+                                            {(provided) => (
+                                              <TableRow
+                                                ref={provided.innerRef}
+                                                {...provided.draggableProps}
+                                                key={item.id}
+                                              >
+                                                <TableCell className="p-2 w-[40px]">
+                                                  <div 
+                                                    {...provided.dragHandleProps}
+                                                    className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 cursor-grab"
+                                                  >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
+                                                      <circle cx="8" cy="8" r="1"/>
+                                                      <circle cx="8" cy="16" r="1"/>
+                                                      <circle cx="16" cy="8" r="1"/>
+                                                      <circle cx="16" cy="16" r="1"/>
+                                                    </svg>
+                                                  </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                  <Input 
+                                                    value={item.name} 
+                                                    onChange={(e) => {
+                                                      const updatedGroups = [...navigationGroups];
+                                                      updatedGroups[groupIndex].items[itemIndex].name = e.target.value;
+                                                      setNavigationGroups(updatedGroups);
+                                                    }}
+                                                    placeholder="Page name"
+                                                  />
+                                                </TableCell>
+                                                <TableCell className="text-sm text-muted-foreground">
+                                                  {item.id}
+                                                </TableCell>
+                                                <TableCell>
+                                                  <Switch
+                                                    checked={item.enabled}
+                                                    onCheckedChange={(checked) => {
+                                                      const updatedGroups = [...navigationGroups];
+                                                      updatedGroups[groupIndex].items[itemIndex].enabled = checked;
+                                                      setNavigationGroups(updatedGroups);
+                                                    }}
+                                                  />
+                                                </TableCell>
+                                              </TableRow>
+                                            )}
+                                          </Draggable>
+                                        ))}
+                                        {provided.placeholder}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                )}
+                              </Droppable>
                             </div>
-                            
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead className="w-[50%]">Page Name</TableHead>
-                                  <TableHead className="w-[30%]">ID</TableHead>
-                                  <TableHead className="w-[20%]">Visible</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {group.items.map((item, itemIndex) => (
-                                  <TableRow key={item.id}>
-                                    <TableCell>
-                                      <Input 
-                                        value={item.name} 
-                                        onChange={(e) => {
-                                          const updatedGroups = [...navigationGroups];
-                                          updatedGroups[groupIndex].items[itemIndex].name = e.target.value;
-                                          setNavigationGroups(updatedGroups);
-                                        }}
-                                        placeholder="Page name"
-                                      />
-                                    </TableCell>
-                                    <TableCell className="text-sm text-muted-foreground">
-                                      {item.id}
-                                    </TableCell>
-                                    <TableCell>
-                                      <Switch
-                                        checked={item.enabled}
-                                        onCheckedChange={(checked) => {
-                                          const updatedGroups = [...navigationGroups];
-                                          updatedGroups[groupIndex].items[itemIndex].enabled = checked;
-                                          setNavigationGroups(updatedGroups);
-                                        }}
-                                      />
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
                   
-                  <div className="flex justify-end space-x-4">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        // Reset to defaults by reloading the page
-                        window.location.reload();
-                      }}
-                    >
-                      Reset to Defaults
-                    </Button>
-                    <Button 
-                      onClick={() => {
-                        saveNavigationSettings.mutate({ groups: navigationGroups });
-                      }}
-                      disabled={saveNavigationSettings.isPending}
-                    >
-                      {saveNavigationSettings.isPending ? "Saving..." : "Save Navigation Settings"}
-                    </Button>
+                    <div className="flex justify-end space-x-4">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          // Reset to defaults by reloading the page
+                          window.location.reload();
+                        }}
+                      >
+                        Reset to Defaults
+                      </Button>
+                      <Button 
+                        onClick={() => {
+                          saveNavigationSettings.mutate({ groups: navigationGroups });
+                        }}
+                        disabled={saveNavigationSettings.isPending}
+                      >
+                        {saveNavigationSettings.isPending ? "Saving..." : "Save Navigation Settings"}
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                </DragDropContext>
               </CardContent>
             </Card>
           </TabsContent>

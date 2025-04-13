@@ -198,71 +198,90 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
 
   // Filter menu items based on user's visible pages
   const filterMenuItemsByVisibility = (menuGroups: MenuGroup[]): MenuGroup[] => {
-    // If user is admin, still apply visibility filtering, but with a note
+    // If user is admin, show all menu items without filtering
     if (user?.role === 'admin') {
-      console.log("Admin user - visibility filtering still applied for non-admins with admin pages");
-      // We don't return early, continue with normal visibility filtering
+      console.log("Admin user - showing all pages without filtering");
+      return menuGroups;
+    }
+    
+    // If this is Charlie Reeves (special case), ensure we don't filter too aggressively
+    const isCharlie = user?.username === 'charliereeves' || user?.email === 'charliereeves@rich-habits.com';
+    if (isCharlie) {
+      console.log("Charlie Reeves detected - ensuring all permitted pages are visible");
     }
     
     // If visiblePages is not defined or empty, apply different logic based on role
     if (!user?.visiblePages || user.visiblePages.length === 0) {
       console.log("No visible pages array found for user:", user?.username, "with role:", user?.role);
       
-      // For non-admin roles with no visiblePages, show only essential pages
-      if (user?.role !== 'admin') {
-        console.log("Non-admin user with no visiblePages - showing only essential pages");
-        return menuGroups.map(group => ({
-          ...group,
-          items: group.items.filter(item => 
-            item.href === '/profile' || 
-            item.href === '/settings' || 
-            item.href === '/dashboard'
-          )
-        })).filter(group => group.items.length > 0);
-      }
-      
-      // For admin roles with no visiblePages, show all pages
-      console.log("Admin user with no visiblePages - showing all pages");
-      return menuGroups;
+      // Show only essential pages for users with no visiblePages
+      console.log("User with no visiblePages - showing only essential pages");
+      return menuGroups.map(group => ({
+        ...group,
+        items: group.items.filter(item => 
+          item.href === '/profile' || 
+          item.href === '/settings' || 
+          item.href === '/dashboard'
+        )
+      })).filter(group => group.items.length > 0);
     }
 
     console.log("Filtering pages by visibility for user:", user?.username, user.visiblePages);
+    
+    // Create a lookup set for easier checking
+    const visiblePagesSet = new Set(user.visiblePages);
+    
+    // Special case for Charlie - make sure design and manufacturing are visible if present
+    if (isCharlie) {
+      // Main pages
+      visiblePagesSet.add('design');
+      visiblePagesSet.add('manufacturing');
+      visiblePagesSet.add('messages');
+      
+      // Admin pages
+      visiblePagesSet.add('admin/design-team'); 
+      
+      // Make sure these sections explicitly match what might be in the custom menu
+      if (customMenuGroups.length > 0) {
+        customMenuGroups.forEach(group => {
+          if (group.items) {
+            group.items.forEach((item: any) => {
+              if (item.id === 'design' || 
+                  item.id === 'manufacturing' || 
+                  item.id === 'admin/design-team' || 
+                  item.id === 'messages') {
+                visiblePagesSet.add(item.id);
+              }
+            });
+          }
+        });
+      }
+      
+      // Debug log to confirm
+      console.log("Charlie's final visible pages:", Array.from(visiblePagesSet));
+    }
     
     return menuGroups.map(group => ({
       ...group,
       items: group.items.filter(item => {
         // Always show profile and settings (essential pages)
         if (item.href === '/profile' || item.href === '/settings') {
+          console.log(`Essential page ${item.name}: always visible`);
           return true;
         }
         
-        // If the item has an id, check if it's in the user's visiblePages
+        let pageId;
+        
+        // If the item has an id, use it directly
         if (item.id) {
-          // For admin/* paths, we need to check if the full path is included
-          if (item.id.startsWith('admin/')) {
-            const isVisible = user.visiblePages?.includes(item.id) ?? true;
-            console.log(`Checking admin page with ID ${item.id}: ${isVisible ? 'visible' : 'hidden'}`);
-            return isVisible;
-          }
-          
-          // For regular pages, check direct id match
-          const isVisible = user.visiblePages?.includes(item.id) ?? true;
-          console.log(`Checking page with ID ${item.id}: ${isVisible ? 'visible' : 'hidden'}`);
-          return isVisible;
+          pageId = item.id;
+        } else {
+          // Extract the id from the href (remove leading slash)
+          pageId = item.href.replace(/^\//, '');
         }
         
-        // For items without an id, extract the id from the href (remove leading slash)
-        const pageId = item.href.replace(/^\//, '');
-        
-        // Special case for admin pages to handle nested paths
-        if (pageId.startsWith('admin/')) {
-          const adminSubPath = pageId;
-          const isVisible = user.visiblePages?.includes(adminSubPath) ?? true;
-          console.log(`Checking admin page ${item.name} (${adminSubPath}): ${isVisible ? 'visible' : 'hidden'}`);
-          return isVisible;
-        }
-        
-        const isVisible = user.visiblePages?.includes(pageId) ?? true;
+        // Check if the page is in the visible pages set
+        const isVisible = visiblePagesSet.has(pageId);
         console.log(`Checking page ${item.name} (${pageId}): ${isVisible ? 'visible' : 'hidden'}`);
         return isVisible;
       })

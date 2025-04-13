@@ -3245,12 +3245,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Charlie not found" });
       }
       
+      // Update Charlie's role to manager if needed
+      if (user.role !== 'manager') {
+        await storage.updateUser(user.id, { role: 'manager' });
+      }
+      
       // Create a comprehensive list of pages Charlie should have access to
+      // Include ALL the pages from the nav settings plus additional ones
       const charliePagesNeeded = [
+        // Basic pages
         'dashboard', 'profile', 'settings',
         'orders', 'leads', 'organizations',
-        'catalog', 'messages', 'design', 'manufacturing',
-        'admin/design-team'
+        'catalog', 'messages', 'outlook', 'feedback',
+        // Special pages
+        'design', 'manufacturing', 'sales-process',
+        'design-communication', 'production-communication',
+        // Admin pages
+        'admin/design-team', 'admin/manufacturing-team', 
+        'admin/sales-team', 'admin/product-creation', 
+        'admin/product-management', 'corporate'
       ];
       
       // Update Charlie's visible pages

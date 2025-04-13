@@ -231,6 +231,16 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
     // Create a lookup set for easier checking
     const visiblePagesSet = new Set(user.visiblePages);
     
+    // Log all the available menu items to help with debugging
+    console.log("Available menu groups before filtering:", menuGroups.map(g => ({
+      title: g.title,
+      items: g.items.map(i => ({ 
+        name: i.name, 
+        id: i.id || i.href.replace(/^\//, ''),
+        href: i.href 
+      }))
+    })));
+    
     // Special case for Charlie - make sure design and manufacturing are visible if present
     if (isCharlie) {
       // Main pages
@@ -238,8 +248,19 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       visiblePagesSet.add('manufacturing');
       visiblePagesSet.add('messages');
       
-      // Admin pages
-      visiblePagesSet.add('admin/design-team'); 
+      // Admin pages - ensure we add both forms (with and without admin/ prefix)
+      visiblePagesSet.add('admin/design-team');
+      visiblePagesSet.add('design-team');
+      visiblePagesSet.add('admin/product-management');
+      visiblePagesSet.add('product-management');
+      visiblePagesSet.add('admin/sales-team');
+      visiblePagesSet.add('sales-team');
+      visiblePagesSet.add('admin/manufacturing-team');
+      visiblePagesSet.add('manufacturing-team');
+      
+      // For admin product creation
+      visiblePagesSet.add('admin/product-creation');
+      visiblePagesSet.add('product-creation');
       
       // Make sure these sections explicitly match what might be in the custom menu
       if (customMenuGroups.length > 0) {
@@ -249,8 +270,18 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               if (item.id === 'design' || 
                   item.id === 'manufacturing' || 
                   item.id === 'admin/design-team' || 
-                  item.id === 'messages') {
+                  item.id === 'messages' ||
+                  item.id === 'product-management' ||
+                  item.id === 'sales-team' ||
+                  item.id === 'design-team' ||
+                  item.id === 'manufacturing-team' ||
+                  item.id === 'product-creation') {
                 visiblePagesSet.add(item.id);
+                
+                // Also add the admin-prefixed version
+                if (!item.id.startsWith('admin/')) {
+                  visiblePagesSet.add(`admin/${item.id}`);
+                }
               }
             });
           }
@@ -359,8 +390,11 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           // Build the path based on the id
           let href = '';
           
-          // Special case for admin pages
-          if (itemId === 'product-management' || 
+          // Handle different page path patterns
+          if (itemId.startsWith('admin/')) {
+            // If the ID already has admin/ prefix, use it directly
+            href = `/${itemId}`;
+          } else if (itemId === 'product-management' || 
               itemId === 'sales-team' || 
               itemId === 'design-team' || 
               itemId === 'manufacturing-team' || 
@@ -368,10 +402,13 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               itemId === 'events' || 
               itemId === 'integrations' ||
               itemId === 'product-creation') {
+            // For known admin pages, add the admin/ prefix
             href = `/admin/${itemId}`;
           } else if (itemId.startsWith('/')) {
+            // If it starts with a slash, use as is
             href = itemId;
           } else {
+            // For other pages, add slash prefix
             href = `/${itemId}`;
           }
           
@@ -472,21 +509,25 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               name: "Product Management",
               href: "/admin/product-management",
               icon: <PackageOpen className="mr-2" size={16} />,
+              id: "admin/product-management",
             },
             {
               name: "Sales Team",
               href: "/admin/sales-team",
               icon: <BriefcaseBusiness className="mr-2" size={16} />,
+              id: "admin/sales-team",
             },
             {
               name: "Design Team",
               href: "/admin/design-team",
               icon: <PenTool className="mr-2" size={16} />,
+              id: "admin/design-team",
             },
             {
               name: "Manufacturing Team",
               href: "/admin/manufacturing-team",
               icon: <HardHat className="mr-2" size={16} />,
+              id: "admin/manufacturing-team",
             },
             {
               name: "Corporate",
@@ -544,8 +585,10 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       ];
     }
     
-    // Apply any custom navigation settings to the default menu
-    return filterMenuItemsByVisibility(applyCustomSettings(defaultMenu));
+    // Filter the default menu first, then apply custom settings
+    // This ensures we check permissions before customizing the menu
+    const customizedMenu = applyCustomSettings(defaultMenu);
+    return filterMenuItemsByVisibility(customizedMenu);
   };
 
   const menuItems = getMenuItems();

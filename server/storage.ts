@@ -330,10 +330,37 @@ export class DatabaseStorage implements IStorage {
   async getUserSettings(userId: number, settingType: string): Promise<any> {
     try {
       if (settingType === 'navigation') {
-        // For now, let's return a simpler implementation that just uses the user's visiblePages
-        // since there's an issue with the database schema
+        // First, get the user's visiblePages
         const user = await this.getUser(userId);
         
+        // Next, try to get any saved custom menu groups from user_settings table
+        let result;
+        try {
+          // Look for any saved navigation settings
+          const [navSettings] = await db.select()
+            .from(userSettings)
+            .where(and(
+              eq(userSettings.userId, userId),
+              eq(userSettings.settingType, 'navigation')
+            ));
+            
+          if (navSettings && navSettings.settings) {
+            // We have custom navigation settings
+            let settings = navSettings.settings;
+            
+            // Make sure the settings include visiblePages
+            if (user && user.visiblePages) {
+              settings.visiblePages = user.visiblePages;
+            }
+            
+            console.log(`Returning saved navigation settings for user ${userId}:`, settings);
+            return { settings };
+          }
+        } catch (dbError) {
+          console.error('Error fetching navigation settings from database:', dbError);
+        }
+        
+        // If we don't have saved settings, return just the visiblePages
         if (user && user.visiblePages && user.visiblePages.length > 0) {
           console.log(`Returning navigation settings for user ${userId} based on visiblePages:`, user.visiblePages);
           
@@ -356,21 +383,40 @@ export class DatabaseStorage implements IStorage {
   
   async updateUserSettings(userId: number, settingType: string, settings: any): Promise<void> {
     try {
-      if (settingType === 'navigation' && settings.groups) {
-        const groups = settings.groups;
-        
-        // In a real implementation, we would:
-        // 1. Delete existing navigation items for this user
-        // 2. Insert new ones with proper display order
-        // 3. Handle transactions to ensure atomicity
-        
-        console.log(`Saving navigation settings for user ${userId}:`, groups);
-        
-        // For now we're just returning success
-        return Promise.resolve();
-      }
+      console.log(`Updating ${settingType} settings for user ${userId}:`, settings);
       
-      // Other settings types would be handled here
+      // First check if there's an existing record
+      const [existingSettings] = await db.select()
+        .from(userSettings)
+        .where(and(
+          eq(userSettings.userId, userId),
+          eq(userSettings.settingType, settingType)
+        ));
+      
+      if (existingSettings) {
+        // Update existing settings
+        await db.update(userSettings)
+          .set({
+            settings: settings,
+            updatedAt: new Date()
+          })
+          .where(and(
+            eq(userSettings.userId, userId),
+            eq(userSettings.settingType, settingType)
+          ));
+          
+        console.log(`Updated existing ${settingType} settings for user ${userId}`);
+      } else {
+        // Insert new settings
+        await db.insert(userSettings)
+          .values({
+            userId,
+            settingType,
+            settings
+          });
+          
+        console.log(`Inserted new ${settingType} settings for user ${userId}`);
+      }
       
       return Promise.resolve();
     } catch (error) {

@@ -483,13 +483,26 @@ export const sidebarItems = pgTable('sidebar_items', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+// User Settings configuration
+export const userSettings = pgTable('user_settings', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  settingType: text('setting_type').notNull(),
+  settings: json('settings').notNull().$type<any>(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 export const insertSidebarGroupSchema = createInsertSchema(sidebarGroups).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSidebarItemSchema = createInsertSchema(sidebarItems).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertUserSettingsSchema = createInsertSchema(userSettings).omit({ id: true, createdAt: true, updatedAt: true });
 
 export type InsertSidebarGroup = z.infer<typeof insertSidebarGroupSchema>;
 export type InsertSidebarItem = z.infer<typeof insertSidebarItemSchema>;
+export type InsertUserSettings = z.infer<typeof insertUserSettingsSchema>;
 export type SidebarGroup = typeof sidebarGroups.$inferSelect;
 export type SidebarItem = typeof sidebarItems.$inferSelect;
+export type UserSettings = typeof userSettings.$inferSelect;
 
 // Events table
 export const events = pgTable('events', {

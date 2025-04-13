@@ -87,6 +87,65 @@ export default function DebugTools() {
       setLoading(false);
     }
   };
+  
+  const checkUserPermissions = async () => {
+    if (!email) {
+      setError('Please enter an email address');
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/debug/user-permissions/${email}`);
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+      const data = await response.json();
+      setQueryData({ 
+        user: {
+          id: data.userId,
+          email: data.email,
+          username: data.username,
+          role: data.role,
+          visiblePages: data.userVisiblePages
+        },
+        navSettings: {
+          settings: {
+            visiblePages: data.settingsVisiblePages
+          }
+        },
+        permissionsDebug: data
+      });
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const fixCharliePermissions = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/debug/fix-charlie-permissions');
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+      const data = await response.json();
+      
+      // If Charlie is the currently searched user, refresh data
+      if (email === 'charliereeves@rich-habits.com') {
+        await checkUserPermissions();
+      }
+      
+      alert(`Success: ${data.message}`);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Card className="w-full">
@@ -95,20 +154,33 @@ export default function DebugTools() {
         <CardDescription>Troubleshoot user permissions and navigation settings</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex space-x-2 mb-4">
-          <div className="flex-1">
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="col-span-3 md:col-span-2">
             <Label htmlFor="email">User Email</Label>
-            <Input 
-              id="email"
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
-              placeholder="Enter email address" 
-            />
+            <div className="flex mt-1">
+              <Input 
+                id="email"
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                placeholder="Enter email address" 
+                className="rounded-r-none"
+              />
+              <Button onClick={fetchUserData} disabled={loading} className="rounded-l-none">
+                {loading ? 'Loading...' : 'Fetch User Data'}
+              </Button>
+            </div>
           </div>
-          <div className="flex items-end">
-            <Button onClick={fetchUserData} disabled={loading}>
-              {loading ? 'Loading...' : 'Fetch User Data'}
-            </Button>
+          
+          <div className="col-span-3 md:col-span-1 space-y-2">
+            <Label>Quick Actions</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button onClick={checkUserPermissions} variant="outline" size="sm" disabled={loading}>
+                Check Permissions
+              </Button>
+              <Button onClick={fixCharliePermissions} variant="outline" size="sm" disabled={loading} className="bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100 hover:text-yellow-900">
+                Fix Charlie's Access
+              </Button>
+            </div>
           </div>
         </div>
         

@@ -3212,7 +3212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (!user.visiblePages || user.visiblePages.length === 0) {
           // If user doesn't have visiblePages, set them
-          await storage.updateVisiblePages(userId, defaultPages);
+          await storage.updateUserVisiblePages(userId, defaultPages);
           user.visiblePages = defaultPages;
         }
       }
@@ -3231,6 +3231,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, message: "User settings synchronized successfully" });
     } catch (error: any) {
       console.error("Sync settings error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Debug endpoint to fix Charlie Reeves permissions
+  app.get('/api/debug/fix-charlie-permissions', async (req, res) => {
+    try {
+      const email = "charliereeves@rich-habits.com";
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        return res.status(404).json({ error: "Charlie not found" });
+      }
+      
+      // Create a comprehensive list of pages Charlie should have access to
+      const charliePagesNeeded = [
+        'dashboard', 'profile', 'settings',
+        'orders', 'leads', 'organizations',
+        'catalog', 'messages', 'design', 'manufacturing',
+        'admin/design-team'
+      ];
+      
+      // Update Charlie's visible pages
+      await storage.updateUserVisiblePages(user.id, charliePagesNeeded);
+      
+      // Get navigation settings
+      const navSettings = await storage.getUserSettings(user.id, 'navigation');
+      
+      // Create settings object with updated visible pages
+      let settingsData = navSettings?.settings || {};
+      settingsData.visiblePages = charliePagesNeeded;
+      
+      // Update the settings
+      await storage.updateUserSettings(user.id, 'navigation', settingsData);
+      
+      res.json({ 
+        success: true, 
+        message: "Charlie's permissions have been fixed",
+        pagesAdded: charliePagesNeeded
+      });
+    } catch (error: any) {
+      console.error("Fix Charlie permissions error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Debug endpoint to show user permissions and settings
+  app.get('/api/debug/user-permissions/:email', async (req, res) => {
+    try {
+      const { email } = req.params;
+      
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+      
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Get user's navigation settings
+      const navSettings = await storage.getUserSettings(user.id, 'navigation');
+      
+      // Compare user.visiblePages with settings.visiblePages
+      const userVisiblePages = user.visiblePages || [];
+      const settingsVisiblePages = (navSettings?.settings?.visiblePages || []) as string[];
+      
+      // Check if they match
+      const pagesMatch = JSON.stringify(userVisiblePages.sort()) === JSON.stringify(settingsVisiblePages.sort());
+      
+      // Collect results in a response object
+      const result = {
+        userId: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        userVisiblePages: userVisiblePages,
+        settingsVisiblePages: settingsVisiblePages,
+        pagesMatch: pagesMatch,
+        missingInUserPages: settingsVisiblePages.filter((p: string) => !userVisiblePages.includes(p)),
+        missingInSettingsPages: userVisiblePages.filter((p: string) => !settingsVisiblePages.includes(p)),
+        userHasAdminPages: userVisiblePages.some((p: string) => p.startsWith('admin/')),
+        settingsHasAdminPages: settingsVisiblePages.some((p: string) => p.startsWith('admin/')),
+        navSettingsFound: !!navSettings
+      };
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error("User permissions debug error:", error);
       res.status(500).json({ error: error.message });
     }
   });

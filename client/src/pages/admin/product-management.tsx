@@ -1138,7 +1138,6 @@ const ProductManagementPage: FC = () => {
   };
 
   return (
-    <Layout user={user}>
       <div className="container px-4 py-6 mx-auto max-w-7xl">
         <div className="flex flex-col">
           <h1 className="text-3xl font-bold tracking-tight">
@@ -1664,7 +1663,6 @@ const ProductManagementPage: FC = () => {
           </Tabs>
         </div>
       </div>
-    </Layout>
   );
 };
 

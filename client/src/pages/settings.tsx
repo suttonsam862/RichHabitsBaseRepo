@@ -281,6 +281,7 @@ export default function Settings() {
             <TabsTrigger value="company">Company</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
+            <TabsTrigger value="navigation">Navigation</TabsTrigger>
             <TabsTrigger value="system">System</TabsTrigger>
           </TabsList>
           

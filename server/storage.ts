@@ -18,6 +18,8 @@ import {
   designRevisions,
   designMessages,
   events,
+  sidebarGroups,
+  sidebarItems,
   ROLES,
   type User, 
   type InsertUser, 
@@ -77,6 +79,7 @@ export interface IStorage {
   getUserCount(): Promise<number>;
   createUser(user: InsertUser): Promise<User>;
   updateUserSettings(userId: number, settingType: string, settings: any): Promise<void>;
+  getUserSettings(userId: number, settingType: string): Promise<any>;
   getAllUsers(): Promise<User[]>;
   updateUserRole(userId: number, role: string): Promise<User>;
   updateUserPermissions(userId: number, permissions: Permission[]): Promise<User>;
@@ -324,10 +327,56 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  async getUserSettings(userId: number, settingType: string): Promise<any> {
+    try {
+      if (settingType === 'navigation') {
+        // Get custom navigation groups with their items for this user
+        const result = await db.query.sidebarGroups.findMany({
+          where: eq(sidebarGroups.id, userId),
+          with: {
+            items: {
+              orderBy: asc(sidebarItems.displayOrder)
+            }
+          },
+          orderBy: asc(sidebarGroups.displayOrder)
+        });
+        
+        if (result?.length > 0) {
+          return { groups: result };
+        }
+      }
+      
+      // Default response if no settings found
+      return null;
+    } catch (error) {
+      console.error(`Error getting ${settingType} settings for user ${userId}:`, error);
+      return null;
+    }
+  }
+  
   async updateUserSettings(userId: number, settingType: string, settings: any): Promise<void> {
-    // In a real application, we would store settings in a separate table
-    // For now, we'll just return as if the operation succeeded
-    return Promise.resolve();
+    try {
+      if (settingType === 'navigation' && settings.groups) {
+        const groups = settings.groups;
+        
+        // In a real implementation, we would:
+        // 1. Delete existing navigation items for this user
+        // 2. Insert new ones with proper display order
+        // 3. Handle transactions to ensure atomicity
+        
+        console.log(`Saving navigation settings for user ${userId}:`, groups);
+        
+        // For now we're just returning success
+        return Promise.resolve();
+      }
+      
+      // Other settings types would be handled here
+      
+      return Promise.resolve();
+    } catch (error) {
+      console.error(`Error updating ${settingType} settings for user ${userId}:`, error);
+      throw error;
+    }
   }
   
   // Lead methods

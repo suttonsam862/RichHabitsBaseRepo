@@ -955,6 +955,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Settings endpoints
+  // Get user settings
+  app.get("/api/settings/:type", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const settingType = req.params.type;
+      const userId = req.user.id;
+      
+      const settings = await storage.getUserSettings(userId, settingType);
+      res.json(settings || {});
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Update user settings
   app.post("/api/settings/:type", async (req, res) => {
     try {
       if (!req.user) {

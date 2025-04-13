@@ -20,6 +20,7 @@ import {
   events,
   sidebarGroups,
   sidebarItems,
+  userSettings,
   ROLES,
   type User, 
   type InsertUser, 

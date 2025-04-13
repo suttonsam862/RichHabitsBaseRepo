@@ -722,6 +722,7 @@ const FabricOptionForm: FC<FabricOptionFormProps> = ({
 // Fabric Cut Form
 const fabricCutFormSchema = insertFabricCutSchema.extend({
   pdfUrl: z.string().optional(),
+  imageUrl: z.string().optional(),
   id: z.number().optional(),
 });
 type FabricCutFormValues = z.infer<typeof fabricCutFormSchema>;
@@ -743,6 +744,7 @@ const FabricCutForm: FC<FabricCutFormProps> = ({
       name: "",
       description: "",
       imageUrl: "",
+      pdfUrl: "",
       isActive: true,
     },
   });
@@ -1663,12 +1665,13 @@ const ProductManagementPage: FC = () => {
                     <FabricCutForm
                       defaultValues={{
                         id: selectedCut.id,
-                        name: selectedCut.name,
-                        description: selectedCut.description,
-                        applicationMethod: selectedCut.applicationMethod,
-                        priceModifier: selectedCut.priceModifier,
-                        imageUrl: selectedCut.imageUrl,
-                        isActive: selectedCut.isActive,
+                        name: selectedCut.name || "",
+                        description: selectedCut.description || "",
+                        applicationMethod: selectedCut.applicationMethod || "",
+                        priceModifier: selectedCut.priceModifier || "",
+                        imageUrl: selectedCut.imageUrl || "",
+                        pdfUrl: selectedCut.pdfUrl || "",
+                        isActive: selectedCut.isActive || true,
                       }}
                       onSubmit={(values) =>
                         updateCutMutation.mutate({

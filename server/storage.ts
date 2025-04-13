@@ -1470,6 +1470,65 @@ export class DatabaseStorage implements IStorage {
   async deleteDesignMessage(id: number): Promise<void> {
     await db.delete(designMessages).where(eq(designMessages.id, id));
   }
+  
+  // Events methods
+  async getEvents(): Promise<Event[]> {
+    return db.select().from(events).orderBy(asc(events.startDate));
+  }
+  
+  async getEventById(id: number): Promise<Event | undefined> {
+    const [event] = await db.select().from(events).where(eq(events.id, id));
+    return event || undefined;
+  }
+  
+  async createEvent(event: InsertEvent): Promise<Event> {
+    const [newEvent] = await db
+      .insert(events)
+      .values(event)
+      .returning();
+    return newEvent;
+  }
+  
+  async updateEvent(id: number, eventData: Partial<InsertEvent>): Promise<Event> {
+    try {
+      // Make sure the event exists
+      const event = await this.getEventById(id);
+      if (!event) {
+        throw new Error("Event not found");
+      }
+      
+      // Update the event
+      const [updatedEvent] = await db
+        .update(events)
+        .set({
+          ...eventData,
+          updatedAt: new Date()
+        })
+        .where(eq(events.id, id))
+        .returning();
+      
+      return updatedEvent;
+    } catch (error) {
+      console.error("Error updating event:", error);
+      throw error;
+    }
+  }
+  
+  async deleteEvent(id: number): Promise<void> {
+    try {
+      // Make sure the event exists
+      const event = await this.getEventById(id);
+      if (!event) {
+        throw new Error("Event not found");
+      }
+      
+      // Delete the event
+      await db.delete(events).where(eq(events.id, id));
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      throw error;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

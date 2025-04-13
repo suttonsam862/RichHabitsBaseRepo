@@ -20,6 +20,7 @@ import {
   feedbackComments,
   feedbackVotes,
   outlookIntegrations,
+  events,
   insertLeadSchema, 
   insertOrderSchema, 
   insertMessageSchema,
@@ -33,11 +34,14 @@ import {
   insertFeedbackSchema,
   insertFeedbackCommentSchema,
   insertFeedbackVoteSchema,
+  insertEventSchema,
   ROLES,
   PERMISSIONS,
   type User,
   type Organization,
-  type Permission
+  type Permission,
+  type Event,
+  type InsertEvent
 } from "@shared/schema";
 import { isAdmin, hasRequiredPermission } from "./auth";
 
@@ -2929,6 +2933,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error providing feedback:", error);
       res.status(500).json({ error: "Failed to provide feedback" });
+    }
+  });
+
+  // Events API Endpoints
+  app.get("/api/events", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const events = await storage.getEvents();
+      res.json({ data: events });
+    } catch (error: any) {
+      console.error("Error fetching events:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/events/:id", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid event ID" });
+      }
+      
+      const event = await storage.getEventById(id);
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      
+      res.json({ data: event });
+    } catch (error: any) {
+      console.error("Error fetching event:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/events", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as User;
+      
+      // Validate the event data
+      const validatedData = insertEventSchema.parse({
+        ...req.body,
+        createdById: user.id  // Add the current user as the creator
+      });
+      
+      // Create the event
+      const newEvent = await storage.createEvent(validatedData);
+      
+      // Create an activity record for this event
+      await storage.createActivity({
+        userId: user.id,
+        type: "event",
+        content: `New event "${newEvent.title}" created`,
+        relatedId: newEvent.id,
+        relatedType: "event"
+      });
+      
+      res.status(201).json({ data: newEvent });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        console.error("Error creating event:", error);
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+
+  app.put("/api/events/:id", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid event ID" });
+      }
+      
+      // Check if the event exists
+      const event = await storage.getEventById(id);
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      
+      const user = req.user as User;
+      
+      // Update the event
+      const updatedEvent = await storage.updateEvent(id, req.body);
+      
+      // Create an activity record for this update
+      await storage.createActivity({
+        userId: user.id,
+        type: "event",
+        content: `Event "${updatedEvent.title}" updated`,
+        relatedId: updatedEvent.id,
+        relatedType: "event"
+      });
+      
+      res.json({ data: updatedEvent });
+    } catch (error: any) {
+      console.error("Error updating event:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/events/:id", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid event ID" });
+      }
+      
+      // Check if the event exists
+      const event = await storage.getEventById(id);
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      
+      const user = req.user as User;
+      
+      // Delete the event
+      await storage.deleteEvent(id);
+      
+      // Create an activity record for this deletion
+      await storage.createActivity({
+        userId: user.id,
+        type: "event",
+        content: `Event "${event.title}" deleted`,
+        relatedId: id,
+        relatedType: "event"
+      });
+      
+      res.json({ success: true, message: "Event deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting event:", error);
+      res.status(500).json({ error: error.message });
     }
   });
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { AuthUser } from "@/types";
@@ -57,6 +57,8 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   const { logoutMutation } = useAuth();
   // Store collapsed state for each group
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  // Store custom navigation groups from settings
+  const [customMenuGroups, setCustomMenuGroups] = useState<any[]>([]);
 
   const toggleGroup = (title: string) => {
     setCollapsedGroups(prev => ({
@@ -65,12 +67,35 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
     }));
   };
 
-  // Initialize collapsed state from localStorage on component mount
+  // Initialize collapsed state and other sidebar configs from localStorage on component mount
   useEffect(() => {
     try {
+      // Load collapsed state
       const savedState = localStorage.getItem('sidebarCollapsedGroups');
       if (savedState) {
         setCollapsedGroups(JSON.parse(savedState));
+      }
+      
+      // Load sidebar groups configuration
+      const savedGroups = localStorage.getItem('sidebarGroups');
+      if (savedGroups) {
+        console.log('Loading sidebar groups from localStorage');
+        const parsedGroups = JSON.parse(savedGroups);
+        setCustomMenuGroups(parsedGroups);
+        
+        // Initialize collapsed state for each group based on their settings
+        // For each group that has collapsed: true, add it to the collapsedGroups state
+        const initialCollapsedState: Record<string, boolean> = {};
+        parsedGroups.forEach((group: any) => {
+          if (group.collapsed) {
+            initialCollapsedState[group.title] = true;
+          }
+        });
+        
+        setCollapsedGroups(prev => ({
+          ...prev,
+          ...initialCollapsedState
+        }));
       }
     } catch (error) {
       console.error('Failed to load sidebar state:', error);
@@ -133,11 +158,80 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
     })).filter(group => group.items.length > 0); // Remove empty groups
   };
 
+  // Apply custom navigation settings to default menu items
+  const applyCustomSettings = (defaultMenuGroups: MenuGroup[]): MenuGroup[] => {
+    if (!customMenuGroups || customMenuGroups.length === 0) {
+      return defaultMenuGroups;
+    }
+    
+    // For each default menu group, look for a matching custom group
+    return defaultMenuGroups.map(defaultGroup => {
+      // Find matching custom group by ID
+      const customGroup = customMenuGroups.find(cg => cg.id === defaultGroup.title.toLowerCase());
+      
+      if (!customGroup) {
+        return defaultGroup; // No custom settings for this group
+      }
+      
+      // Apply custom title if available
+      const title = customGroup.title || defaultGroup.title;
+      
+      // Map default items to custom ones
+      const items = defaultGroup.items.map(defaultItem => {
+        // Extract id from href if not explicitly set
+        const itemId = defaultItem.id || defaultItem.href.replace(/^\//, '');
+        
+        // Find matching custom item
+        const customItem = customGroup.items.find((ci: any) => ci.id === itemId);
+        
+        if (!customItem || customItem.enabled === false) {
+          // If no custom settings or disabled, return null (will be filtered out)
+          return customItem?.enabled === false ? null : defaultItem;
+        }
+        
+        // Apply custom name if available
+        return {
+          ...defaultItem,
+          name: customItem.name || defaultItem.name
+        };
+      }).filter(Boolean) as MenuItem[]; // Filter out null items and cast to MenuItem[]
+      
+      return {
+        title,
+        items
+      };
+    }).filter(group => group.items.length > 0); // Filter out empty groups
+  };
+
   // Get menu items based on user role
   const getMenuItems = () => {
+    // Default menu for non-admin roles
+    let defaultMenu: MenuGroup[] = [
+      {
+        title: "Main",
+        items: [
+          {
+            name: "Dashboard",
+            href: "/dashboard",
+            icon: <LayoutDashboard className="mr-2" size={16} />,
+          },
+          {
+            name: "Profile",
+            href: "/profile",
+            icon: <User className="mr-2" size={16} />,
+          },
+          {
+            name: "Settings",
+            href: "/settings",
+            icon: <Settings className="mr-2" size={16} />,
+          },
+        ],
+      },
+    ];
+    
     // Admin dashboard
     if (user?.role === 'admin') {
-      return filterMenuItemsByVisibility([
+      defaultMenu = [
         {
           title: "Main",
           items: [
@@ -259,32 +353,11 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             },
           ],
         },
-      ]);
+      ];
     }
     
-    // Default menu items (fallback)
-    return filterMenuItemsByVisibility([
-      {
-        title: "Main",
-        items: [
-          {
-            name: "Dashboard",
-            href: "/dashboard",
-            icon: <LayoutDashboard className="mr-2" size={16} />,
-          },
-          {
-            name: "Profile",
-            href: "/profile",
-            icon: <User className="mr-2" size={16} />,
-          },
-          {
-            name: "Settings",
-            href: "/settings",
-            icon: <Settings className="mr-2" size={16} />,
-          },
-        ],
-      },
-    ]);
+    // Apply any custom navigation settings to the default menu
+    return filterMenuItemsByVisibility(applyCustomSettings(defaultMenu));
   };
 
   const menuItems = getMenuItems();

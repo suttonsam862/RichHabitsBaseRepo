@@ -227,14 +227,15 @@ export default function Settings() {
       return;
     }
     
-    // Handle items being reordered within a group
+    const newGroups = [...navigationGroups];
+    
+    // Handle items being reordered within the same group
     if (type === "item" && source.droppableId === destination.droppableId) {
       const groupId = source.droppableId;
-      const groupIndex = navigationGroups.findIndex((g: { id: string }) => g.id === groupId);
+      const groupIndex = newGroups.findIndex((g: { id: string }) => g.id === groupId);
       
       if (groupIndex === -1) return;
       
-      const newGroups = [...navigationGroups];
       const group = {...newGroups[groupIndex]};
       const items = [...group.items];
       
@@ -244,9 +245,39 @@ export default function Settings() {
       
       group.items = items;
       newGroups[groupIndex] = group;
+    } 
+    // Handle items being moved between groups
+    else if (type === "item" && source.droppableId !== destination.droppableId) {
+      // Find source and destination group indexes
+      const sourceGroupIndex = newGroups.findIndex((g: { id: string }) => g.id === source.droppableId);
+      const destGroupIndex = newGroups.findIndex((g: { id: string }) => g.id === destination.droppableId);
       
-      setNavigationGroups(newGroups);
+      if (sourceGroupIndex === -1 || destGroupIndex === -1) return;
+      
+      // Create copies of the source and destination groups
+      const sourceGroup = {...newGroups[sourceGroupIndex]};
+      const destGroup = {...newGroups[destGroupIndex]};
+      
+      // Create copies of the items arrays
+      const sourceItems = [...sourceGroup.items];
+      const destItems = [...destGroup.items];
+      
+      // Remove the item from the source group
+      const [movedItem] = sourceItems.splice(source.index, 1);
+      
+      // Add the item to the destination group
+      destItems.splice(destination.index, 0, movedItem);
+      
+      // Update the groups with their new items arrays
+      sourceGroup.items = sourceItems;
+      destGroup.items = destItems;
+      
+      // Update the groups in the newGroups array
+      newGroups[sourceGroupIndex] = sourceGroup;
+      newGroups[destGroupIndex] = destGroup;
     }
+    
+    setNavigationGroups(newGroups);
   };
 
   const navigationForm = useForm<NavigationFormValues>({

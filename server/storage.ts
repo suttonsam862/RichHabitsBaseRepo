@@ -330,27 +330,27 @@ export class DatabaseStorage implements IStorage {
   async getUserSettings(userId: number, settingType: string): Promise<any> {
     try {
       if (settingType === 'navigation') {
-        // Get custom navigation groups with their items for this user
-        const result = await db.query.sidebarGroups.findMany({
-          where: eq(sidebarGroups.id, userId),
-          with: {
-            items: {
-              orderBy: asc(sidebarItems.displayOrder)
-            }
-          },
-          orderBy: asc(sidebarGroups.displayOrder)
-        });
+        // For now, let's return a simpler implementation that just uses the user's visiblePages
+        // since there's an issue with the database schema
+        const user = await this.getUser(userId);
         
-        if (result?.length > 0) {
-          return { groups: result };
+        if (user && user.visiblePages && user.visiblePages.length > 0) {
+          console.log(`Returning navigation settings for user ${userId} based on visiblePages:`, user.visiblePages);
+          
+          // Return the visible pages directly - the sidebar will handle filtering
+          return { 
+            settings: {
+              visiblePages: user.visiblePages 
+            }
+          };
         }
       }
       
       // Default response if no settings found
-      return null;
+      return { settings: {} };
     } catch (error) {
       console.error(`Error getting ${settingType} settings for user ${userId}:`, error);
-      return null;
+      return { settings: {} };
     }
   }
   

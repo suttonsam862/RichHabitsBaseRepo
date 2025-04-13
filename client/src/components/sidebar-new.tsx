@@ -71,7 +71,8 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
 
   // Define the type for navigation settings
   interface NavigationSettings {
-    groups: {
+    visiblePages?: string[];
+    groups?: {
       id: string;
       title: string;
       collapsed?: boolean;
@@ -101,37 +102,51 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       }
       
       // First try to load from server settings
-      if (serverSettings?.settings?.groups && serverSettings.settings.groups.length > 0) {
-        console.log('Loading sidebar groups from server settings:', serverSettings);
+      if (serverSettings?.settings) {
+        console.log('Loading sidebar settings from server:', serverSettings);
         
-        // Map server data to expected format
-        const serverGroups = serverSettings.settings.groups.map((group: any) => ({
-          id: group.id,
-          title: group.title,
-          collapsed: group.collapsed || false,
-          items: group.items.map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            enabled: item.enabled !== false, // Default to true if not specified
-          }))
-        }));
-        
-        setCustomMenuGroups(serverGroups);
-        
-        // Initialize collapsed state for each group based on their settings
-        const initialCollapsedState: Record<string, boolean> = {};
-        serverGroups.forEach((group: any) => {
-          if (group.collapsed) {
-            initialCollapsedState[group.title] = true;
+        // Check if we have visible pages
+        if (serverSettings.settings.visiblePages) {
+          console.log('Server has provided visiblePages:', serverSettings.settings.visiblePages);
+          // Make sure the user object has the visiblePages array
+          if (user && !user.visiblePages) {
+            user.visiblePages = serverSettings.settings.visiblePages;
           }
-        });
+        }
         
-        setCollapsedGroups(prev => ({
-          ...prev,
-          ...initialCollapsedState
-        }));
-        
-        return; // If server settings loaded successfully, don't try localStorage
+        // Check if we have custom group settings
+        if (serverSettings.settings.groups && serverSettings.settings.groups.length > 0) {
+          console.log('Server has provided custom groups:', serverSettings.settings.groups);
+          
+          // Map server data to expected format
+          const serverGroups = serverSettings.settings.groups.map((group: any) => ({
+            id: group.id,
+            title: group.title,
+            collapsed: group.collapsed || false,
+            items: group.items.map((item: any) => ({
+              id: item.id,
+              name: item.name,
+              enabled: item.enabled !== false, // Default to true if not specified
+            }))
+          }));
+          
+          setCustomMenuGroups(serverGroups);
+          
+          // Initialize collapsed state for each group based on their settings
+          const initialCollapsedState: Record<string, boolean> = {};
+          serverGroups.forEach((group: any) => {
+            if (group.collapsed) {
+              initialCollapsedState[group.title] = true;
+            }
+          });
+          
+          setCollapsedGroups(prev => ({
+            ...prev,
+            ...initialCollapsedState
+          }));
+          
+          return; // If server settings loaded successfully, don't try localStorage
+        }
       }
       
       // Fallback to localStorage if server settings not available

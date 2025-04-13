@@ -220,13 +220,45 @@ export default function Leads() {
     }
   };
 
+  // State to control active tab
+  const [activeTab, setActiveTab] = useState("unclaimed");
+  // Refresh key to force re-render when needed
+  const [refreshKey, setRefreshKey] = useState(0);
+  
   // Create a mutation to claim a lead by the current user
   const claimLeadMutation = useMutation({
     mutationFn: async (leadId: number) => {
       return await apiRequest("POST", `/api/leads/${leadId}/claim`, {});
     },
     onSuccess: (response) => {
+      // Invalidate to refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+      
+      // Update the local cache immediately to show the lead in My Leads tab
+      queryClient.setQueryData(['/api/leads'], (oldData: any) => {
+        if (!oldData) return oldData;
+        
+        // Update the lead in the data to mark it as claimed by current user
+        const updatedLeads = oldData.data.map((lead: any) => {
+          if (lead.id === response.leadId) {
+            return {
+              ...lead,
+              claimed: true,
+              claimedById: user.id,
+              claimedAt: new Date().toISOString(),
+              salesRepId: user.id
+            };
+          }
+          return lead;
+        });
+        
+        return { ...oldData, data: updatedLeads };
+      });
+      
+      // Switch to My Leads tab and force refresh
+      setActiveTab("my-leads");
+      setRefreshKey(prev => prev + 1);
+      
       toast({
         title: "Lead claimed",
         description: "Lead has been successfully claimed. You'll be able to convert it to an order after the 3-day verification period.",
@@ -797,7 +829,7 @@ export default function Leads() {
             </div>
           </CardHeader>
           <CardContent className="bg-white">
-            <Tabs defaultValue="unclaimed" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-2'} mb-6`}>
                 <TabsTrigger value="unclaimed" className="flex items-center">
                   <Inbox className="h-4 w-4 mr-2" />

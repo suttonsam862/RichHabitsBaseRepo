@@ -294,6 +294,81 @@ export default function Orders() {
     });
   };
 
+  // Create organization schema for the new organization form
+  const newOrgSchema = z.object({
+    name: z.string().min(2, "Organization name is required"),
+    type: z.string().default("client"),
+    industry: z.string().optional(),
+    website: z.string().optional(),
+    phone: z.string().optional(),
+    email: z.string().email("Invalid email").optional(),
+    address: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    zip: z.string().optional(),
+    country: z.string().default("USA"),
+    notes: z.string().optional(),
+  });
+
+  // Create a form for the new organization
+  const newOrgForm = useForm<z.infer<typeof newOrgSchema>>({
+    resolver: zodResolver(newOrgSchema),
+    defaultValues: {
+      name: "",
+      type: "client",
+      industry: "",
+      website: "",
+      phone: "",
+      email: "",
+      address: "",
+      city: "",
+      state: "",
+      zip: "",
+      country: "USA",
+      notes: "",
+    },
+  });
+
+  // Create a mutation for adding a new organization
+  const addOrgMutation = useMutation({
+    mutationFn: async (values: z.infer<typeof newOrgSchema>) => {
+      return await apiRequest("POST", "/api/organizations", values);
+    },
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/organizations'] });
+      toast({
+        title: "Organization added",
+        description: "New organization has been added successfully",
+      });
+      
+      // Close the dialog
+      setOpenNewOrgDialog(false);
+      
+      // Reset the form
+      newOrgForm.reset();
+      
+      // Set the newly created organization as the selected organization in the order form
+      // We need to wait for the invalidate to finish and the new data to be available
+      setTimeout(() => {
+        const newOrgId = response.data?.id;
+        if (newOrgId) {
+          form.setValue("organizationId", newOrgId.toString());
+        }
+      }, 300);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add organization",
+        variant: "destructive",
+      });
+    },
+  });
+
+  function onOrgSubmit(values: z.infer<typeof newOrgSchema>) {
+    addOrgMutation.mutate(values);
+  }
+
   return (
     <>
       {/* View Order Dialog */}
@@ -704,6 +779,227 @@ export default function Orders() {
         </AlertDialogContent>
       </AlertDialog>
       
+      {/* New Organization Dialog */}
+      <Dialog open={openNewOrgDialog} onOpenChange={setOpenNewOrgDialog}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto bg-white">
+          <DialogHeader>
+            <DialogTitle>Add New Organization</DialogTitle>
+            <DialogDescription>
+              Fill in the details below to add a new organization to your system.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...newOrgForm}>
+            <form onSubmit={newOrgForm.handleSubmit(onOrgSubmit)} className="space-y-4">
+              {/* Organization Name */}
+              <FormField
+                control={newOrgForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Organization Name <span className="text-red-500">*</span></FormLabel>
+                    <FormControl>
+                      <Input placeholder="ABC Sports Club" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Type and Industry in row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={newOrgForm.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type</FormLabel>
+                      <FormControl>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          value={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="client">Client</SelectItem>
+                            <SelectItem value="prospect">Prospect</SelectItem>
+                            <SelectItem value="partner">Partner</SelectItem>
+                            <SelectItem value="vendor">Vendor</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={newOrgForm.control}
+                  name="industry"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Industry</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Sports / Education / etc." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              {/* Website */}
+              <FormField
+                control={newOrgForm.control}
+                name="website"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Website</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Contact Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={newOrgForm.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="+1 (555) 123-4567" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={newOrgForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="contact@example.com" type="email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              {/* Address */}
+              <FormField
+                control={newOrgForm.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Street Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="123 Main St" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* City, State, Zip */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={newOrgForm.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>City</FormLabel>
+                      <FormControl>
+                        <Input placeholder="New York" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={newOrgForm.control}
+                  name="state"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>State</FormLabel>
+                      <FormControl>
+                        <Input placeholder="NY" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={newOrgForm.control}
+                  name="zip"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Zip Code</FormLabel>
+                      <FormControl>
+                        <Input placeholder="10001" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              {/* Country */}
+              <FormField
+                control={newOrgForm.control}
+                name="country"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country</FormLabel>
+                    <FormControl>
+                      <Input placeholder="USA" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Notes */}
+              <FormField
+                control={newOrgForm.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Additional details about this organization..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setOpenNewOrgDialog(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={addOrgMutation.isPending}>
+                  {addOrgMutation.isPending ? "Adding..." : "Add Organization"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-800 py-4 px-6">
         <div className="flex items-center justify-between">
@@ -755,7 +1051,14 @@ export default function Orders() {
                           <FormLabel>Select Organization</FormLabel>
                           <FormControl>
                             <Select 
-                              onValueChange={field.onChange} 
+                              onValueChange={(value) => {
+                                if (value === "new-org") {
+                                  // Open the new organization dialog
+                                  setOpenNewOrgDialog(true);
+                                } else {
+                                  field.onChange(value);
+                                }
+                              }} 
                               value={field.value}
                             >
                               <SelectTrigger>

@@ -395,9 +395,18 @@ export default function Settings() {
       // Save to localStorage to keep state between refreshes
       localStorage.setItem('sidebarGroups', JSON.stringify(values.groups));
       
-      return await apiRequest("POST", "/api/settings/navigation", values);
+      // Send to server API - format the data for the backend
+      return await apiRequest("POST", "/api/settings/navigation", {
+        settingType: "navigation",
+        settings: {
+          groups: values.groups
+        }
+      });
     },
     onSuccess: () => {
+      // Invalidate the query to ensure the sidebar gets the new settings
+      queryClient.invalidateQueries({ queryKey: ['/api/settings/navigation'] });
+      
       toast({
         title: "Navigation settings saved",
         description: "Your navigation settings have been updated successfully.",

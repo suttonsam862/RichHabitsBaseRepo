@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 import { AuthUser } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import {
   LayoutDashboard,
   Users,
@@ -67,24 +69,79 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
     }));
   };
 
-  // Initialize collapsed state and other sidebar configs from localStorage on component mount
+  // Define the type for navigation settings
+  interface NavigationSettings {
+    groups: {
+      id: string;
+      title: string;
+      collapsed?: boolean;
+      items: {
+        id: string;
+        name: string;
+        enabled?: boolean;
+      }[];
+    }[];
+  }
+
+  // Fetch navigation settings from the server
+  const { data: serverSettings, isLoading: isLoadingSettings } = useQuery<{ settings: NavigationSettings }>({
+    queryKey: ['/api/settings/navigation'],
+    enabled: !!user, // Only run the query when we have a user
+    retry: 1, // Don't retry more than once
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+  });
+
+  // Initialize collapsed state and other sidebar configs from localStorage AND server
   useEffect(() => {
     try {
-      // Load collapsed state
+      // Load collapsed state from localStorage
       const savedState = localStorage.getItem('sidebarCollapsedGroups');
       if (savedState) {
         setCollapsedGroups(JSON.parse(savedState));
       }
       
-      // Load sidebar groups configuration
+      // First try to load from server settings
+      if (serverSettings?.settings?.groups && serverSettings.settings.groups.length > 0) {
+        console.log('Loading sidebar groups from server settings:', serverSettings);
+        
+        // Map server data to expected format
+        const serverGroups = serverSettings.settings.groups.map((group: any) => ({
+          id: group.id,
+          title: group.title,
+          collapsed: group.collapsed || false,
+          items: group.items.map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            enabled: item.enabled !== false, // Default to true if not specified
+          }))
+        }));
+        
+        setCustomMenuGroups(serverGroups);
+        
+        // Initialize collapsed state for each group based on their settings
+        const initialCollapsedState: Record<string, boolean> = {};
+        serverGroups.forEach((group: any) => {
+          if (group.collapsed) {
+            initialCollapsedState[group.title] = true;
+          }
+        });
+        
+        setCollapsedGroups(prev => ({
+          ...prev,
+          ...initialCollapsedState
+        }));
+        
+        return; // If server settings loaded successfully, don't try localStorage
+      }
+      
+      // Fallback to localStorage if server settings not available
       const savedGroups = localStorage.getItem('sidebarGroups');
       if (savedGroups) {
-        console.log('Loading sidebar groups from localStorage');
+        console.log('Loading sidebar groups from localStorage (server settings not available)');
         const parsedGroups = JSON.parse(savedGroups);
         setCustomMenuGroups(parsedGroups);
         
         // Initialize collapsed state for each group based on their settings
-        // For each group that has collapsed: true, add it to the collapsedGroups state
         const initialCollapsedState: Record<string, boolean> = {};
         parsedGroups.forEach((group: any) => {
           if (group.collapsed) {
@@ -100,7 +157,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
     } catch (error) {
       console.error('Failed to load sidebar state:', error);
     }
-  }, []);
+  }, [serverSettings, user]);
 
   // Save collapsed state to localStorage when it changes
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { FC, useState, useEffect } from "react";
+import { FC, useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -1119,6 +1119,9 @@ const ProductManagementPage: FC = () => {
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const [clearAllProductsDialog, setClearAllProductsDialog] = useState(false);
   
+  // Product type navigation state
+  const [selectedProductType, setSelectedProductType] = useState<string | null>(null);
+  
   // Fabric options dialog state
   const [addFabricOptionOpen, setAddFabricOptionOpen] = useState(false);
   const [addFabricOpen, setAddFabricOpen] = useState(false);
@@ -1140,6 +1143,36 @@ const ProductManagementPage: FC = () => {
     queryKey: ['/api/products'],
     select: (data: any) => data?.data || [],
   });
+  
+  // Group products by type
+  const productTypes = useMemo(() => {
+    if (!products || products.length === 0) return [];
+    
+    // Get unique product types
+    const typeMap = new Map<string, number>();
+    
+    products.forEach(product => {
+      const type = product.item || 'Uncategorized';
+      const count = typeMap.get(type) || 0;
+      typeMap.set(type, count + 1);
+    });
+    
+    return Array.from(typeMap.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [products]);
+  
+  // Filter products by selected type
+  const filteredProducts = useMemo(() => {
+    if (!selectedProductType) return products;
+    
+    return products.filter(product => {
+      if (selectedProductType === 'Uncategorized') {
+        return !product.item || product.item === 'Uncategorized';
+      }
+      return product.item === selectedProductType;
+    });
+  }, [products, selectedProductType]);
 
   // Fabric Options Query
   const {
@@ -1547,59 +1580,138 @@ const ProductManagementPage: FC = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="border rounded-md">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Product</TableHead>
-                        <TableHead>SKU</TableHead>
-                        <TableHead>Sport</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {products.map((product) => (
-                        <TableRow key={product.id}>
-                          <TableCell className="font-medium">
-                            {product.name}
-                          </TableCell>
-                          <TableCell>{product.sku}</TableCell>
-                          <TableCell>{product.sport}</TableCell>
-                          <TableCell>{product.category}</TableCell>
-                          <TableCell>${product.price}</TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => handleEditProduct(product)}
-                                >
-                                  <Edit className="w-4 h-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => handleDeleteProduct(product.id)}
-                                  className="text-red-600"
-                                >
-                                  <Trash className="w-4 h-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
+                <>
+                  {/* Product Type Selection View */}
+                  {!selectedProductType ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {productTypes.map((type) => (
+                        <Card 
+                          key={type.name} 
+                          className="cursor-pointer hover:border-primary transition-colors"
+                          onClick={() => setSelectedProductType(type.name)}
+                        >
+                          <CardHeader className="pb-2">
+                            <CardTitle className="flex items-center">
+                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                                <ShoppingBag className="w-5 h-5 text-primary" />
+                              </div>
+                              {type.name}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-muted-foreground text-sm">{type.count} Products</p>
+                          </CardContent>
+                          <CardFooter className="pt-0 flex justify-between">
+                            <p className="text-sm text-muted-foreground">View Products</p>
+                            <Button variant="ghost" size="icon">
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          </CardFooter>
+                        </Card>
                       ))}
-                    </TableBody>
-                  </Table>
-                </div>
+
+                      <Card 
+                        className="cursor-pointer hover:border-primary transition-colors border-dashed"
+                        onClick={() => setAddProductOpen(true)}
+                      >
+                        <CardHeader className="pb-2">
+                          <CardTitle className="flex items-center">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                              <Plus className="w-5 h-5 text-primary" />
+                            </div>
+                            Add New Product
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-muted-foreground text-sm">Create a new product</p>
+                        </CardContent>
+                        <CardFooter className="pt-0 flex justify-between">
+                          <p className="text-sm text-muted-foreground">Add to catalog</p>
+                          <Button variant="ghost" size="icon">
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center mb-4">
+                        <Button 
+                          variant="ghost" 
+                          onClick={() => setSelectedProductType(null)}
+                          className="gap-1"
+                        >
+                          <ChevronLeft className="h-4 w-4" /> Back to Product Types
+                        </Button>
+                        <h2 className="ml-4 text-xl font-semibold">{selectedProductType} Products</h2>
+                      </div>
+                      <div className="border rounded-md">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Product</TableHead>
+                              <TableHead>SKU</TableHead>
+                              <TableHead>Sport</TableHead>
+                              <TableHead>Category</TableHead>
+                              <TableHead>Price</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredProducts.map((product) => (
+                              <TableRow key={product.id}>
+                                <TableCell className="font-medium">
+                                  <div className="flex items-center gap-2">
+                                    {product.imageUrl && (
+                                      <div className="h-8 w-8 rounded overflow-hidden">
+                                        <img 
+                                          src={product.imageUrl} 
+                                          alt={product.name} 
+                                          className="h-full w-full object-contain"
+                                        />
+                                      </div>
+                                    )}
+                                    {product.name}
+                                  </div>
+                                </TableCell>
+                                <TableCell>{product.sku}</TableCell>
+                                <TableCell>{product.sport}</TableCell>
+                                <TableCell>{product.category}</TableCell>
+                                <TableCell>${product.price}</TableCell>
+                                <TableCell className="text-right">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreHorizontal className="w-4 h-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={() => handleEditProduct(product)}
+                                      >
+                                        <Edit className="w-4 h-4 mr-2" />
+                                        Edit
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => handleDeleteProduct(product.id)}
+                                        className="text-red-600"
+                                      >
+                                        <Trash className="w-4 h-4 mr-2" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </>
+                  )}
+                </>
               )}
 
               {/* Edit Product Dialog */}

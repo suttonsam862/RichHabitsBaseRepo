@@ -791,6 +791,28 @@ const FabricCutForm: FC<FabricCutFormProps> = ({
           name="imageUrl"
           render={({ field }) => (
             <FormItem>
+              <FormLabel>Cutting Pattern Image</FormLabel>
+              <FormControl>
+                <FileUpload
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  disabled={isSubmitting}
+                  accept="image/*"
+                />
+              </FormControl>
+              <FormDescription>
+                Upload an image showing the cutting pattern (max 20MB)
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="pdfUrl"
+          render={({ field }) => (
+            <FormItem>
               <FormLabel>PDF Cutting Pattern</FormLabel>
               <FormControl>
                 <FileUpload

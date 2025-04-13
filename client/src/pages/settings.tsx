@@ -173,8 +173,8 @@ export default function Settings() {
           { id: "design", name: "Design", enabled: true },
           { id: "manufacturing", name: "Manufacturing", enabled: true },
           { id: "organizations", name: "Organizations", enabled: true },
-          { id: "messages", name: "Messages", enabled: true },
-          { id: "catalog", name: "Product Catalog", enabled: true },
+          { id: "design-communication", name: "Design Communication", enabled: true },
+          { id: "production-communication", name: "Production Communication", enabled: true },
         ]
       },
       {
@@ -183,22 +183,42 @@ export default function Settings() {
         collapsed: false,
         items: [
           { id: "product-management", name: "Product Management", enabled: true },
-          { id: "sales-team", name: "Sales Team", enabled: true },
-          { id: "design-team", name: "Design Team", enabled: true },
-          { id: "manufacturing-team", name: "Manufacturing Team", enabled: true },
+          { id: "sales-team", name: "Sales Management", enabled: true },
+          { id: "design-team", name: "Design Management", enabled: true },
+          { id: "manufacturing-team", name: "Manufacturing Management", enabled: true },
           { id: "corporate", name: "Corporate", enabled: true },
           { id: "reports", name: "Reports", enabled: true },
           { id: "user-management", name: "User Management", enabled: true },
         ]
       },
       {
-        id: "camps",
-        title: "Camps & Teams",
+        id: "catalog",
+        title: "Catalog",
+        collapsed: false,
+        items: [
+          { id: "catalog", name: "Product Catalog", enabled: true },
+        ]
+      },
+      {
+        id: "tools",
+        title: "Tools",
         collapsed: false,
         items: [
           { id: "order-tracking", name: "Order Tracking", enabled: true },
-          { id: "design-communication", name: "Design Communication", enabled: true },
-          { id: "production-communication", name: "Production Communication", enabled: true },
+          { id: "messages", name: "Messages", enabled: true },
+          { id: "outlook", name: "Outlook", enabled: true },
+        ]
+      },
+      {
+        id: "events",
+        title: "Events",
+        collapsed: false,
+        items: [
+          { id: "events/calendar", name: "Event Calendar", enabled: true },
+          { id: "events/registration", name: "Registration", enabled: true },
+          { id: "events/attendees", name: "Attendees", enabled: true },
+          { id: "events/management", name: "Event Management", enabled: true },
+          { id: "feedback", name: "Feedback", enabled: true },
         ]
       },
       {

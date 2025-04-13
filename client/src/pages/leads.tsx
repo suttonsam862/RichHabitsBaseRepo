@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, Search, Filter, Inbox, UserCircle, Archive, Plus, Users } from "lucide-react";
+import { PlusCircle, Search, Filter, Inbox, UserCircle, Archive, Plus, Users, Calendar as CalendarIcon, Tag as TagIcon } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -952,75 +952,114 @@ export default function Leads() {
               </TabsContent>
               
               <TabsContent value="my-leads" className="mt-2">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                        <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                        <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                        <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
-                        <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th className="text-right p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {myLeads.length > 0 ? (
-                        myLeads.map((lead) => (
-                          <tr key={lead.id} className="hover:bg-gray-50">
-                            <td className="p-4 text-sm text-gray-900">{lead.name}</td>
-                            <td className="p-4 text-sm text-gray-600">{lead.email}</td>
-                            <td className="p-4 text-sm text-gray-600">{lead.phone}</td>
-                            <td className="p-4 text-sm text-gray-600">{lead.source}</td>
-                            <td className="p-4">
+                <div className="p-4 bg-gray-50 border border-gray-100 rounded-lg mb-4">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-medium">My Assigned Leads</h3>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-500">
+                        {myLeads.length} {myLeads.length === 1 ? 'lead' : 'leads'} assigned to you
+                      </span>
+                      <HelpIconOnly 
+                        content="Leads you've claimed will appear here. You can convert them to orders, update their status, or add notes as you progress through the sales cycle."
+                      />
+                    </div>
+                  </div>
+                  
+                  {myLeads.length > 0 ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {myLeads.map((lead) => (
+                        <div 
+                          key={lead.id} 
+                          className="bg-white border border-gray-200 hover:border-brand-300 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+                        >
+                          <div className="p-4 border-b border-gray-100">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h4 className="text-lg font-semibold text-gray-900 truncate">{lead.name}</h4>
+                                <p className="text-sm text-gray-600 mt-1">
+                                  {lead.email} {lead.phone && <span>• {lead.phone}</span>}
+                                </p>
+                              </div>
                               <Badge className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(lead.status as LeadStatus)}`}>
                                 {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
                               </Badge>
-                            </td>
-                            <td className="p-4 text-right">
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="mr-2" 
+                            </div>
+                            
+                            <div className="flex items-center mt-3 space-x-4">
+                              <div className="flex items-center text-sm text-gray-600">
+                                <CalendarIcon className="h-4 w-4 mr-1" />
+                                <span>Claimed: {formatDate(lead.claimedAt || "")}</span>
+                              </div>
+                              <div className="flex items-center text-sm text-gray-600">
+                                <TagIcon className="h-4 w-4 mr-1" />
+                                <span>{lead.source}</span>
+                              </div>
+                            </div>
+                            
+                            {lead.notes && (
+                              <div className="mt-3 pt-3 border-t border-gray-100">
+                                <p className="text-sm text-gray-700 line-clamp-2">{lead.notes}</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="bg-gray-50 p-3 flex justify-between items-center">
+                            {lead.value ? (
+                              <div className="text-base font-bold text-green-600">
+                                Est. Value: ${parseFloat(lead.value).toLocaleString()}
+                              </div>
+                            ) : (
+                              <div className="text-base text-gray-500">
+                                Value: Unknown
+                              </div>
+                            )}
+                            
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 onClick={() => {
-                                  // Display lead details in a view dialog
                                   setSelectedLead(lead);
                                   setOpenViewDialog(true);
                                 }}
                               >
                                 View
                               </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => {
-                                  // Open edit dialog with lead details
-                                  form.reset({
-                                    name: lead.name,
-                                    email: lead.email,
-                                    phone: lead.phone || "",
-                                    source: lead.source,
-                                    status: lead.status as any,
-                                    notes: lead.notes || ""
-                                  });
-                                  setSelectedLeadId(lead.id);
-                                  setOpenEditDialog(true);
-                                }}
-                              >
-                                Edit
-                              </Button>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={6} className="p-4 text-center text-gray-500">
-                            No leads assigned to you found matching your criteria.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                              
+                              {/* Only show Convert if lead is not already converted */}
+                              {lead.status !== 'converted' && (
+                                <Button
+                                  size="sm"
+                                  className="bg-brand-600 hover:bg-brand-700 text-white"
+                                  onClick={() => {
+                                    convertToOrderMutation.mutate(lead.id);
+                                  }}
+                                >
+                                  Convert
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center bg-white border border-gray-200 rounded-lg">
+                      <div className="text-gray-500 mb-2">
+                        <UserCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <h3 className="text-lg font-medium text-gray-900">No leads assigned to you</h3>
+                        <p className="mt-1 text-sm">To get started, claim some leads from the "Unclaimed Leads" tab.</p>
+                      </div>
+                      <Button 
+                        variant="default" 
+                        className="mt-4 bg-brand-600 hover:bg-brand-700 text-white"
+                        onClick={() => setActiveTab("unclaimed")}
+                      >
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Browse Available Leads
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
               
@@ -1453,15 +1492,33 @@ export default function Leads() {
                   >
                     Delete Lead
                   </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => {
-                      convertToOrderMutation.mutate(selectedLead.id);
-                    }}
-                  >
-                    Convert to Order
-                  </Button>
+                  
+                  {/* Only show Convert to Order for claimed leads */}
+                  {selectedLead.claimed ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => {
+                        convertToOrderMutation.mutate(selectedLead.id);
+                      }}
+                    >
+                      Convert to Order
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="bg-brand-600 hover:bg-brand-700 text-white"
+                      onClick={() => {
+                        // Close dialog first
+                        setOpenViewDialog(false);
+                        // Claim the lead
+                        claimLeadMutation.mutate(selectedLead.id);
+                      }}
+                    >
+                      Claim Lead
+                    </Button>
+                  )}
                 </div>
                 <div className="flex space-x-2">
                   <Button type="button" variant="outline" onClick={() => {

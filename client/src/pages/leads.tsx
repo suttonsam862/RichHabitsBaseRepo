@@ -6,13 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, Search, Filter, Inbox, UserCircle, Archive, Plus } from "lucide-react";
+import { PlusCircle, Search, Filter, Inbox, UserCircle, Archive, Plus, Users } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -346,6 +347,37 @@ export default function Leads() {
                            lead.email.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesSearch;
     });
+    
+  // Sample sales team data (in a real app, this would come from an API)
+  const salesTeam = [
+    {
+      id: 1,
+      username: "laird",
+      fullName: "Laird Bourbon",
+      email: "laird@rich-habits.com",
+      role: "agent",
+      avatarUrl: "",
+      leads: leads.filter(lead => lead.salesRepId === 1)
+    },
+    {
+      id: 2,
+      username: "julia",
+      fullName: "Julia Reynolds",
+      email: "julia@rich-habits.com",
+      role: "agent",
+      avatarUrl: "",
+      leads: leads.filter(lead => lead.salesRepId === 2)
+    },
+    {
+      id: 3,
+      username: "thomas",
+      fullName: "Thomas Ferguson",
+      email: "thomas@rich-habits.com",
+      role: "agent",
+      avatarUrl: "",
+      leads: leads.filter(lead => lead.salesRepId === 3)
+    }
+  ];
 
   return (
     <>
@@ -766,7 +798,7 @@ export default function Leads() {
           </CardHeader>
           <CardContent className="bg-white">
             <Tabs defaultValue="unclaimed" className="w-full">
-              <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'} mb-6`}>
+              <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-2'} mb-6`}>
                 <TabsTrigger value="unclaimed" className="flex items-center">
                   <Inbox className="h-4 w-4 mr-2" />
                   Unclaimed Leads
@@ -775,6 +807,12 @@ export default function Leads() {
                   <UserCircle className="h-4 w-4 mr-2" />
                   My Leads
                 </TabsTrigger>
+                {isAdmin && (
+                  <TabsTrigger value="by-salesperson" className="flex items-center">
+                    <Users className="h-4 w-4 mr-2" />
+                    Leads By Salesperson
+                  </TabsTrigger>
+                )}
                 {isAdmin && (
                   <TabsTrigger value="archived-leads" className="flex items-center">
                     <Archive className="h-4 w-4 mr-2" />
@@ -953,6 +991,135 @@ export default function Leads() {
                   </table>
                 </div>
               </TabsContent>
+              
+              {isAdmin && (
+                <TabsContent value="by-salesperson" className="mt-2">
+                  <div className="p-4 bg-gray-50 border border-gray-100 rounded-lg">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-lg font-medium">Leads By Salesperson</h3>
+                      <p className="text-sm text-gray-500">
+                        Showing leads grouped by sales representative
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      {salesTeam.length > 0 ? (
+                        salesTeam.map((salesperson) => (
+                          <div key={salesperson.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                            <div className="flex items-center mb-4">
+                              <Avatar className="h-12 w-12 mr-4">
+                                <AvatarImage src={salesperson.avatarUrl || ""} />
+                                <AvatarFallback className="bg-brand-100 text-brand-800">
+                                  {salesperson.fullName?.charAt(0) || salesperson.username?.charAt(0) || "?"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <h4 className="text-lg font-semibold">{salesperson.fullName || salesperson.username}</h4>
+                                <p className="text-sm text-gray-500">{salesperson.email}</p>
+                              </div>
+                              <div className="ml-auto">
+                                <Badge variant="outline" className="ml-2">
+                                  {salesperson.leads?.length || 0} Leads
+                                </Badge>
+                              </div>
+                            </div>
+                            
+                            {salesperson.leads && salesperson.leads.length > 0 ? (
+                              <div className="overflow-hidden border border-gray-100 rounded-lg">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                  <thead className="bg-gray-50">
+                                    <tr>
+                                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Lead
+                                      </th>
+                                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Status
+                                      </th>
+                                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Value
+                                      </th>
+                                      <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Actions
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="bg-white divide-y divide-gray-200">
+                                    {salesperson.leads.map((lead) => (
+                                      <tr key={lead.id} className="hover:bg-gray-50">
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                          <div className="text-sm font-medium text-gray-900">{lead.name}</div>
+                                          <div className="text-sm text-gray-500">{lead.email}</div>
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                          <Badge className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(lead.status as LeadStatus)}`}>
+                                            {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
+                                          </Badge>
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                          {lead.value ? (
+                                            <span className="text-sm font-medium text-green-600">
+                                              ${parseFloat(lead.value).toLocaleString()}
+                                            </span>
+                                          ) : (
+                                            <span className="text-sm text-gray-500">Unknown</span>
+                                          )}
+                                        </td>
+                                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="mr-2"
+                                            onClick={() => {
+                                              setSelectedLead(lead);
+                                              setOpenViewDialog(true);
+                                            }}
+                                          >
+                                            View
+                                          </Button>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                              form.reset({
+                                                name: lead.name,
+                                                email: lead.email,
+                                                phone: lead.phone || "",
+                                                source: lead.source,
+                                                status: lead.status as any,
+                                                notes: lead.notes || ""
+                                              });
+                                              setSelectedLeadId(lead.id);
+                                              setOpenEditDialog(true);
+                                            }}
+                                          >
+                                            Edit
+                                          </Button>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            ) : (
+                              <div className="text-center py-8 bg-gray-50 rounded-lg">
+                                <UserCircle className="mx-auto h-12 w-12 text-gray-400" />
+                                <h3 className="mt-2 text-sm font-medium text-gray-900">No leads assigned</h3>
+                                <p className="mt-1 text-sm text-gray-500">This salesperson has no active leads.</p>
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8 bg-white rounded-lg border border-gray-200">
+                          <Users className="mx-auto h-12 w-12 text-gray-400" />
+                          <h3 className="mt-2 text-sm font-medium text-gray-900">No sales representatives found</h3>
+                          <p className="mt-1 text-sm text-gray-500">Add members to your sales team to see them here.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </TabsContent>
+              )}
               
               {isAdmin && (
                 <TabsContent value="archived-leads" className="mt-2">

@@ -345,7 +345,23 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           const icon = iconMap[itemId] || <User className="mr-2" size={16} />;
           
           // Build the path based on the id
-          const href = itemId.startsWith('/') ? itemId : `/${itemId}`;
+          let href = '';
+          
+          // Special case for admin pages
+          if (itemId === 'product-management' || 
+              itemId === 'sales-team' || 
+              itemId === 'design-team' || 
+              itemId === 'manufacturing-team' || 
+              itemId === 'order-management' ||
+              itemId === 'events' || 
+              itemId === 'integrations' ||
+              itemId === 'product-creation') {
+            href = `/admin/${itemId}`;
+          } else if (itemId.startsWith('/')) {
+            href = itemId;
+          } else {
+            href = `/${itemId}`;
+          }
           
           // Return a new menu item with the custom name and icon
           return {

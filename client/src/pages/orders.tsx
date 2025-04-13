@@ -50,6 +50,7 @@ export default function Orders() {
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [openNewOrgDialog, setOpenNewOrgDialog] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -766,19 +767,30 @@ export default function Orders() {
                                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                                     <span>Loading organizations...</span>
                                   </div>
-                                ) : organizationsData?.length > 0 ? (
-                                  organizationsData.map((org: Organization) => (
-                                    <SelectItem 
-                                      key={org.id} 
-                                      value={org.id.toString()}
-                                    >
-                                      {org.name} ({org.type})
-                                    </SelectItem>
-                                  ))
                                 ) : (
-                                  <SelectItem value="no-org" disabled>
-                                    No organizations available
-                                  </SelectItem>
+                                  <>
+                                    <SelectItem value="new-org" className="bg-brand-50 border-b border-brand-100">
+                                      <div className="flex items-center text-brand-600 font-medium">
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add New Organization
+                                      </div>
+                                    </SelectItem>
+                                    
+                                    {organizationsData?.length > 0 ? (
+                                      organizationsData.map((org: Organization) => (
+                                        <SelectItem 
+                                          key={org.id} 
+                                          value={org.id.toString()}
+                                        >
+                                          {org.name} ({org.type})
+                                        </SelectItem>
+                                      ))
+                                    ) : (
+                                      <SelectItem value="no-org" disabled>
+                                        No organizations available
+                                      </SelectItem>
+                                    )}
+                                  </>
                                 )}
                               </SelectContent>
                             </Select>

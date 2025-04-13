@@ -79,6 +79,8 @@ import {
   MessageSquare,
   Tag,
   Shirt,
+  ChevronRight,
+  ChevronLeft,
 } from "lucide-react";
 import { CSVImportDialog } from "@/components/products/csv-import-dialog";
 import {
@@ -1584,7 +1586,7 @@ const ProductManagementPage: FC = () => {
                   {/* Product Type Selection View */}
                   {!selectedProductType ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {productTypes.map((type) => (
+                      {productTypes.map((type: { name: string; count: number }) => (
                         <Card 
                           key={type.name} 
                           className="cursor-pointer hover:border-primary transition-colors"
@@ -1658,7 +1660,7 @@ const ProductManagementPage: FC = () => {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {filteredProducts.map((product) => (
+                            {filteredProducts.map((product: Product) => (
                               <TableRow key={product.id}>
                                 <TableCell className="font-medium">
                                   <div className="flex items-center gap-2">

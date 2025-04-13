@@ -11,6 +11,7 @@ export const ROLES = {
   DESIGNER: 'designer',
   MANUFACTURER: 'manufacturer',
   VIEWER: 'viewer',
+  HYBRID: 'hybrid',  // Combined sales and design role
 } as const;
 
 export type Role = typeof ROLES[keyof typeof ROLES];

@@ -281,7 +281,19 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
         }
         
         // Check if the page is in the visible pages set
-        const isVisible = visiblePagesSet.has(pageId);
+        // First check direct match
+        let isVisible = visiblePagesSet.has(pageId);
+        
+        // If not found, check with admin prefix
+        if (!isVisible && !pageId.startsWith('admin/')) {
+          isVisible = visiblePagesSet.has(`admin/${pageId}`);
+        }
+        
+        // If still not found and it has admin/ prefix, check without it
+        if (!isVisible && pageId.startsWith('admin/')) {
+          isVisible = visiblePagesSet.has(pageId.replace('admin/', ''));
+        }
+        
         console.log(`Checking page ${item.name} (${pageId}): ${isVisible ? 'visible' : 'hidden'}`);
         return isVisible;
       })

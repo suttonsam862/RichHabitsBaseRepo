@@ -797,6 +797,123 @@ export default function Settings() {
             </Card>
           </TabsContent>
           
+          {/* Navigation Tab */}
+          <TabsContent value="navigation">
+            <Card>
+              <CardHeader>
+                <CardTitle>Navigation Settings</CardTitle>
+                <CardDescription>
+                  Customize the sidebar navigation and page names
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <Accordion type="multiple" className="w-full border rounded-md">
+                    {navigationGroups.map((group, groupIndex) => (
+                      <AccordionItem key={group.id} value={group.id}>
+                        <AccordionTrigger className="px-4">
+                          <div className="flex items-center space-x-2">
+                            <span>{group.title}</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pt-2 pb-4">
+                          <div className="space-y-4">
+                            <div className="flex items-center space-x-4">
+                              <Input 
+                                value={group.title} 
+                                onChange={(e) => {
+                                  const updatedGroups = [...navigationGroups];
+                                  updatedGroups[groupIndex].title = e.target.value;
+                                  setNavigationGroups(updatedGroups);
+                                }}
+                                placeholder="Group name"
+                                className="max-w-xs"
+                              />
+                              <div className="flex items-center space-x-2">
+                                <Switch
+                                  checked={!group.collapsed}
+                                  onCheckedChange={(checked) => {
+                                    const updatedGroups = [...navigationGroups];
+                                    updatedGroups[groupIndex].collapsed = !checked;
+                                    setNavigationGroups(updatedGroups);
+                                  }}
+                                  id={`${group.id}-expanded`}
+                                />
+                                <label htmlFor={`${group.id}-expanded`} className="text-sm font-medium">
+                                  Expanded by default
+                                </label>
+                              </div>
+                            </div>
+                            
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="w-[50%]">Page Name</TableHead>
+                                  <TableHead className="w-[30%]">ID</TableHead>
+                                  <TableHead className="w-[20%]">Visible</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {group.items.map((item, itemIndex) => (
+                                  <TableRow key={item.id}>
+                                    <TableCell>
+                                      <Input 
+                                        value={item.name} 
+                                        onChange={(e) => {
+                                          const updatedGroups = [...navigationGroups];
+                                          updatedGroups[groupIndex].items[itemIndex].name = e.target.value;
+                                          setNavigationGroups(updatedGroups);
+                                        }}
+                                        placeholder="Page name"
+                                      />
+                                    </TableCell>
+                                    <TableCell className="text-sm text-muted-foreground">
+                                      {item.id}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Switch
+                                        checked={item.enabled}
+                                        onCheckedChange={(checked) => {
+                                          const updatedGroups = [...navigationGroups];
+                                          updatedGroups[groupIndex].items[itemIndex].enabled = checked;
+                                          setNavigationGroups(updatedGroups);
+                                        }}
+                                      />
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                  
+                  <div className="flex justify-end space-x-4">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        // Reset to defaults by reloading the page
+                        window.location.reload();
+                      }}
+                    >
+                      Reset to Defaults
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        saveNavigationSettings.mutate({ groups: navigationGroups });
+                      }}
+                      disabled={saveNavigationSettings.isPending}
+                    >
+                      {saveNavigationSettings.isPending ? "Saving..." : "Save Navigation Settings"}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
           {/* System Settings Tab */}
           <TabsContent value="system">
             <div className="space-y-6">

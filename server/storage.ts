@@ -17,6 +17,7 @@ import {
   designVersions,
   designRevisions,
   designMessages,
+  events,
   ROLES,
   type User, 
   type InsertUser, 
@@ -54,7 +55,9 @@ import {
   type InsertFeedback,
   type InsertFeedbackComment,
   type InsertFeedbackVote,
-  type Permission
+  type Permission,
+  type Event,
+  type InsertEvent
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, or, isNull, asc, inArray } from "drizzle-orm";
@@ -222,6 +225,13 @@ export interface IStorage {
   getDesignMessages(designId: number): Promise<DesignMessage[]>;
   createDesignMessage(message: InsertDesignMessage): Promise<DesignMessage>;
   deleteDesignMessage(id: number): Promise<void>;
+  
+  // Events methods
+  getEvents(): Promise<Event[]>;
+  getEventById(id: number): Promise<Event | undefined>;
+  createEvent(event: InsertEvent): Promise<Event>;
+  updateEvent(id: number, event: Partial<InsertEvent>): Promise<Event>;
+  deleteEvent(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {

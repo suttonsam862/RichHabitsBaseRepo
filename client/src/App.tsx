@@ -523,11 +523,11 @@ function AppContent() {
   }
   
   // Role-based routing
-  if (user.role === ROLES.AGENT || user.role === ROLES.SALES) {
+  if (user.role === ROLES.AGENT || user.role === 'sales') {
     return <SalespersonDashboardLayout />;
   } else if (user.role === ROLES.DESIGNER) {
     return <DesignerDashboardLayout />;
-  } else if (user.role === ROLES.MANUFACTURER || user.role === ROLES.MANUFACTURING) {
+  } else if (user.role === ROLES.MANUFACTURER || user.role === 'manufacturing') {
     return <ManufacturerDashboardLayout />;
   } else if (user.role === ROLES.HYBRID) {
     return <HybridDashboardLayout />;

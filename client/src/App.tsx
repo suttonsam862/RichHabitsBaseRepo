@@ -402,11 +402,11 @@ function AppContent() {
   }
   
   // Role-based routing
-  if (user.role === ROLES.AGENT) {
+  if (user.role === 'agent' || user.role === 'sales') {
     return <SalespersonDashboardLayout />;
-  } else if (user.role === ROLES.DESIGNER) {
+  } else if (user.role === 'designer') {
     return <DesignerDashboardLayout />;
-  } else if (user.role === ROLES.MANUFACTURER) {
+  } else if (user.role === 'manufacturer' || user.role === 'manufacturing') {
     return <ManufacturerDashboardLayout />;
   }
   

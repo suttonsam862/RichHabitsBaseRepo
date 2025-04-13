@@ -309,6 +309,9 @@ function DesignerDashboardLayout() {
         <Route path="/design-process-guide">
           <ProtectedPageLoader pageId="design-process-guide"><DesignProcessGuide /></ProtectedPageLoader>
         </Route>
+        <Route path="/events/calendar">
+          <ProtectedPageLoader pageId="events/calendar"><EventCalendar /></ProtectedPageLoader>
+        </Route>
         <Route path="/profile">
           <ProtectedPageLoader pageId="profile"><Profile /></ProtectedPageLoader>
         </Route>
@@ -380,6 +383,9 @@ function ManufacturerDashboardLayout() {
         </Route>
         <Route path="/manufacturing-guide">
           <ProtectedPageLoader pageId="manufacturing-guide"><ManufacturingGuide /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/calendar">
+          <ProtectedPageLoader pageId="events/calendar"><EventCalendar /></ProtectedPageLoader>
         </Route>
         <Route path="/profile">
           <ProtectedPageLoader pageId="profile"><Profile /></ProtectedPageLoader>
@@ -517,13 +523,13 @@ function AppContent() {
   }
   
   // Role-based routing
-  if (user.role === 'agent' || user.role === 'sales') {
+  if (user.role === ROLES.AGENT || user.role === ROLES.SALES) {
     return <SalespersonDashboardLayout />;
-  } else if (user.role === 'designer') {
+  } else if (user.role === ROLES.DESIGNER) {
     return <DesignerDashboardLayout />;
-  } else if (user.role === 'manufacturer' || user.role === 'manufacturing') {
+  } else if (user.role === ROLES.MANUFACTURER || user.role === ROLES.MANUFACTURING) {
     return <ManufacturerDashboardLayout />;
-  } else if (user.role === 'hybrid') {
+  } else if (user.role === ROLES.HYBRID) {
     return <HybridDashboardLayout />;
   }
   

@@ -490,3 +490,24 @@ export type InsertSidebarGroup = z.infer<typeof insertSidebarGroupSchema>;
 export type InsertSidebarItem = z.infer<typeof insertSidebarItemSchema>;
 export type SidebarGroup = typeof sidebarGroups.$inferSelect;
 export type SidebarItem = typeof sidebarItems.$inferSelect;
+
+// Events table
+export const events = pgTable('events', {
+  id: serial('id').primaryKey(),
+  title: text('title').notNull(),
+  description: text('description'),
+  startDate: timestamp('start_date').notNull(),
+  endDate: timestamp('end_date').notNull(),
+  location: text('location'),
+  type: text('type').notNull(),
+  capacity: integer('capacity').default(0),
+  registered: integer('registered').default(0),
+  status: text('status').default('upcoming'),
+  createdById: integer('created_by_id').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const insertEventSchema = createInsertSchema(events).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertEvent = z.infer<typeof insertEventSchema>;
+export type Event = typeof events.$inferSelect;

@@ -255,7 +255,7 @@ export function HybridSidebar({ user }: { user: AuthUser }) {
         <div className="p-4 border-b">
           <div className="flex items-center space-x-3">
             <Avatar>
-              <AvatarImage src={user?.avatar || ""} />
+              <AvatarImage src="/avatar-placeholder.png" />
               <AvatarFallback>{user?.fullName?.substring(0, 2).toUpperCase() || "U"}</AvatarFallback>
             </Avatar>
             <div>

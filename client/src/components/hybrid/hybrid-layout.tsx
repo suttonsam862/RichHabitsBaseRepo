@@ -11,7 +11,7 @@ export function HybridLayout({ children, user }: { children: ReactNode; user: Au
   
   useEffect(() => {
     // Check if the user has the required role for this layout
-    if (user.role !== "hybrid") {
+    if (user.role !== "hybrid" && user.role !== "admin") {
       toast({
         title: "Access Restricted",
         description: "You do not have permission to access the hybrid role area.",

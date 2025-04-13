@@ -497,7 +497,10 @@ const ProductForm: FC<ProductFormProps> = ({
                 <FormItem>
                   <FormLabel>Minimum Order</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="10" {...field} 
+                    <Input 
+                      type="number" 
+                      placeholder="10" 
+                      value={field.value?.toString() || '1'}
                       onChange={(e) => {
                         // Convert string value to number for the form
                         const value = parseInt(e.target.value, 10);
@@ -524,7 +527,10 @@ const ProductForm: FC<ProductFormProps> = ({
                 <FormItem>
                   <FormLabel>Lead Time (Days)</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="14" {...field}
+                    <Input 
+                      type="number" 
+                      placeholder="14" 
+                      value={field.value?.toString() || '14'}
                       onChange={(e) => {
                         // Convert string value to number for the form
                         const value = parseInt(e.target.value, 10);
@@ -673,11 +679,11 @@ const ProductForm: FC<ProductFormProps> = ({
                         />
                         <div className="flex items-center gap-2">
                           {fabric.imageUrl && (
-                            <div className="h-8 w-8 overflow-hidden rounded-sm">
+                            <div className="h-10 w-10 overflow-hidden rounded border">
                               <img 
                                 src={fabric.imageUrl} 
                                 alt={fabric.name} 
-                                className="h-full w-full object-cover"
+                                className="h-full w-full object-contain"
                               />
                             </div>
                           )}
@@ -730,11 +736,11 @@ const ProductForm: FC<ProductFormProps> = ({
                         />
                         <div className="flex items-center gap-2">
                           {cut.imageUrl && (
-                            <div className="h-8 w-8 overflow-hidden rounded-sm">
+                            <div className="h-10 w-10 overflow-hidden rounded border">
                               <img 
                                 src={cut.imageUrl} 
                                 alt={cut.name} 
-                                className="h-full w-full object-cover"
+                                className="h-full w-full object-contain"
                               />
                             </div>
                           )}
@@ -797,8 +803,8 @@ const ProductForm: FC<ProductFormProps> = ({
               </div>
               <FormControl>
                 <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
+                  checked={Boolean(field.value)}
+                  onCheckedChange={(value) => field.onChange(value)}
                   disabled={isSubmitting}
                 />
               </FormControl>

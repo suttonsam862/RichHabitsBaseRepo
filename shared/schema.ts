@@ -458,3 +458,34 @@ export type InsertFeedbackVote = z.infer<typeof insertFeedbackVoteSchema>;
 export type Feedback = typeof feedback.$inferSelect;
 export type FeedbackComment = typeof feedbackComments.$inferSelect;
 export type FeedbackVote = typeof feedbackVotes.$inferSelect;
+
+// Sidebar Configuration
+export const sidebarGroups = pgTable('sidebar_groups', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  displayOrder: integer('display_order').notNull(),
+  isCollapsible: boolean('is_collapsible').default(true),
+  isCollapsed: boolean('is_collapsed').default(false),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const sidebarItems = pgTable('sidebar_items', {
+  id: serial('id').primaryKey(),
+  groupId: integer('group_id').notNull().references(() => sidebarGroups.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  href: text('href').notNull(),
+  icon: text('icon').notNull(),
+  displayOrder: integer('display_order').notNull(),
+  isVisible: boolean('is_visible').default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const insertSidebarGroupSchema = createInsertSchema(sidebarGroups).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSidebarItemSchema = createInsertSchema(sidebarItems).omit({ id: true, createdAt: true, updatedAt: true });
+
+export type InsertSidebarGroup = z.infer<typeof insertSidebarGroupSchema>;
+export type InsertSidebarItem = z.infer<typeof insertSidebarItemSchema>;
+export type SidebarGroup = typeof sidebarGroups.$inferSelect;
+export type SidebarItem = typeof sidebarItems.$inferSelect;

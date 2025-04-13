@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { 
@@ -65,10 +67,29 @@ const systemSchema = z.object({
   currency: z.enum(["USD", "EUR", "GBP", "CAD", "AUD"]),
 });
 
+// Navigation Settings Schema
+const navigationItemSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1, "Name is required"),
+  enabled: z.boolean().default(true),
+});
+
+const navigationGroupSchema = z.object({
+  id: z.string(),
+  title: z.string().min(1, "Title is required"),
+  collapsed: z.boolean().default(false),
+  items: z.array(navigationItemSchema),
+});
+
+const navigationSchema = z.object({
+  groups: z.array(navigationGroupSchema),
+});
+
 type CompanyFormValues = z.infer<typeof companySchema>;
 type NotificationFormValues = z.infer<typeof notificationSchema>;
 type ApiConnectionFormValues = z.infer<typeof apiConnectionSchema>;
 type SystemFormValues = z.infer<typeof systemSchema>;
+type NavigationFormValues = z.infer<typeof navigationSchema>;
 
 export default function Settings() {
   const { toast } = useToast();
@@ -123,6 +144,65 @@ export default function Settings() {
       timezone: "America/Los_Angeles",
       language: "en",
       currency: "USD",
+    },
+  });
+  
+  // Navigation Settings Form
+  const [navigationGroups, setNavigationGroups] = useState([
+    {
+      id: "main",
+      title: "Main",
+      collapsed: false,
+      items: [
+        { id: "dashboard", name: "Dashboard", enabled: true },
+        { id: "leads", name: "Leads", enabled: true },
+        { id: "orders", name: "Orders", enabled: true },
+        { id: "design", name: "Design", enabled: true },
+        { id: "manufacturing", name: "Manufacturing", enabled: true },
+        { id: "organizations", name: "Organizations", enabled: true },
+        { id: "messages", name: "Messages", enabled: true },
+        { id: "catalog", name: "Product Catalog", enabled: true },
+      ]
+    },
+    {
+      id: "admin",
+      title: "Admin",
+      collapsed: false,
+      items: [
+        { id: "product-management", name: "Product Management", enabled: true },
+        { id: "sales-team", name: "Sales Team", enabled: true },
+        { id: "design-team", name: "Design Team", enabled: true },
+        { id: "manufacturing-team", name: "Manufacturing Team", enabled: true },
+        { id: "corporate", name: "Corporate", enabled: true },
+        { id: "reports", name: "Reports", enabled: true },
+        { id: "user-management", name: "User Management", enabled: true },
+      ]
+    },
+    {
+      id: "camps",
+      title: "Camps & Teams",
+      collapsed: false,
+      items: [
+        { id: "order-tracking", name: "Order Tracking", enabled: true },
+        { id: "design-communication", name: "Design Communication", enabled: true },
+        { id: "production-communication", name: "Production Communication", enabled: true },
+      ]
+    },
+    {
+      id: "settings",
+      title: "Settings",
+      collapsed: false,
+      items: [
+        { id: "profile", name: "Profile", enabled: true },
+        { id: "settings", name: "Settings", enabled: true },
+      ]
+    }
+  ]);
+  
+  const navigationForm = useForm<NavigationFormValues>({
+    resolver: zodResolver(navigationSchema),
+    defaultValues: {
+      groups: navigationGroups,
     },
   });
 
@@ -201,6 +281,31 @@ export default function Settings() {
       toast({
         title: "Error",
         description: error.message || "Failed to save system settings",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Save Navigation Settings
+  const saveNavigationSettings = useMutation({
+    mutationFn: async (values: NavigationFormValues) => {
+      // Update local state
+      setNavigationGroups(values.groups);
+      // Save to localStorage to keep state between refreshes
+      localStorage.setItem('sidebarGroups', JSON.stringify(values.groups));
+      
+      return await apiRequest("POST", "/api/settings/navigation", values);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Navigation settings saved",
+        description: "Your navigation settings have been updated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save navigation settings",
         variant: "destructive",
       });
     },

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AuthUser } from "../types";
-import Sidebar from "./sidebar-with-feedback";
+import Sidebar from "./sidebar-new";
 import MobileMenu from "./mobile-menu";
 
 interface LayoutProps {

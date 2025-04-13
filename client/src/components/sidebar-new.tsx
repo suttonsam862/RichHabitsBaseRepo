@@ -198,6 +198,12 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
 
   // Filter menu items based on user's visible pages
   const filterMenuItemsByVisibility = (menuGroups: MenuGroup[]): MenuGroup[] => {
+    // If user is admin, don't filter anything - show all menu items
+    if (user?.role === 'admin') {
+      console.log("Admin user - no visibility filtering applied");
+      return menuGroups;
+    }
+    
     // If visiblePages is not defined or empty, return all menu items
     if (!user?.visiblePages || user.visiblePages.length === 0) {
       console.log("No visible pages filter applied for user:", user?.username);

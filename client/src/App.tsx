@@ -167,6 +167,21 @@ function DashboardLayout() {
         <Route path="/events/calendar">
           <ProtectedPageLoader pageId="events/calendar"><EventCalendar /></ProtectedPageLoader>
         </Route>
+        <Route path="/events/overview">
+          <ProtectedPageLoader pageId="events/overview"><CampOverview /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/travel">
+          <ProtectedPageLoader pageId="events/travel"><TravelAccommodations /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/financial">
+          <ProtectedPageLoader pageId="events/financial"><FinancialManagement /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/staff">
+          <ProtectedPageLoader pageId="events/staff"><StaffManagement /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/vendors">
+          <ProtectedPageLoader pageId="events/vendors"><VendorsServices /></ProtectedPageLoader>
+        </Route>
         
         {/* Admin Routes */}
         <Route path="/admin/sales-team">
@@ -500,6 +515,21 @@ function HybridDashboardLayout() {
         {/* Events Routes */}
         <Route path="/events/calendar">
           <ProtectedPageLoader pageId="events/calendar"><EventCalendar /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/overview">
+          <ProtectedPageLoader pageId="events/overview"><CampOverview /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/travel">
+          <ProtectedPageLoader pageId="events/travel"><TravelAccommodations /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/financial">
+          <ProtectedPageLoader pageId="events/financial"><FinancialManagement /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/staff">
+          <ProtectedPageLoader pageId="events/staff"><StaffManagement /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/vendors">
+          <ProtectedPageLoader pageId="events/vendors"><VendorsServices /></ProtectedPageLoader>
         </Route>
         
         <Route>

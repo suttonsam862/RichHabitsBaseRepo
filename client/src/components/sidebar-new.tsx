@@ -187,10 +187,12 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             { id: 'messages', name: 'Messages' },
           ],
           'EVENTS': [
-            { id: 'events/calendar', name: 'Event Calendar' },
-            { id: 'events/registration', name: 'Registration' },
-            { id: 'events/attendees', name: 'Attendees' },
-            { id: 'events/management', name: 'Event Management' },
+            { id: 'events/overview', name: 'Camp Overview' },
+            { id: 'events/travel', name: 'Travel and Accommodations' },
+            { id: 'events/financial', name: 'Financial Management' },
+            { id: 'events/staff', name: 'Staff Management' },
+            { id: 'events/vendors', name: 'Vendors and Services' },
+            { id: 'events/calendar', name: 'Calendar and Scheduling' },
             { id: 'feedback', name: 'Feedback' },
           ],
           'SETTINGS': [
@@ -490,10 +492,12 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       outlook: <MessageCircle className="mr-2" size={16} />,
       feedback: <MessageSquare className="mr-2" size={16} />,
       // Events module
+      'events/overview': <LayoutDashboard className="mr-2" size={16} />,
+      'events/travel': <Building className="mr-2" size={16} />,
+      'events/financial': <BadgeDollarSign className="mr-2" size={16} />,
+      'events/staff': <UsersRound className="mr-2" size={16} />,
+      'events/vendors': <Building2 className="mr-2" size={16} />,
       'events/calendar': <CalendarClock className="mr-2" size={16} />,
-      'events/registration': <Users className="mr-2" size={16} />,
-      'events/attendees': <Users className="mr-2" size={16} />,
-      'events/management': <CalendarClock className="mr-2" size={16} />,
     };
     
     // Create a completely new menu structure based on custom groups
@@ -883,22 +887,37 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           ],
         },
         {
-          title: "Camps & Teams",
+          title: "Events Group",
           items: [
             {
-              name: "Order Tracking",
-              href: "/order-tracking",
-              icon: <ShoppingBag className="mr-2" size={16} />,
+              name: "Camp Overview",
+              href: "/events/overview",
+              icon: <LayoutDashboard className="mr-2" size={16} />,
             },
             {
-              name: "Design Communication",
-              href: "/design-communication",
-              icon: <Palette className="mr-2" size={16} />,
+              name: "Travel and Accommodations",
+              href: "/events/travel",
+              icon: <Building className="mr-2" size={16} />,
             },
             {
-              name: "Production Communication",
-              href: "/production-communication",
-              icon: <Factory className="mr-2" size={16} />,
+              name: "Financial Management",
+              href: "/events/financial",
+              icon: <BadgeDollarSign className="mr-2" size={16} />,
+            },
+            {
+              name: "Staff Management",
+              href: "/events/staff",
+              icon: <UsersRound className="mr-2" size={16} />,
+            },
+            {
+              name: "Vendors and Services",
+              href: "/events/vendors",
+              icon: <Building2 className="mr-2" size={16} />,
+            },
+            {
+              name: "Calendar and Scheduling",
+              href: "/events/calendar",
+              icon: <CalendarClock className="mr-2" size={16} />,
             },
           ],
         },

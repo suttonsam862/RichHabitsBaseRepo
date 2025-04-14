@@ -279,8 +279,8 @@ const ScheduleDetailsDialog = ({ camp, isOpen, onClose }: { camp: any, isOpen: b
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-6">
+        <DialogHeader className="sticky top-0 bg-white z-10 pb-3 pt-0">
           <DialogTitle className="flex items-center">
             <Calendar className="h-5 w-5 mr-2" />
             Detailed Camp Schedule
@@ -290,141 +290,143 @@ const ScheduleDetailsDialog = ({ camp, isOpen, onClose }: { camp: any, isOpen: b
           </DialogDescription>
         </DialogHeader>
         
-        <Tabs defaultValue={days[0]?.toString() || "1"} className="mt-6">
-          <div className="flex justify-between items-center mb-4">
-            <TabsList>
-              {days.map(day => (
-                <TabsTrigger key={day} value={day.toString()}>
-                  Day {day}
-                </TabsTrigger>
-              ))}
-              {/* Add day button */}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="ml-2 h-9"
-                onClick={() => {
-                  const newDay = Math.max(...days) + 1;
-                  setNewItem({...newItem, day: newDay});
-                  setEditingDay(newDay);
-                }}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add Day
-              </Button>
-            </TabsList>
-          </div>
-          
-          {days.map(day => (
-            <TabsContent key={day} value={day.toString()} className="space-y-4">
-              <div className="border rounded-md">
-                <div className="grid grid-cols-12 border-b bg-muted p-3 font-medium">
-                  <div className="col-span-2">Time</div>
-                  <div className="col-span-3">Activity</div>
-                  <div className="col-span-2">Location</div>
-                  <div className="col-span-4">Notes</div>
-                  <div className="col-span-1 text-right">Actions</div>
+        <div className="mt-4 space-y-6 overflow-y-auto">
+          <Tabs defaultValue={days[0]?.toString() || "1"} className="mt-2">
+            <div className="flex justify-between items-center mb-4 sticky top-16 bg-white z-10 pb-2">
+              <TabsList className="overflow-x-auto flex-wrap">
+                {days.map(day => (
+                  <TabsTrigger key={day} value={day.toString()}>
+                    Day {day}
+                  </TabsTrigger>
+                ))}
+                {/* Add day button */}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="ml-2 h-9"
+                  onClick={() => {
+                    const newDay = Math.max(...days) + 1;
+                    setNewItem({...newItem, day: newDay});
+                    setEditingDay(newDay);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Day
+                </Button>
+              </TabsList>
+            </div>
+            
+            {days.map(day => (
+              <TabsContent key={day} value={day.toString()} className="space-y-4 pt-2">
+                <div className="border rounded-md overflow-hidden">
+                  <div className="grid grid-cols-12 border-b bg-muted p-3 font-medium sticky top-28 z-10">
+                    <div className="col-span-2">Time</div>
+                    <div className="col-span-3">Activity</div>
+                    <div className="col-span-2">Location</div>
+                    <div className="col-span-4">Notes</div>
+                    <div className="col-span-1 text-right">Actions</div>
+                  </div>
+                  
+                  <div className="divide-y max-h-[40vh] overflow-y-auto">
+                    {groupedByDay[day]?.sort((a, b) => a.startTime.localeCompare(b.startTime)).map((item) => (
+                      <div key={item.id} className="grid grid-cols-12 p-3 items-center">
+                        <div className="col-span-2 text-sm">
+                          {item.startTime} - {item.endTime}
+                        </div>
+                        <div className="col-span-3 font-medium">{item.activity}</div>
+                        <div className="col-span-2 text-sm">{item.location}</div>
+                        <div className="col-span-4 text-sm text-gray-500">{item.notes}</div>
+                        <div className="col-span-1 flex justify-end">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleDeleteItem(item.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {(!groupedByDay[day] || groupedByDay[day].length === 0) && (
+                      <div className="p-4 text-center text-muted-foreground">
+                        No activities scheduled for Day {day}. Add an activity below.
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
-                <div className="divide-y">
-                  {groupedByDay[day]?.sort((a, b) => a.startTime.localeCompare(b.startTime)).map((item) => (
-                    <div key={item.id} className="grid grid-cols-12 p-3 items-center">
-                      <div className="col-span-2 text-sm">
-                        {item.startTime} - {item.endTime}
+                {/* Add schedule item form */}
+                <Card>
+                  <CardHeader className="py-3">
+                    <CardTitle className="text-md">Add New Activity for Day {day}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="text-sm font-medium">Time:</label>
+                        <div className="grid grid-cols-2 gap-2 mt-1">
+                          <Input
+                            type="time"
+                            value={newItem.startTime}
+                            onChange={(e) => setNewItem({...newItem, startTime: e.target.value})}
+                            className="text-xs"
+                          />
+                          <Input
+                            type="time"
+                            value={newItem.endTime}
+                            onChange={(e) => setNewItem({...newItem, endTime: e.target.value})}
+                            className="text-xs"
+                          />
+                        </div>
                       </div>
-                      <div className="col-span-3 font-medium">{item.activity}</div>
-                      <div className="col-span-2 text-sm">{item.location}</div>
-                      <div className="col-span-4 text-sm text-gray-500">{item.notes}</div>
-                      <div className="col-span-1 flex justify-end">
+                      <div className="md:col-span-3">
+                        <label className="text-sm font-medium">Activity:</label>
+                        <Input
+                          value={newItem.activity}
+                          onChange={(e) => setNewItem({...newItem, activity: e.target.value})}
+                          placeholder="Activity name"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="text-sm font-medium">Location:</label>
+                        <Input
+                          value={newItem.location}
+                          onChange={(e) => setNewItem({...newItem, location: e.target.value})}
+                          placeholder="Location"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="md:col-span-4">
+                        <label className="text-sm font-medium">Notes:</label>
+                        <Input
+                          value={newItem.notes}
+                          onChange={(e) => setNewItem({...newItem, notes: e.target.value})}
+                          placeholder="Additional information"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="md:col-span-1 flex items-end">
                         <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleDeleteItem(item.id)}
+                          onClick={() => {
+                            setNewItem({...newItem, day: day});
+                            handleAddItem();
+                          }}
+                          className="w-full"
                         >
-                          <X className="h-4 w-4" />
+                          Add
                         </Button>
                       </div>
                     </div>
-                  ))}
-                  
-                  {(!groupedByDay[day] || groupedByDay[day].length === 0) && (
-                    <div className="p-4 text-center text-muted-foreground">
-                      No activities scheduled for Day {day}. Add an activity below.
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* Add schedule item form */}
-              <Card>
-                <CardHeader className="py-3">
-                  <CardTitle className="text-md">Add New Activity for Day {day}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                    <div className="md:col-span-2">
-                      <label className="text-sm font-medium">Time:</label>
-                      <div className="grid grid-cols-2 gap-2 mt-1">
-                        <Input
-                          type="time"
-                          value={newItem.startTime}
-                          onChange={(e) => setNewItem({...newItem, startTime: e.target.value})}
-                          className="text-xs"
-                        />
-                        <Input
-                          type="time"
-                          value={newItem.endTime}
-                          onChange={(e) => setNewItem({...newItem, endTime: e.target.value})}
-                          className="text-xs"
-                        />
-                      </div>
-                    </div>
-                    <div className="md:col-span-3">
-                      <label className="text-sm font-medium">Activity:</label>
-                      <Input
-                        value={newItem.activity}
-                        onChange={(e) => setNewItem({...newItem, activity: e.target.value})}
-                        placeholder="Activity name"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="text-sm font-medium">Location:</label>
-                      <Input
-                        value={newItem.location}
-                        onChange={(e) => setNewItem({...newItem, location: e.target.value})}
-                        placeholder="Location"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div className="md:col-span-4">
-                      <label className="text-sm font-medium">Notes:</label>
-                      <Input
-                        value={newItem.notes}
-                        onChange={(e) => setNewItem({...newItem, notes: e.target.value})}
-                        placeholder="Additional information"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div className="md:col-span-1 flex items-end">
-                      <Button 
-                        onClick={() => {
-                          setNewItem({...newItem, day: day});
-                          handleAddItem();
-                        }}
-                        className="w-full"
-                      >
-                        Add
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          ))}
-        </Tabs>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </div>
         
-        <DialogFooter className="mt-6">
+        <DialogFooter className="sticky bottom-0 bg-white pt-4 mt-6">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>

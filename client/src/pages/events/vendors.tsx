@@ -34,7 +34,8 @@ import {
   Truck,
   Home,
   Camera,
-  Award
+  Award,
+  User
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { 

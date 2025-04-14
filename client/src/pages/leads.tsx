@@ -1481,6 +1481,42 @@ export default function Leads() {
               
               <DialogFooter className="mt-6">
                 <div className="flex space-x-2 mr-auto">
+                  {/* Admin-only Edit button */}
+                  {isAdmin && (
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => {
+                        // Set the form values based on the selected lead
+                        form.reset({
+                          name: selectedLead.name,
+                          email: selectedLead.email,
+                          phone: selectedLead.phone || "",
+                          source: selectedLead.source || "",
+                          status: selectedLead.status as any,
+                          notes: selectedLead.notes || "",
+                          value: selectedLead.value?.toString() || "",
+                          autoClaimLead: false,
+                          website: selectedLead.website || "",
+                          industry: selectedLead.industry || "",
+                          address: selectedLead.address || "",
+                          city: selectedLead.city || "",
+                          state: selectedLead.state || "",
+                          zip: selectedLead.zip || "",
+                          country: selectedLead.country || "USA",
+                          organizationType: selectedLead.organizationType || "client",
+                        });
+                        // Set the selected lead ID for the update operation
+                        setSelectedLeadId(selectedLead.id);
+                        // Close the view dialog and open the edit dialog
+                        setOpenViewDialog(false);
+                        setOpenEditDialog(true);
+                      }}
+                    >
+                      Edit Lead
+                    </Button>
+                  )}
+                  
                   <Button 
                     type="button" 
                     variant="destructive" 
@@ -1526,27 +1562,6 @@ export default function Leads() {
                     setSelectedLead(null);
                   }}>
                     Close
-                  </Button>
-                  <Button 
-                    type="button" 
-                    className="bg-brand-600 hover:bg-brand-700 text-white"
-                    onClick={() => {
-                      setOpenViewDialog(false);
-                      // Set up the edit dialog with this lead's data
-                      form.reset({
-                        name: selectedLead.name,
-                        email: selectedLead.email,
-                        phone: selectedLead.phone || "",
-                        source: selectedLead.source,
-                        status: selectedLead.status as any,
-                        notes: selectedLead.notes || "",
-                        value: selectedLead.value || ""
-                      });
-                      setSelectedLeadId(selectedLead.id);
-                      setOpenEditDialog(true);
-                    }}
-                  >
-                    Edit Lead
                   </Button>
                 </div>
               </DialogFooter>

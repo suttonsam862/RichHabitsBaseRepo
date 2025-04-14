@@ -1135,11 +1135,32 @@ export default function StaffManagement() {
               <Button 
                 className="bg-brand-600 hover:bg-brand-700"
                 onClick={() => {
-                  // In a real app, you would submit to the server
-                  // For now, we'll just close the dialog
+                  // Create a new clinician with a unique ID
+                  const newId = Math.max(0, ...localStaffData.map(s => s.id)) + 1;
+                  const newStaffMember: Clinician = {
+                    ...newClinician as Clinician,
+                    id: newId,
+                    documents: [],
+                    assignedShifts: [],
+                    // Add any missing required fields
+                    avatar: newClinician.avatar || '',
+                    skills: newClinician.skills || [],
+                    certifications: newClinician.certifications || [],
+                    camps: []
+                  };
+                  
+                  // Update local data
+                  setLocalStaffData([...localStaffData, newStaffMember]);
+                  
+                  // Reset form and close dialog
                   setIsAddClinicianOpen(false);
-                  // Toast notification
-                  alert("Clinician added successfully!");
+                  
+                  // Show success notification
+                  toast({
+                    title: "Clinician added",
+                    description: `${newStaffMember.name} has been added to the system.`,
+                    variant: "default",
+                  });
                 }}
               >
                 Add Clinician

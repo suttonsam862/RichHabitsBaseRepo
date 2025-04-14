@@ -25,6 +25,7 @@ import { HelpIconOnly } from "@/components/ui/help-tooltip";
 import { useAuth } from "@/hooks/use-auth";
 
 const formSchema = insertLeadSchema.extend({
+  companyName: z.string().optional().nullable(),
   status: z.enum(["new", "contacted", "qualified", "proposal", "negotiation", "closed", "lost"]),
   value: z.string().optional().nullable(),
   autoClaimLead: z.boolean().optional(),

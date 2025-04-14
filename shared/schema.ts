@@ -91,6 +91,7 @@ export const leads = pgTable("leads", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
   name: text("name").notNull(),
+  companyName: text("company_name"),
   email: text("email").notNull(),
   phone: text("phone"),
   source: text("source"),

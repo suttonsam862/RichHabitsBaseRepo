@@ -82,6 +82,7 @@ export interface IStorage {
   updateUserSettings(userId: number, settingType: string, settings: any): Promise<void>;
   getUserSettings(userId: number, settingType: string): Promise<any>;
   getAllUsers(): Promise<User[]>;
+  getAdminUsers(): Promise<User[]>;
   updateUserRole(userId: number, role: string): Promise<User>;
   updateUserPermissions(userId: number, permissions: Permission[]): Promise<User>;
   updateUserVisiblePages(userId: number, visiblePages: string[]): Promise<User>;
@@ -272,6 +273,13 @@ export class DatabaseStorage implements IStorage {
   
   async getAllUsers(): Promise<User[]> {
     return db.select().from(users).orderBy(asc(users.fullName));
+  }
+  
+  async getAdminUsers(): Promise<User[]> {
+    return db.select()
+      .from(users)
+      .where(eq(users.role, 'admin'))
+      .orderBy(asc(users.fullName));
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {

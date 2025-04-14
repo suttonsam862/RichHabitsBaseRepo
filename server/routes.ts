@@ -3235,6 +3235,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint to update event page names in navigation
+  app.get('/api/debug/update-event-pages', async (req, res) => {
+    try {
+      // Get all admin users to update their settings
+      const adminUsers = await storage.getAdminUsers();
+      
+      if (!adminUsers || adminUsers.length === 0) {
+        return res.status(404).json({ error: "No admin users found" });
+      }
+      
+      const results = [];
+      
+      // Update each admin user's navigation settings
+      for (const user of adminUsers) {
+        // Get current navigation settings
+        const navSettings = await storage.getUserSettings(user.id, 'navigation');
+        let settingsData = navSettings?.settings || {};
+        
+        // Update the visible pages array with new event pages
+        const updatedVisiblePages = new Set([
+          ...(user.visiblePages || []),
+          'events/overview',
+          'events/travel',
+          'events/financial', 
+          'events/staff',
+          'events/vendors',
+          'events/calendar'
+        ]);
+        
+        // Set updated visible pages
+        user.visiblePages = Array.from(updatedVisiblePages);
+        await storage.updateUserVisiblePages(user.id, user.visiblePages);
+        
+        // Update the settings groups if they exist
+        if (settingsData.groups && Array.isArray(settingsData.groups)) {
+          // Find the events group
+          const eventsGroup = settingsData.groups.find((g: any) => 
+            g.id === 'events' || g.title.toLowerCase().includes('event'));
+          
+          if (eventsGroup) {
+            // Replace the existing items with new event pages
+            eventsGroup.items = [
+              { id: 'events/overview', name: 'Camp Overview', enabled: true },
+              { id: 'events/travel', name: 'Travel and Accommodations', enabled: true },
+              { id: 'events/financial', name: 'Financial Management', enabled: true },
+              { id: 'events/staff', name: 'Staff Management', enabled: true },
+              { id: 'events/vendors', name: 'Vendors and Services', enabled: true },
+              { id: 'events/calendar', name: 'Calendar and Scheduling', enabled: true },
+              { id: 'feedback', name: 'Feedback', enabled: true }
+            ];
+          }
+          
+          // Update the navigation settings
+          settingsData.visiblePages = user.visiblePages;
+          await storage.updateUserSettings(user.id, 'navigation', settingsData);
+          
+          results.push({
+            userId: user.id,
+            username: user.username,
+            status: 'updated'
+          });
+        }
+      }
+      
+      res.json({ 
+        success: true, 
+        message: `Updated navigation settings for ${results.length} admin users`,
+        results
+      });
+    } catch (error: any) {
+      console.error("Update event pages error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Debug endpoint to fix Charlie Reeves permissions
   app.get('/api/debug/fix-charlie-permissions', async (req, res) => {
     try {

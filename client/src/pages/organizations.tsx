@@ -17,7 +17,7 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2, Users, User, Building, Search, Phone, Mail, MapPin, PlusCircle, Edit, Trash, FileText, ShoppingBag, DollarSign, Save, Plus, Dumbbell, GraduationCap, Trophy, UsersRound } from "lucide-react";
+import { Loader2, Users, User, Building, Search, Phone, Mail, MapPin, PlusCircle, Edit, Trash, FileText, ShoppingBag, DollarSign, Save, Plus, Dumbbell, GraduationCap, Trophy, UsersRound, Globe, CalendarIcon, CreditCard, FileBarChart, Lock, Network, Share2, Hash, BarChart4, LinkIcon, Briefcase, AtSign, Award, Map, Calendar } from "lucide-react";
 
 interface Organization {
   id: number;
@@ -27,11 +27,28 @@ interface Organization {
   website: string;
   phone: string;
   email: string;
+  // Enhanced address fields
   address: string;
+  address2?: string;
   city: string;
   state: string;
   zip: string;
   country: string;
+  // Enhanced organization details
+  foundedYear?: number;
+  employeeCount?: number;
+  annualRevenue?: string;
+  taxId?: string;
+  businessHours?: string;
+  socialMedia?: {
+    facebook?: string;
+    linkedin?: string;
+    twitter?: string;
+    instagram?: string;
+  };
+  paymentTerms?: string;
+  creditLimit?: string;
+  paymentMethods?: string[];
   logoUrl: string | null;
   notes: string | null;
   status: 'active' | 'inactive';
@@ -39,8 +56,23 @@ interface Organization {
   assignedSalesRepId: number | null;
   totalRevenue: string;
   icon?: string;
+  preferredContactMethod?: 'email' | 'phone' | 'mail';
+  shippingAddress?: {
+    sameAsBilling: boolean;
+    address: string;
+    address2?: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+  };
+  tags?: string[];
+  accountManager?: number;
+  accountType?: 'regular' | 'vip' | 'key' | 'strategic';
+  discountTier?: 'none' | 'tier1' | 'tier2' | 'tier3';
   createdAt: string;
   updatedAt: string;
+  lastInteractionDate?: string;
 }
 
 interface Contact {
@@ -467,29 +499,53 @@ export default function OrganizationsPage() {
 
       {/* Organization Details Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-auto">
           {selectedOrg && (
             <>
               <DialogHeader className="space-y-1">
                 <div className="flex justify-between items-start">
-                  <DialogTitle className="text-2xl">{selectedOrg.name}</DialogTitle>
+                  {editMode ? (
+                    <Input
+                      className="text-2xl font-bold w-full md:w-2/3"
+                      value={editedOrg.name ?? selectedOrg.name}
+                      onChange={(e) => setEditedOrg({...editedOrg, name: e.target.value})}
+                    />
+                  ) : (
+                    <DialogTitle className="text-2xl">{selectedOrg.name}</DialogTitle>
+                  )}
                   <div className="flex items-center gap-2">
                     {getOrgTypeBadge(selectedOrg.type)}
                     {getStatusBadge(selectedOrg.status)}
                   </div>
                 </div>
-                <DialogDescription>{selectedOrg.industry}</DialogDescription>
+                {editMode ? (
+                  <Input
+                    placeholder="Industry"
+                    value={editedOrg.industry ?? selectedOrg.industry}
+                    onChange={(e) => setEditedOrg({...editedOrg, industry: e.target.value})}
+                  />
+                ) : (
+                  <DialogDescription>{selectedOrg.industry}</DialogDescription>
+                )}
               </DialogHeader>
 
               <div className="flex justify-end mb-4">
                 {editMode ? (
-                  <Button onClick={handleEditSave} disabled={updateOrganizationMutation.isPending}>
-                    {updateOrganizationMutation.isPending && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    <Save className="mr-2 h-4 w-4" />
-                    Save Changes
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => {
+                      setEditMode(false);
+                      setEditedOrg({});
+                    }}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleEditSave} disabled={updateOrganizationMutation.isPending} className="bg-brand-600 hover:bg-brand-700">
+                      {updateOrganizationMutation.isPending && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Changes
+                    </Button>
+                  </div>
                 ) : (
                   /* Only show Edit button to admin users */
                   isAdmin && (
@@ -503,9 +559,12 @@ export default function OrganizationsPage() {
 
               <Tabs defaultValue="details">
                 <TabsList className="mb-4">
-                  <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="details">Overview</TabsTrigger>
+                  <TabsTrigger value="contact">Contact Info</TabsTrigger>
+                  <TabsTrigger value="financial">Financial</TabsTrigger>
                   <TabsTrigger value="contacts">Contacts</TabsTrigger>
                   <TabsTrigger value="orders">Orders</TabsTrigger>
+                  <TabsTrigger value="advanced">Advanced</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="details" className="space-y-6">
@@ -797,6 +856,791 @@ export default function OrganizationsPage() {
                             </div>
                           )}
                         </>
+                      )}
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="contact" className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-lg font-medium">Contact Details</h3>
+                        {editMode ? (
+                          <div className="grid grid-cols-1 gap-4 mt-3">
+                            <div className="space-y-2">
+                              <Label htmlFor="preferredContactMethod">Preferred Contact Method</Label>
+                              <Select 
+                                value={editedOrg.preferredContactMethod ?? selectedOrg.preferredContactMethod ?? 'email'} 
+                                onValueChange={(value) => setEditedOrg({...editedOrg, preferredContactMethod: value as any})}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select contact method"/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="email">Email</SelectItem>
+                                  <SelectItem value="phone">Phone</SelectItem>
+                                  <SelectItem value="mail">Mail</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="email">Email Address</Label>
+                              <Input
+                                id="email"
+                                value={editedOrg.email ?? selectedOrg.email}
+                                onChange={(e) => setEditedOrg({...editedOrg, email: e.target.value})}
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="phone">Phone Number</Label>
+                              <Input
+                                id="phone"
+                                value={editedOrg.phone ?? selectedOrg.phone}
+                                onChange={(e) => setEditedOrg({...editedOrg, phone: e.target.value})}
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="website">Website</Label>
+                              <Input
+                                id="website"
+                                value={editedOrg.website ?? selectedOrg.website}
+                                onChange={(e) => setEditedOrg({...editedOrg, website: e.target.value})}
+                              />
+                            </div>
+                            
+                            <div>
+                              <h4 className="font-medium mb-2">Social Media</h4>
+                              <div className="space-y-3">
+                                <div className="space-y-2">
+                                  <Label htmlFor="linkedIn">LinkedIn</Label>
+                                  <Input
+                                    id="linkedIn"
+                                    value={editedOrg.socialMedia?.linkedin ?? selectedOrg.socialMedia?.linkedin ?? ''}
+                                    onChange={(e) => setEditedOrg({
+                                      ...editedOrg, 
+                                      socialMedia: {
+                                        ...(editedOrg.socialMedia || selectedOrg.socialMedia || {}),
+                                        linkedin: e.target.value
+                                      }
+                                    })}
+                                  />
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  <Label htmlFor="facebook">Facebook</Label>
+                                  <Input
+                                    id="facebook"
+                                    value={editedOrg.socialMedia?.facebook ?? selectedOrg.socialMedia?.facebook ?? ''}
+                                    onChange={(e) => setEditedOrg({
+                                      ...editedOrg, 
+                                      socialMedia: {
+                                        ...(editedOrg.socialMedia || selectedOrg.socialMedia || {}),
+                                        facebook: e.target.value
+                                      }
+                                    })}
+                                  />
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  <Label htmlFor="twitter">Twitter</Label>
+                                  <Input
+                                    id="twitter"
+                                    value={editedOrg.socialMedia?.twitter ?? selectedOrg.socialMedia?.twitter ?? ''}
+                                    onChange={(e) => setEditedOrg({
+                                      ...editedOrg, 
+                                      socialMedia: {
+                                        ...(editedOrg.socialMedia || selectedOrg.socialMedia || {}),
+                                        twitter: e.target.value
+                                      }
+                                    })}
+                                  />
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  <Label htmlFor="instagram">Instagram</Label>
+                                  <Input
+                                    id="instagram"
+                                    value={editedOrg.socialMedia?.instagram ?? selectedOrg.socialMedia?.instagram ?? ''}
+                                    onChange={(e) => setEditedOrg({
+                                      ...editedOrg, 
+                                      socialMedia: {
+                                        ...(editedOrg.socialMedia || selectedOrg.socialMedia || {}),
+                                        instagram: e.target.value
+                                      }
+                                    })}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mt-3 space-y-6">
+                            <div className="space-y-2">
+                              <div className="flex items-center">
+                                <Mail className="h-4 w-4 mr-2 text-gray-500" />
+                                <span className="text-gray-500 mr-2">Email:</span>
+                                <a href={`mailto:${selectedOrg.email}`} className="text-blue-600 hover:underline">
+                                  {selectedOrg.email}
+                                </a>
+                              </div>
+                              
+                              <div className="flex items-center">
+                                <Phone className="h-4 w-4 mr-2 text-gray-500" />
+                                <span className="text-gray-500 mr-2">Phone:</span>
+                                <a href={`tel:${selectedOrg.phone}`} className="text-blue-600 hover:underline">
+                                  {selectedOrg.phone}
+                                </a>
+                              </div>
+                              
+                              <div className="flex items-center">
+                                <Globe className="h-4 w-4 mr-2 text-gray-500" />
+                                <span className="text-gray-500 mr-2">Website:</span>
+                                <a href={`https://${selectedOrg.website}`} target="_blank" className="text-blue-600 hover:underline">
+                                  {selectedOrg.website}
+                                </a>
+                              </div>
+                              
+                              <div className="flex items-center">
+                                <Map className="h-4 w-4 mr-2 text-gray-500" />
+                                <span className="text-gray-500 mr-2">Preferred Contact:</span>
+                                <span>
+                                  {selectedOrg.preferredContactMethod ? 
+                                    selectedOrg.preferredContactMethod.charAt(0).toUpperCase() + selectedOrg.preferredContactMethod.slice(1) : 
+                                    'Email'}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            {selectedOrg.socialMedia && Object.values(selectedOrg.socialMedia).some(val => val) && (
+                              <div>
+                                <h4 className="font-medium mb-2">Social Media</h4>
+                                <div className="grid grid-cols-1 gap-2">
+                                  {selectedOrg.socialMedia.linkedin && (
+                                    <div className="flex items-center">
+                                      <LinkIcon className="h-4 w-4 mr-2 text-gray-500" />
+                                      <span className="text-gray-500 mr-2">LinkedIn:</span>
+                                      <a href={selectedOrg.socialMedia.linkedin} target="_blank" className="text-blue-600 hover:underline truncate">
+                                        {selectedOrg.socialMedia.linkedin}
+                                      </a>
+                                    </div>
+                                  )}
+                                  
+                                  {selectedOrg.socialMedia.facebook && (
+                                    <div className="flex items-center">
+                                      <Share2 className="h-4 w-4 mr-2 text-gray-500" />
+                                      <span className="text-gray-500 mr-2">Facebook:</span>
+                                      <a href={selectedOrg.socialMedia.facebook} target="_blank" className="text-blue-600 hover:underline truncate">
+                                        {selectedOrg.socialMedia.facebook}
+                                      </a>
+                                    </div>
+                                  )}
+                                  
+                                  {selectedOrg.socialMedia.twitter && (
+                                    <div className="flex items-center">
+                                      <Hash className="h-4 w-4 mr-2 text-gray-500" />
+                                      <span className="text-gray-500 mr-2">Twitter:</span>
+                                      <a href={selectedOrg.socialMedia.twitter} target="_blank" className="text-blue-600 hover:underline truncate">
+                                        {selectedOrg.socialMedia.twitter}
+                                      </a>
+                                    </div>
+                                  )}
+                                  
+                                  {selectedOrg.socialMedia.instagram && (
+                                    <div className="flex items-center">
+                                      <Network className="h-4 w-4 mr-2 text-gray-500" />
+                                      <span className="text-gray-500 mr-2">Instagram:</span>
+                                      <a href={selectedOrg.socialMedia.instagram} target="_blank" className="text-blue-600 hover:underline truncate">
+                                        {selectedOrg.socialMedia.instagram}
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-lg font-medium">Address Information</h3>
+                        {editMode ? (
+                          <div className="grid grid-cols-1 gap-4 mt-3">
+                            <div className="space-y-2">
+                              <Label htmlFor="billingAddress">Billing Address</Label>
+                              <Input
+                                id="billingAddress"
+                                value={editedOrg.address ?? selectedOrg.address}
+                                onChange={(e) => setEditedOrg({...editedOrg, address: e.target.value})}
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="billingAddress2">Address Line 2</Label>
+                              <Input
+                                id="billingAddress2"
+                                value={editedOrg.address2 ?? selectedOrg.address2 ?? ''}
+                                onChange={(e) => setEditedOrg({...editedOrg, address2: e.target.value})}
+                              />
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="billingCity">City</Label>
+                                <Input
+                                  id="billingCity"
+                                  value={editedOrg.city ?? selectedOrg.city}
+                                  onChange={(e) => setEditedOrg({...editedOrg, city: e.target.value})}
+                                />
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <Label htmlFor="billingState">State/Province</Label>
+                                <Input
+                                  id="billingState"
+                                  value={editedOrg.state ?? selectedOrg.state}
+                                  onChange={(e) => setEditedOrg({...editedOrg, state: e.target.value})}
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="billingZip">ZIP/Postal Code</Label>
+                                <Input
+                                  id="billingZip"
+                                  value={editedOrg.zip ?? selectedOrg.zip}
+                                  onChange={(e) => setEditedOrg({...editedOrg, zip: e.target.value})}
+                                />
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <Label htmlFor="billingCountry">Country</Label>
+                                <Input
+                                  id="billingCountry"
+                                  value={editedOrg.country ?? selectedOrg.country}
+                                  onChange={(e) => setEditedOrg({...editedOrg, country: e.target.value})}
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="pt-4 border-t">
+                              <div className="flex items-center space-x-2 mb-4">
+                                <Switch 
+                                  checked={!(editedOrg.shippingAddress?.sameAsBilling ?? selectedOrg.shippingAddress?.sameAsBilling ?? true)} 
+                                  onCheckedChange={(checked) => {
+                                    const currentShipping = editedOrg.shippingAddress || selectedOrg.shippingAddress || { 
+                                      sameAsBilling: true,
+                                      address: selectedOrg.address,
+                                      city: selectedOrg.city,
+                                      state: selectedOrg.state,
+                                      zip: selectedOrg.zip,
+                                      country: selectedOrg.country
+                                    };
+                                    
+                                    setEditedOrg({
+                                      ...editedOrg, 
+                                      shippingAddress: { 
+                                        ...currentShipping,
+                                        sameAsBilling: !checked
+                                      }
+                                    });
+                                  }}
+                                />
+                                <Label htmlFor="differentShipping">Use different shipping address</Label>
+                              </div>
+                              
+                              {(!(editedOrg.shippingAddress?.sameAsBilling ?? selectedOrg.shippingAddress?.sameAsBilling ?? true)) && (
+                                <div className="space-y-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="shippingAddress">Shipping Address</Label>
+                                    <Input
+                                      id="shippingAddress"
+                                      value={editedOrg.shippingAddress?.address ?? selectedOrg.shippingAddress?.address ?? ''}
+                                      onChange={(e) => {
+                                        const currentShipping = editedOrg.shippingAddress || selectedOrg.shippingAddress || { sameAsBilling: false };
+                                        setEditedOrg({
+                                          ...editedOrg, 
+                                          shippingAddress: { 
+                                            ...currentShipping,
+                                            address: e.target.value
+                                          }
+                                        });
+                                      }}
+                                    />
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <Label htmlFor="shippingAddress2">Address Line 2</Label>
+                                    <Input
+                                      id="shippingAddress2"
+                                      value={editedOrg.shippingAddress?.address2 ?? selectedOrg.shippingAddress?.address2 ?? ''}
+                                      onChange={(e) => {
+                                        const currentShipping = editedOrg.shippingAddress || selectedOrg.shippingAddress || { sameAsBilling: false };
+                                        setEditedOrg({
+                                          ...editedOrg, 
+                                          shippingAddress: { 
+                                            ...currentShipping,
+                                            address2: e.target.value
+                                          }
+                                        });
+                                      }}
+                                    />
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="shippingCity">City</Label>
+                                      <Input
+                                        id="shippingCity"
+                                        value={editedOrg.shippingAddress?.city ?? selectedOrg.shippingAddress?.city ?? ''}
+                                        onChange={(e) => {
+                                          const currentShipping = editedOrg.shippingAddress || selectedOrg.shippingAddress || { sameAsBilling: false };
+                                          setEditedOrg({
+                                            ...editedOrg, 
+                                            shippingAddress: { 
+                                              ...currentShipping,
+                                              city: e.target.value
+                                            }
+                                          });
+                                        }}
+                                      />
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                      <Label htmlFor="shippingState">State/Province</Label>
+                                      <Input
+                                        id="shippingState"
+                                        value={editedOrg.shippingAddress?.state ?? selectedOrg.shippingAddress?.state ?? ''}
+                                        onChange={(e) => {
+                                          const currentShipping = editedOrg.shippingAddress || selectedOrg.shippingAddress || { sameAsBilling: false };
+                                          setEditedOrg({
+                                            ...editedOrg, 
+                                            shippingAddress: { 
+                                              ...currentShipping,
+                                              state: e.target.value
+                                            }
+                                          });
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="shippingZip">ZIP/Postal Code</Label>
+                                      <Input
+                                        id="shippingZip"
+                                        value={editedOrg.shippingAddress?.zip ?? selectedOrg.shippingAddress?.zip ?? ''}
+                                        onChange={(e) => {
+                                          const currentShipping = editedOrg.shippingAddress || selectedOrg.shippingAddress || { sameAsBilling: false };
+                                          setEditedOrg({
+                                            ...editedOrg, 
+                                            shippingAddress: { 
+                                              ...currentShipping,
+                                              zip: e.target.value
+                                            }
+                                          });
+                                        }}
+                                      />
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                      <Label htmlFor="shippingCountry">Country</Label>
+                                      <Input
+                                        id="shippingCountry"
+                                        value={editedOrg.shippingAddress?.country ?? selectedOrg.shippingAddress?.country ?? ''}
+                                        onChange={(e) => {
+                                          const currentShipping = editedOrg.shippingAddress || selectedOrg.shippingAddress || { sameAsBilling: false };
+                                          setEditedOrg({
+                                            ...editedOrg, 
+                                            shippingAddress: { 
+                                              ...currentShipping,
+                                              country: e.target.value
+                                            }
+                                          });
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mt-3 space-y-4">
+                            <div>
+                              <h4 className="font-medium mb-2">Billing Address</h4>
+                              <div className="grid grid-cols-1 gap-1">
+                                <div>{selectedOrg.address}</div>
+                                {selectedOrg.address2 && <div>{selectedOrg.address2}</div>}
+                                <div>{selectedOrg.city}, {selectedOrg.state} {selectedOrg.zip}</div>
+                                <div>{selectedOrg.country}</div>
+                              </div>
+                            </div>
+                            
+                            {selectedOrg.shippingAddress && !selectedOrg.shippingAddress.sameAsBilling && (
+                              <div>
+                                <h4 className="font-medium mb-2">Shipping Address</h4>
+                                <div className="grid grid-cols-1 gap-1">
+                                  <div>{selectedOrg.shippingAddress.address}</div>
+                                  {selectedOrg.shippingAddress.address2 && <div>{selectedOrg.shippingAddress.address2}</div>}
+                                  <div>{selectedOrg.shippingAddress.city}, {selectedOrg.shippingAddress.state} {selectedOrg.shippingAddress.zip}</div>
+                                  <div>{selectedOrg.shippingAddress.country}</div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="financial" className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-lg font-medium">Financial Information</h3>
+                        {editMode ? (
+                          <div className="grid grid-cols-1 gap-4 mt-3">
+                            <div className="space-y-2">
+                              <Label htmlFor="annualRevenue">Annual Revenue</Label>
+                              <Input
+                                id="annualRevenue"
+                                value={editedOrg.annualRevenue ?? selectedOrg.annualRevenue ?? ''}
+                                onChange={(e) => setEditedOrg({...editedOrg, annualRevenue: e.target.value})}
+                                placeholder="e.g. $5,000,000"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="employeeCount">Employee Count</Label>
+                              <Input
+                                id="employeeCount"
+                                type="number"
+                                value={editedOrg.employeeCount ?? selectedOrg.employeeCount ?? ''}
+                                onChange={(e) => setEditedOrg({...editedOrg, employeeCount: parseInt(e.target.value) || undefined})}
+                                placeholder="e.g. 250"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="foundedYear">Founded Year</Label>
+                              <Input
+                                id="foundedYear"
+                                type="number"
+                                value={editedOrg.foundedYear ?? selectedOrg.foundedYear ?? ''}
+                                onChange={(e) => setEditedOrg({...editedOrg, foundedYear: parseInt(e.target.value) || undefined})}
+                                placeholder="e.g. 2010"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="taxId">Tax ID</Label>
+                              <Input
+                                id="taxId"
+                                value={editedOrg.taxId ?? selectedOrg.taxId ?? ''}
+                                onChange={(e) => setEditedOrg({...editedOrg, taxId: e.target.value})}
+                                placeholder="e.g. 12-3456789"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mt-3 grid grid-cols-1 gap-2">
+                            <div className="grid grid-cols-2">
+                              <div className="text-gray-500">Annual Revenue:</div>
+                              <div>{selectedOrg.annualRevenue || 'Not specified'}</div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2">
+                              <div className="text-gray-500">Employee Count:</div>
+                              <div>{selectedOrg.employeeCount ? selectedOrg.employeeCount.toLocaleString() : 'Not specified'}</div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2">
+                              <div className="text-gray-500">Year Founded:</div>
+                              <div>{selectedOrg.foundedYear || 'Not specified'}</div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2">
+                              <div className="text-gray-500">Tax ID:</div>
+                              <div>{selectedOrg.taxId || 'Not specified'}</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-lg font-medium">Revenue Summary</h3>
+                        <div className="mt-3 border rounded-md p-4">
+                          <div className="text-3xl font-bold mb-2">
+                            {formatCurrency(Number(selectedOrg.totalRevenue))}
+                          </div>
+                          <p className="text-gray-500">
+                            Total revenue from all orders
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-lg font-medium">Billing Information</h3>
+                        {editMode ? (
+                          <div className="grid grid-cols-1 gap-4 mt-3">
+                            <div className="space-y-2">
+                              <Label htmlFor="accountType">Account Type</Label>
+                              <Select 
+                                value={editedOrg.accountType ?? selectedOrg.accountType ?? 'regular'} 
+                                onValueChange={(value) => setEditedOrg({...editedOrg, accountType: value as any})}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select account type"/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="regular">Regular</SelectItem>
+                                  <SelectItem value="vip">VIP</SelectItem>
+                                  <SelectItem value="key">Key Account</SelectItem>
+                                  <SelectItem value="strategic">Strategic</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="discountTier">Discount Tier</Label>
+                              <Select 
+                                value={editedOrg.discountTier ?? selectedOrg.discountTier ?? 'none'} 
+                                onValueChange={(value) => setEditedOrg({...editedOrg, discountTier: value as any})}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select discount tier"/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">None</SelectItem>
+                                  <SelectItem value="tier1">Tier 1 (5%)</SelectItem>
+                                  <SelectItem value="tier2">Tier 2 (10%)</SelectItem>
+                                  <SelectItem value="tier3">Tier 3 (15%)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="paymentTerms">Payment Terms</Label>
+                              <Input
+                                id="paymentTerms"
+                                value={editedOrg.paymentTerms ?? selectedOrg.paymentTerms ?? ''}
+                                onChange={(e) => setEditedOrg({...editedOrg, paymentTerms: e.target.value})}
+                                placeholder="e.g. Net 30"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="creditLimit">Credit Limit</Label>
+                              <Input
+                                id="creditLimit"
+                                value={editedOrg.creditLimit ?? selectedOrg.creditLimit ?? ''}
+                                onChange={(e) => setEditedOrg({...editedOrg, creditLimit: e.target.value})}
+                                placeholder="e.g. $10,000"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mt-3 grid grid-cols-1 gap-2">
+                            <div className="grid grid-cols-2">
+                              <div className="text-gray-500">Account Type:</div>
+                              <div>
+                                {selectedOrg.accountType ? 
+                                  selectedOrg.accountType.charAt(0).toUpperCase() + selectedOrg.accountType.slice(1) : 
+                                  'Regular'}
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2">
+                              <div className="text-gray-500">Discount Tier:</div>
+                              <div>
+                                {selectedOrg.discountTier === 'tier1' ? 'Tier 1 (5%)' : 
+                                 selectedOrg.discountTier === 'tier2' ? 'Tier 2 (10%)' : 
+                                 selectedOrg.discountTier === 'tier3' ? 'Tier 3 (15%)' : 
+                                 'None'}
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2">
+                              <div className="text-gray-500">Payment Terms:</div>
+                              <div>{selectedOrg.paymentTerms || 'Not specified'}</div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2">
+                              <div className="text-gray-500">Credit Limit:</div>
+                              <div>{selectedOrg.creditLimit || 'Not specified'}</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-lg font-medium">Recent Orders</h3>
+                        <div className="mt-3">
+                          {ordersLoading ? (
+                            <div className="flex justify-center p-4">
+                              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                            </div>
+                          ) : orders.length === 0 ? (
+                            <div className="text-gray-500 p-4 text-center border rounded-md">
+                              No orders found for this organization
+                            </div>
+                          ) : (
+                            <div className="border rounded-md overflow-hidden">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Order ID</TableHead>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Amount</TableHead>
+                                    <TableHead>Status</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {orders.slice(0, 5).map((order) => (
+                                    <TableRow key={order.id}>
+                                      <TableCell className="font-medium">{order.orderId}</TableCell>
+                                      <TableCell>{formatDate(new Date(order.createdAt))}</TableCell>
+                                      <TableCell>{formatCurrency(Number(order.totalAmount))}</TableCell>
+                                      <TableCell>{getOrderStatusBadge(order.status)}</TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="advanced" className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-lg font-medium">Business Details</h3>
+                        {editMode ? (
+                          <div className="grid grid-cols-1 gap-4 mt-3">
+                            <div className="space-y-2">
+                              <Label htmlFor="businessHours">Business Hours</Label>
+                              <Textarea
+                                id="businessHours"
+                                value={editedOrg.businessHours ?? selectedOrg.businessHours ?? ''}
+                                onChange={(e) => setEditedOrg({...editedOrg, businessHours: e.target.value})}
+                                placeholder="e.g. Mon-Fri: 9am-5pm, Sat: 10am-2pm, Sun: Closed"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="tags">Tags</Label>
+                              <Input
+                                id="tags"
+                                value={(editedOrg.tags ?? selectedOrg.tags ?? []).join(', ')}
+                                onChange={(e) => {
+                                  const tagsArray = e.target.value.split(',').map(tag => tag.trim()).filter(Boolean);
+                                  setEditedOrg({...editedOrg, tags: tagsArray});
+                                }}
+                                placeholder="e.g. VIP, Referral, Enterprise"
+                              />
+                              <p className="text-xs text-gray-500">Separate tags with commas</p>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="lastInteractionDate">Last Interaction Date</Label>
+                              <Input
+                                id="lastInteractionDate"
+                                type="date"
+                                value={editedOrg.lastInteractionDate?.split('T')[0] ?? selectedOrg.lastInteractionDate?.split('T')[0] ?? ''}
+                                onChange={(e) => setEditedOrg({...editedOrg, lastInteractionDate: e.target.value ? `${e.target.value}T00:00:00` : undefined})}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mt-3 grid grid-cols-1 gap-2">
+                            <div className="grid grid-cols-2">
+                              <div className="text-gray-500">Business Hours:</div>
+                              <div className="whitespace-pre-line">{selectedOrg.businessHours || 'Not specified'}</div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2">
+                              <div className="text-gray-500">Tags:</div>
+                              <div>
+                                {selectedOrg.tags && selectedOrg.tags.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {selectedOrg.tags.map((tag, index) => (
+                                      <Badge key={index} variant="outline" className="rounded-md">{tag}</Badge>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  'No tags'
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2">
+                              <div className="text-gray-500">Last Interaction:</div>
+                              <div>{selectedOrg.lastInteractionDate ? formatDate(new Date(selectedOrg.lastInteractionDate)) : 'Not recorded'}</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-lg font-medium">System Information</h3>
+                        <div className="mt-3 grid grid-cols-1 gap-2">
+                          <div className="grid grid-cols-2">
+                            <div className="text-gray-500">Created:</div>
+                            <div>{formatDate(new Date(selectedOrg.createdAt))}</div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2">
+                            <div className="text-gray-500">Last Updated:</div>
+                            <div>{formatDate(new Date(selectedOrg.updatedAt))}</div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2">
+                            <div className="text-gray-500">Organization ID:</div>
+                            <div>{selectedOrg.id}</div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {isAdmin && (
+                        <div>
+                          <h3 className="text-lg font-medium">Admin Actions</h3>
+                          <div className="mt-3 space-y-2">
+                            <Button 
+                              variant="outline" 
+                              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                              // onClick={handleDeleteOrganization}
+                            >
+                              <Trash className="h-4 w-4 mr-2" />
+                              Delete Organization
+                            </Button>
+                            
+                            <Button 
+                              variant="outline" 
+                              className="w-full justify-start" 
+                              // onClick={handleExportData}
+                            >
+                              <FileBarChart className="h-4 w-4 mr-2" />
+                              Export Organization Data
+                            </Button>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1290,23 +2134,3 @@ export default function OrganizationsPage() {
   );
 }
 
-function Globe(props: React.ComponentProps<"svg">) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <line x1="2" y1="12" x2="22" y2="12" />
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-    </svg>
-  );
-}

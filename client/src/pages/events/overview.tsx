@@ -196,9 +196,236 @@ const TaskStatusIndicator = ({ status }: { status: string }) => {
   );
 };
 
+// Schedule Details Dialog Component
+const ScheduleDetailsDialog = ({ camp, isOpen, onClose }: { camp: any, isOpen: boolean, onClose: () => void }) => {
+  const [scheduleItems, setScheduleItems] = useState([
+    { id: 1, day: 1, startTime: '08:00', endTime: '10:00', activity: 'Check-in & Registration', location: 'Main Entrance', notes: 'Staff needed: 3' },
+    { id: 2, day: 1, startTime: '10:30', endTime: '12:00', activity: 'Opening Ceremony', location: 'Main Hall', notes: 'All staff and participants required' },
+    { id: 3, day: 1, startTime: '13:00', endTime: '15:00', activity: 'Session 1: Fundamentals', location: 'Training Area A', notes: 'Equipment needed: mats, projector' },
+    { id: 4, day: 1, startTime: '15:30', endTime: '17:00', activity: 'Session 2: Technique Development', location: 'Training Area B', notes: 'Divide into skill level groups' },
+    { id: 5, day: 2, startTime: '08:30', endTime: '10:00', activity: 'Morning Conditioning', location: 'Outdoor Field', notes: 'Weather dependent; indoor backup ready' },
+    { id: 6, day: 2, startTime: '10:30', endTime: '12:30', activity: 'Session 3: Advanced Techniques', location: 'Training Area A', notes: 'Video recording scheduled' },
+  ]);
+  
+  const [newItem, setNewItem] = useState({
+    day: 1,
+    startTime: '09:00',
+    endTime: '10:00',
+    activity: '',
+    location: '',
+    notes: ''
+  });
+  
+  const [editingDay, setEditingDay] = useState<number | null>(null);
+  
+  const handleAddItem = () => {
+    if (!newItem.activity.trim()) return;
+    
+    setScheduleItems([
+      ...scheduleItems,
+      { 
+        id: Math.max(0, ...scheduleItems.map(item => item.id)) + 1,
+        ...newItem
+      }
+    ]);
+    
+    // Reset form
+    setNewItem({
+      day: newItem.day,
+      startTime: '09:00',
+      endTime: '10:00',
+      activity: '',
+      location: '',
+      notes: ''
+    });
+  };
+  
+  const handleDeleteItem = (id: number) => {
+    setScheduleItems(scheduleItems.filter(item => item.id !== id));
+  };
+  
+  const handleSave = () => {
+    // In a real app, you would update the server
+    console.log("Saving updated schedule:", scheduleItems);
+    onClose();
+  };
+  
+  // Group schedule items by day
+  const groupedByDay = scheduleItems.reduce((acc, item) => {
+    if (!acc[item.day]) {
+      acc[item.day] = [];
+    }
+    acc[item.day].push(item);
+    return acc;
+  }, {} as Record<number, typeof scheduleItems>);
+  
+  // Get array of unique days
+  const days = Object.keys(groupedByDay).map(Number).sort((a, b) => a - b);
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center">
+            <Calendar className="h-5 w-5 mr-2" />
+            Detailed Camp Schedule
+          </DialogTitle>
+          <DialogDescription>
+            Manage the daily schedule and activities for {camp.name}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <Tabs defaultValue={days[0]?.toString() || "1"} className="mt-6">
+          <div className="flex justify-between items-center mb-4">
+            <TabsList>
+              {days.map(day => (
+                <TabsTrigger key={day} value={day.toString()}>
+                  Day {day}
+                </TabsTrigger>
+              ))}
+              {/* Add day button */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="ml-2 h-9"
+                onClick={() => {
+                  const newDay = Math.max(...days) + 1;
+                  setNewItem({...newItem, day: newDay});
+                  setEditingDay(newDay);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add Day
+              </Button>
+            </TabsList>
+          </div>
+          
+          {days.map(day => (
+            <TabsContent key={day} value={day.toString()} className="space-y-4">
+              <div className="border rounded-md">
+                <div className="grid grid-cols-12 border-b bg-muted p-3 font-medium">
+                  <div className="col-span-2">Time</div>
+                  <div className="col-span-3">Activity</div>
+                  <div className="col-span-2">Location</div>
+                  <div className="col-span-4">Notes</div>
+                  <div className="col-span-1 text-right">Actions</div>
+                </div>
+                
+                <div className="divide-y">
+                  {groupedByDay[day]?.sort((a, b) => a.startTime.localeCompare(b.startTime)).map((item) => (
+                    <div key={item.id} className="grid grid-cols-12 p-3 items-center">
+                      <div className="col-span-2 text-sm">
+                        {item.startTime} - {item.endTime}
+                      </div>
+                      <div className="col-span-3 font-medium">{item.activity}</div>
+                      <div className="col-span-2 text-sm">{item.location}</div>
+                      <div className="col-span-4 text-sm text-gray-500">{item.notes}</div>
+                      <div className="col-span-1 flex justify-end">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleDeleteItem(item.id)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {(!groupedByDay[day] || groupedByDay[day].length === 0) && (
+                    <div className="p-4 text-center text-muted-foreground">
+                      No activities scheduled for Day {day}. Add an activity below.
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Add schedule item form */}
+              <Card>
+                <CardHeader className="py-3">
+                  <CardTitle className="text-md">Add New Activity for Day {day}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="text-sm font-medium">Time:</label>
+                      <div className="grid grid-cols-2 gap-2 mt-1">
+                        <Input
+                          type="time"
+                          value={newItem.startTime}
+                          onChange={(e) => setNewItem({...newItem, startTime: e.target.value})}
+                          className="text-xs"
+                        />
+                        <Input
+                          type="time"
+                          value={newItem.endTime}
+                          onChange={(e) => setNewItem({...newItem, endTime: e.target.value})}
+                          className="text-xs"
+                        />
+                      </div>
+                    </div>
+                    <div className="md:col-span-3">
+                      <label className="text-sm font-medium">Activity:</label>
+                      <Input
+                        value={newItem.activity}
+                        onChange={(e) => setNewItem({...newItem, activity: e.target.value})}
+                        placeholder="Activity name"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="text-sm font-medium">Location:</label>
+                      <Input
+                        value={newItem.location}
+                        onChange={(e) => setNewItem({...newItem, location: e.target.value})}
+                        placeholder="Location"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="md:col-span-4">
+                      <label className="text-sm font-medium">Notes:</label>
+                      <Input
+                        value={newItem.notes}
+                        onChange={(e) => setNewItem({...newItem, notes: e.target.value})}
+                        placeholder="Additional information"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="md:col-span-1 flex items-end">
+                      <Button 
+                        onClick={() => {
+                          setNewItem({...newItem, day: day});
+                          handleAddItem();
+                        }}
+                        className="w-full"
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          ))}
+        </Tabs>
+        
+        <DialogFooter className="mt-6">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave}>
+            Save Schedule
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // Camp Details Component
 const CampDetails = ({ camp }: { camp: any }) => {
   const [isTasksDialogOpen, setIsTasksDialogOpen] = useState(false);
+  const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
   
   return (
     <div className="mt-6">
@@ -209,7 +436,7 @@ const CampDetails = ({ camp }: { camp: any }) => {
             <CardHeader className="pb-2">
               <CardTitle className="text-xl flex items-center">
                 <Calendar className="h-5 w-5 mr-2 text-brand-600" />
-                Schedule Overview
+                Schedule Overviews
               </CardTitle>
               <CardDescription>Camp duration and key dates</CardDescription>
             </CardHeader>
@@ -236,13 +463,26 @@ const CampDetails = ({ camp }: { camp: any }) => {
               <Separator className="my-4" />
               
               <div className="flex justify-between mt-2">
-                <Button variant="outline" size="sm" className="text-xs">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-xs"
+                  onClick={() => setIsScheduleDialogOpen(true)}
+                >
                   View Detailed Schedule
                 </Button>
                 <Button variant="outline" size="sm" className="text-xs">
                   Download Calendar
                 </Button>
               </div>
+              
+              {isScheduleDialogOpen && (
+                <ScheduleDetailsDialog
+                  camp={camp}
+                  isOpen={isScheduleDialogOpen}
+                  onClose={() => setIsScheduleDialogOpen(false)}
+                />
+              )}
             </CardContent>
           </Card>
           
@@ -547,6 +787,340 @@ const TasksDialog = ({ camp, isOpen, onClose }: { camp: any, isOpen: boolean, on
   );
 };
 
+// EditCampDialog Component
+const EditCampDialog = ({ camp, isOpen, onClose, onSave }: { camp: any, isOpen: boolean, onClose: () => void, onSave: (updatedCamp: any) => void }) => {
+  const form = useForm({
+    defaultValues: {
+      name: camp.name,
+      type: camp.type,
+      clinician: camp.clinician,
+      startDate: camp.startDate,
+      endDate: camp.endDate,
+      venue: camp.venue,
+      address: camp.address,
+      budget: camp.budget.toString(),
+      notes: camp.notes || "",
+      status: camp.status,
+    },
+  });
+
+  const handleSubmit = (values: any) => {
+    const updatedCamp = {
+      ...camp,
+      name: values.name,
+      type: values.type,
+      clinician: values.clinician,
+      startDate: values.startDate,
+      endDate: values.endDate,
+      venue: values.venue,
+      address: values.address,
+      budget: parseFloat(values.budget),
+      notes: values.notes,
+      status: values.status,
+    };
+    
+    console.log("Updated Camp Data:", updatedCamp);
+    // In a real app, you would update the server
+    onSave(updatedCamp);
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Edit Camp</DialogTitle>
+          <DialogDescription>
+            Update the details for {camp.name}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Camp Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Summer Training Camp 2025" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Camp Type</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="training">Training Camp</SelectItem>
+                        <SelectItem value="skills">Skills Clinic</SelectItem>
+                        <SelectItem value="elite">Elite Training</SelectItem>
+                        <SelectItem value="competition">Competition Prep</SelectItem>
+                        <SelectItem value="youth">Youth Camp</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="clinician"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Lead Clinician</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Coach Name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Start Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(new Date(field.value), "PPP")
+                            ) : (
+                              <span>Select date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={field.value ? new Date(field.value) : undefined}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>End Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(new Date(field.value), "PPP")
+                            ) : (
+                              <span>Select date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={field.value ? new Date(field.value) : undefined}
+                          onSelect={field.onChange}
+                          disabled={(date) => {
+                            const startDate = form.getValues("startDate");
+                            return startDate 
+                              ? date < new Date(startDate) 
+                              : false;
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="venue"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Venue Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Training Center Name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="budget"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Budget</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="10000" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Venue Address</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Full address" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="upcoming">
+                        <div className="flex items-center">
+                          <div className="h-2 w-2 rounded-full bg-blue-500 mr-2"></div>
+                          Upcoming
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="current">
+                        <div className="flex items-center">
+                          <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
+                          Current
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="completed">
+                        <div className="flex items-center">
+                          <div className="h-2 w-2 rounded-full bg-gray-400 mr-2"></div>
+                          Completed
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Additional information about the camp"
+                      className="min-h-[80px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit">Save Changes</Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// DeleteCampDialog Component
+const DeleteCampDialog = ({ camp, isOpen, onClose, onDelete }: { camp: any, isOpen: boolean, onClose: () => void, onDelete: () => void }) => {
+  return (
+    <AlertDialog open={isOpen} onOpenChange={onClose}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            Delete Camp
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete "{camp.name}"? This action cannot be undone and will remove all associated data.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={onClose}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onDelete} className="bg-destructive text-destructive-foreground">
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
 // New Camp Form Component
 const AddCampForm = ({ onClose }: { onClose: () => void }) => {
   const form = useForm({
@@ -798,9 +1372,12 @@ export default function CampOverview() {
   const [selectedCamp, setSelectedCamp] = useState<any>(sampleCamps[0]);
   const [isAddCampOpen, setIsAddCampOpen] = useState(false);
   const [isTasksDialogOpen, setIsTasksDialogOpen] = useState(false);
+  const [isEditCampOpen, setIsEditCampOpen] = useState(false);
+  const [isDeleteCampOpen, setIsDeleteCampOpen] = useState(false);
+  const [campData, setCampData] = useState(sampleCamps);
   
   // In a real app, you would fetch camps from the server
-  const { data: camps = sampleCamps, isLoading } = useQuery({
+  const { data: camps = campData, isLoading } = useQuery({
     queryKey: ['/api/camps'],
     enabled: false, // Disabled for now as we're using sample data
   });
@@ -812,6 +1389,31 @@ export default function CampOverview() {
     const matchesStatus = statusFilter === "all" || camp.status === statusFilter;
     return matchesSearch && matchesStatus;
   }) : [];
+  
+  const handleEditCamp = (updatedCamp: any) => {
+    // Update the camp data
+    const updatedCamps = campData.map(camp => 
+      camp.id === updatedCamp.id ? updatedCamp : camp
+    );
+    setCampData(updatedCamps);
+    setSelectedCamp(updatedCamp);
+    
+    // In a real app, you would also update the server
+    console.log("Updated camp data:", updatedCamp);
+  };
+  
+  const handleDeleteCamp = () => {
+    // Remove the camp from data
+    const updatedCamps = campData.filter(camp => camp.id !== selectedCamp.id);
+    setCampData(updatedCamps);
+    
+    // Select a new camp if available, otherwise clear selection
+    setSelectedCamp(updatedCamps.length > 0 ? updatedCamps[0] : null);
+    setIsDeleteCampOpen(false);
+    
+    // In a real app, you would also delete from the server
+    console.log("Deleted camp:", selectedCamp);
+  };
 
   return (
     <div className="p-6">

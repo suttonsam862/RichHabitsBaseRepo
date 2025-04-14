@@ -598,13 +598,15 @@ export default function StaffManagement() {
                                 <DropdownMenuItem 
                                   className="text-destructive" 
                                   onClick={() => {
-                                    setSelectedStaffMember(staff);
-                                    setTimeout(() => {
-                                      const dialogDeleteBtn = document.querySelector('[data-delete-btn="true"]');
-                                      if (dialogDeleteBtn) {
-                                        (dialogDeleteBtn as HTMLButtonElement).click();
-                                      }
-                                    }, 200);
+                                    // Directly handle deletion without involving the dialog
+                                    const updatedStaff = localStaffData.filter(s => s.id !== staff.id);
+                                    setLocalStaffData(updatedStaff);
+                                    
+                                    toast({
+                                      title: "Staff member deleted",
+                                      description: `${staff.name} has been removed from the system.`,
+                                      variant: "default",
+                                    });
                                   }}
                                 >
                                   Delete

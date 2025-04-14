@@ -3268,35 +3268,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user.visiblePages = Array.from(updatedVisiblePages);
         await storage.updateUserVisiblePages(user.id, user.visiblePages);
         
-        // Update the settings groups if they exist
-        if (settingsData.groups && Array.isArray(settingsData.groups)) {
-          // Find the events group
-          const eventsGroup = settingsData.groups.find((g: any) => 
-            g.id === 'events' || g.title.toLowerCase().includes('event'));
-          
-          if (eventsGroup) {
-            // Replace the existing items with new event pages
-            eventsGroup.items = [
-              { id: 'events/overview', name: 'Camp Overview', enabled: true },
-              { id: 'events/travel', name: 'Travel and Accommodations', enabled: true },
-              { id: 'events/financial', name: 'Financial Management', enabled: true },
-              { id: 'events/staff', name: 'Staff Management', enabled: true },
-              { id: 'events/vendors', name: 'Vendors and Services', enabled: true },
-              { id: 'events/calendar', name: 'Calendar and Scheduling', enabled: true },
-              { id: 'feedback', name: 'Feedback', enabled: true }
-            ];
-          }
-          
-          // Update the navigation settings
-          settingsData.visiblePages = user.visiblePages;
-          await storage.updateUserSettings(user.id, 'navigation', settingsData);
-          
-          results.push({
-            userId: user.id,
-            username: user.username,
-            status: 'updated'
-          });
+        // Ensure groups array exists
+        if (!settingsData.groups || !Array.isArray(settingsData.groups)) {
+          settingsData.groups = [];
         }
+        
+        // Find or create the events group
+        let eventsGroup = settingsData.groups.find((g: any) => 
+          g.id === 'events' || (g.title && g.title.toLowerCase().includes('event')));
+        
+        if (!eventsGroup) {
+          // Create a new events group if one doesn't exist
+          eventsGroup = {
+            id: 'events',
+            title: 'Events',
+            collapsed: false,
+            items: []
+          };
+          settingsData.groups.push(eventsGroup);
+        }
+        
+        // Replace the existing items with new event pages
+        eventsGroup.items = [
+          { id: 'events/overview', name: 'Camp Overview', enabled: true },
+          { id: 'events/travel', name: 'Travel and Accommodations', enabled: true },
+          { id: 'events/financial', name: 'Financial Management', enabled: true },
+          { id: 'events/staff', name: 'Staff Management', enabled: true },
+          { id: 'events/vendors', name: 'Vendors and Services', enabled: true },
+          { id: 'events/calendar', name: 'Calendar and Scheduling', enabled: true },
+          { id: 'feedback', name: 'Feedback', enabled: true }
+        ];
+        
+        // Update the navigation settings
+        settingsData.visiblePages = user.visiblePages;
+        await storage.updateUserSettings(user.id, 'navigation', settingsData);
+        
+        results.push({
+          userId: user.id,
+          username: user.username,
+          status: 'updated'
+        });
       }
       
       res.json({ 

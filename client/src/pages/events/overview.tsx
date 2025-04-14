@@ -5,7 +5,8 @@ import {
   CardContent, 
   CardDescription, 
   CardHeader, 
-  CardTitle 
+  CardTitle, 
+  CardFooter
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,18 @@ import {
   Plus,
   Search,
   Filter,
-  ChevronRight
+  ChevronRight,
+  Info,
+  CheckCircle2,
+  Clock3,
+  AlertCircle,
+  BarChart3,
+  LineChart,
+  PieChart,
+  Activity,
+  Settings,
+  X,
+  Save
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { 
@@ -35,6 +47,34 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useForm } from "react-hook-form";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
 // Sample data for the page
 const sampleCamps = [
@@ -346,10 +386,257 @@ const CampDetails = ({ camp }: { camp: any }) => {
   );
 };
 
+// New Camp Form Component
+const AddCampForm = ({ onClose }: { onClose: () => void }) => {
+  const form = useForm({
+    defaultValues: {
+      name: "",
+      type: "",
+      clinician: "",
+      startDate: undefined,
+      endDate: undefined,
+      venue: "",
+      address: "",
+      budget: "",
+      notes: "",
+    },
+  });
+
+  const handleSubmit = (values: any) => {
+    console.log("New Camp Data:", values);
+    // In a real app, you would save the data to the server
+    onClose();
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Camp Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Summer Training Camp 2025" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Camp Type</FormLabel>
+                <Select 
+                  onValueChange={field.onChange} 
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="training">Training Camp</SelectItem>
+                    <SelectItem value="skills">Skills Clinic</SelectItem>
+                    <SelectItem value="elite">Elite Training</SelectItem>
+                    <SelectItem value="competition">Competition Prep</SelectItem>
+                    <SelectItem value="youth">Youth Camp</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="clinician"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Lead Clinician</FormLabel>
+                <FormControl>
+                  <Input placeholder="Coach Name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="startDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Start Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(new Date(field.value), "PPP")
+                        ) : (
+                          <span>Select date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={field.value ? new Date(field.value) : undefined}
+                      onSelect={field.onChange}
+                      disabled={(date) =>
+                        date < new Date(new Date().setHours(0, 0, 0, 0))
+                      }
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="endDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>End Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(new Date(field.value), "PPP")
+                        ) : (
+                          <span>Select date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={field.value ? new Date(field.value) : undefined}
+                      onSelect={field.onChange}
+                      disabled={(date) => {
+                        const startDate = form.getValues("startDate");
+                        return startDate 
+                          ? date < new Date(startDate) 
+                          : date < new Date(new Date().setHours(0, 0, 0, 0));
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="venue"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Venue Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Training Center Name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="budget"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Budget</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="10000" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        
+        <FormField
+          control={form.control}
+          name="address"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Venue Address</FormLabel>
+              <FormControl>
+                <Input placeholder="Full address" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="notes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Notes</FormLabel>
+              <FormControl>
+                <Textarea 
+                  placeholder="Additional information about the camp"
+                  className="min-h-[80px]"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit">Create Camp</Button>
+        </DialogFooter>
+      </form>
+    </Form>
+  );
+};
+
 export default function CampOverview() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedCamp, setSelectedCamp] = useState<any>(sampleCamps[0]);
+  const [isAddCampOpen, setIsAddCampOpen] = useState(false);
+  const [isTasksDialogOpen, setIsTasksDialogOpen] = useState(false);
   
   // In a real app, you would fetch camps from the server
   const { data: camps = sampleCamps, isLoading } = useQuery({
@@ -373,10 +660,23 @@ export default function CampOverview() {
           <p className="text-gray-500 mt-1">Manage all your camp operations in one place</p>
         </div>
         <div className="mt-4 md:mt-0">
-          <Button className="bg-brand-600 hover:bg-brand-700">
-            <Plus className="mr-2 h-4 w-4" />
-            Add New Camp
-          </Button>
+          <Dialog open={isAddCampOpen} onOpenChange={setIsAddCampOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-brand-600 hover:bg-brand-700">
+                <Plus className="mr-2 h-4 w-4" />
+                Add New Camp
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl">
+              <DialogHeader>
+                <DialogTitle>Create New Camp</DialogTitle>
+                <DialogDescription>
+                  Fill in the details to create a new camp or event.
+                </DialogDescription>
+              </DialogHeader>
+              <AddCampForm onClose={() => setIsAddCampOpen(false)} />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
       

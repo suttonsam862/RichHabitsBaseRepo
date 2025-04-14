@@ -8,6 +8,11 @@ import {
   CardTitle, 
   CardFooter
 } from "@/components/ui/card";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1385,6 +1390,8 @@ export default function CampOverview() {
   const [isEditCampOpen, setIsEditCampOpen] = useState(false);
   const [isDeleteCampOpen, setIsDeleteCampOpen] = useState(false);
   const [campData, setCampData] = useState(sampleCamps);
+  const [clinicianSearchTerm, setClinicianSearchTerm] = useState("");
+  const [selectedClinicians, setSelectedClinicians] = useState<any[]>([]);
   
   // In a real app, you would fetch camps from the server
   const { data: camps = campData, isLoading } = useQuery({
@@ -2277,25 +2284,44 @@ export default function CampOverview() {
                     defaultValue={selectedCamp.participants}
                     className="mt-1"
                     onChange={(e) => {
+                      const participants = parseInt(e.target.value);
+                      const campCost = selectedCamp.campCost || 0;
+                      const totalRevenue = participants * campCost;
+                      
                       setSelectedCamp({
                         ...selectedCamp,
-                        participants: parseInt(e.target.value)
+                        participants: participants,
+                        budget: totalRevenue // Update budget based on participants x camp cost
                       });
                     }}
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Budget</label>
+                  <label className="text-sm font-medium">Camp Cost (per participant)</label>
                   <Input 
                     type="number"
-                    defaultValue={selectedCamp.budget}
+                    defaultValue={selectedCamp.campCost || 0}
                     className="mt-1"
                     onChange={(e) => {
+                      const campCost = parseInt(e.target.value);
+                      const participants = selectedCamp.participants || 0;
+                      const totalRevenue = participants * campCost;
+                      
                       setSelectedCamp({
                         ...selectedCamp,
-                        budget: parseInt(e.target.value)
+                        campCost: campCost,
+                        budget: totalRevenue // Update budget based on participants x camp cost
                       });
                     }}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Total Revenue</label>
+                  <Input 
+                    type="number"
+                    value={(selectedCamp.participants || 0) * (selectedCamp.campCost || 0)}
+                    className="mt-1 bg-gray-50"
+                    disabled
                   />
                 </div>
                 <div>
@@ -2321,18 +2347,131 @@ export default function CampOverview() {
                 </div>
               </div>
               
-              <div>
-                <label className="text-sm font-medium">Clinician</label>
-                <Input 
-                  defaultValue={selectedCamp.clinician}
-                  className="mt-1"
-                  onChange={(e) => {
-                    setSelectedCamp({
-                      ...selectedCamp,
-                      clinician: e.target.value
-                    });
-                  }}
-                />
+              <div className="mb-6">
+                <label className="text-sm font-medium mb-2 block">Assigned Clinicians</label>
+                
+                {/* Selected clinicians display */}
+                <div className="border rounded-md p-2 mb-2 max-h-48 overflow-y-auto">
+                  {selectedCamp.clinicians?.length > 0 ? (
+                    <div className="space-y-2">
+                      {selectedCamp.clinicians.map((clinician: any, index: number) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={clinician.avatar} />
+                              <AvatarFallback>
+                                {clinician.name.split(' ').map((n: string) => n[0]).join('')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium text-sm">{clinician.name}</div>
+                              <div className="text-xs text-gray-500">{clinician.role}</div>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 h-auto"
+                            onClick={() => {
+                              const updatedClinicians = selectedCamp.clinicians.filter((_: any, i: number) => i !== index);
+                              setSelectedCamp({
+                                ...selectedCamp,
+                                clinicians: updatedClinicians
+                              });
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-gray-400 text-center py-4">No clinicians assigned yet</div>
+                  )}
+                </div>
+                
+                {/* Clinician search and add */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <div className="relative flex-grow">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                      <Input 
+                        placeholder="Search clinicians by name..."
+                        className="pl-8"
+                        value={clinicianSearchTerm}
+                        onChange={(e) => setClinicianSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        // In a real app, this would open a dialog to add a new clinician
+                        // or navigate to the staff page
+                        alert("This would redirect to the Staff Management page to add a new clinician.");
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      New
+                    </Button>
+                  </div>
+                  
+                  {/* Mock clinician search results */}
+                  <div className="border rounded-md p-2 max-h-60 overflow-y-auto">
+                    {sampleStaffMembers
+                      .filter(staff => 
+                        staff.name.toLowerCase().includes(clinicianSearchTerm.toLowerCase()) ||
+                        staff.role.toLowerCase().includes(clinicianSearchTerm.toLowerCase())
+                      )
+                      .slice(0, 5) // Limit results
+                      .map((staff, index) => (
+                        <div 
+                          key={index} 
+                          className="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer"
+                          onClick={() => {
+                            const isAlreadySelected = selectedCamp.clinicians?.some(
+                              (c: any) => c.id === staff.id
+                            );
+                            
+                            if (!isAlreadySelected) {
+                              const updatedClinicians = [...(selectedCamp.clinicians || []), staff];
+                              setSelectedCamp({
+                                ...selectedCamp,
+                                clinicians: updatedClinicians
+                              });
+                              setClinicianSearchTerm(""); // Clear search after selection
+                            }
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={staff.avatar} />
+                              <AvatarFallback>
+                                {staff.name.split(' ').map((n: string) => n[0]).join('')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium text-sm">{staff.name}</div>
+                              <div className="text-xs text-gray-500">{staff.role} • ${staff.rate}/{staff.rateType}</div>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="bg-gray-50">
+                            Add
+                          </Badge>
+                        </div>
+                      ))}
+                      
+                    {clinicianSearchTerm && sampleStaffMembers.filter(staff => 
+                      staff.name.toLowerCase().includes(clinicianSearchTerm.toLowerCase()) ||
+                      staff.role.toLowerCase().includes(clinicianSearchTerm.toLowerCase())
+                    ).length === 0 && (
+                      <div className="text-gray-400 text-center py-4">No matching clinicians found</div>
+                    )}
+                    
+                    {!clinicianSearchTerm && (
+                      <div className="text-gray-400 text-center py-4">Type to search for clinicians</div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
             <DialogFooter className="flex justify-between">

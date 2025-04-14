@@ -356,10 +356,12 @@ export default function OrganizationsPage() {
               />
             </div>
             
-            <Button onClick={() => setAddOrgDialogOpen(true)}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add Organization
-            </Button>
+            {isAdmin && (
+              <Button onClick={() => setAddOrgDialogOpen(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Organization
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -489,10 +491,13 @@ export default function OrganizationsPage() {
                     Save Changes
                   </Button>
                 ) : (
-                  <Button variant="outline" onClick={() => setEditMode(true)}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
+                  /* Only show Edit button to admin users */
+                  isAdmin && (
+                    <Button variant="outline" onClick={() => setEditMode(true)}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit
+                    </Button>
+                  )
                 )}
               </div>
 
@@ -800,13 +805,15 @@ export default function OrganizationsPage() {
                 <TabsContent value="contacts" className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-medium">Contacts</h3>
-                    <Button 
-                      size="sm" 
-                      onClick={() => setAddContactDialogOpen(true)}
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Contact
-                    </Button>
+                    {isAdmin && (
+                      <Button 
+                        size="sm" 
+                        onClick={() => setAddContactDialogOpen(true)}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Contact
+                      </Button>
+                    )}
                   </div>
                   
                   {contactsLoading ? (
@@ -820,14 +827,16 @@ export default function OrganizationsPage() {
                       <p className="text-gray-500 text-sm mt-1">
                         Add contacts to keep track of your relationships
                       </p>
-                      <Button 
-                        onClick={() => setAddContactDialogOpen(true)} 
-                        variant="outline" 
-                        className="mt-4"
-                      >
-                        <PlusCircle className="h-4 w-4 mr-1" />
-                        Add First Contact
-                      </Button>
+                      {isAdmin && (
+                        <Button 
+                          onClick={() => setAddContactDialogOpen(true)} 
+                          variant="outline" 
+                          className="mt-4"
+                        >
+                          <PlusCircle className="h-4 w-4 mr-1" />
+                          Add First Contact
+                        </Button>
+                      )}
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

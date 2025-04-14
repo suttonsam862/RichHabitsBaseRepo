@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 import { Loader2, Users, User, Building, Search, Phone, Mail, MapPin, PlusCircle, Edit, Trash, FileText, ShoppingBag, DollarSign, Save, Plus, Dumbbell, GraduationCap, Trophy, UsersRound } from "lucide-react";
 
 interface Organization {
@@ -84,6 +85,8 @@ export default function OrganizationsPage() {
   const [editedOrg, setEditedOrg] = useState<Partial<Organization>>({});
 
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
 
   const { data: organizationsData, isLoading } = useQuery({
     queryKey: ['/api/organizations'],

@@ -32,7 +32,11 @@ import {
   PackageOpen,
   MessageCircle,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Map,
+  Calendar,
+  ClipboardCheck,
+  BarChart
 } from "lucide-react";
 
 interface SidebarProps {
@@ -883,7 +887,54 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           ],
         },
         {
-          title: "Camps & Teams",
+          title: "Camps & Events",
+          items: [
+            {
+              name: "Dashboard",
+              href: "/camps/dashboard",
+              icon: <Map className="mr-2" size={16} />,
+              id: "camps/dashboard",
+            },
+            {
+              name: "Calendar",
+              href: "/camps/calendar",
+              icon: <CalendarClock className="mr-2" size={16} />,
+              id: "camps/calendar",
+            },
+            {
+              name: "Registration",
+              href: "/camps/registration",
+              icon: <FileBarChart className="mr-2" size={16} />,
+              id: "camps/registration",
+            },
+            {
+              name: "Attendees",
+              href: "/camps/attendees",
+              icon: <Users className="mr-2" size={16} />,
+              id: "camps/attendees",
+            },
+            {
+              name: "Camp Management",
+              href: "/camps/management",
+              icon: <Settings className="mr-2" size={16} />,
+              id: "camps/management",
+            },
+            {
+              name: "Reports",
+              href: "/camps/reports",
+              icon: <BarChart3 className="mr-2" size={16} />,
+              id: "camps/reports",
+            },
+            {
+              name: "Feedback",
+              href: "/camps/feedback",
+              icon: <MessageSquare className="mr-2" size={16} />,
+              id: "camps/feedback",
+            },
+          ],
+        },
+        {
+          title: "Communication",
           items: [
             {
               name: "Order Tracking",

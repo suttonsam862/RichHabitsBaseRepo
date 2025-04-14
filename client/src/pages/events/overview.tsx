@@ -1876,7 +1876,7 @@ export default function CampOverview() {
                           }}></div>
                           <div className="absolute inset-[15%] bg-white rounded-full flex items-center justify-center">
                             <div className="text-lg font-semibold">
-                              ${sampleCamps.reduce((acc, camp) => acc + camp.budget, 0).toLocaleString()}
+                              ${campData.reduce((acc, camp) => acc + camp.budget, 0).toLocaleString()}
                             </div>
                           </div>
                         </div>
@@ -1884,7 +1884,7 @@ export default function CampOverview() {
                     </div>
                     
                     <div className="mt-6 grid grid-cols-1 gap-2">
-                      {sampleCamps.map((camp, index) => (
+                      {campData.map((camp, index) => (
                         <div key={camp.id} className="flex items-center">
                           <div className={`h-3 w-3 rounded-full mr-2 ${
                             index === 0 ? 'bg-indigo-500' : 
@@ -1913,7 +1913,7 @@ export default function CampOverview() {
               </CardHeader>
               <CardContent className="pt-4">
                 <div className="space-y-6">
-                  {sampleCamps.map((camp) => (
+                  {campData.map((camp) => (
                     <div key={camp.id}>
                       <div className="flex justify-between mb-1">
                         <div className="text-sm font-medium">{camp.name}</div>
@@ -1963,7 +1963,7 @@ export default function CampOverview() {
                   <div className="relative h-full flex flex-col justify-center">
                     <div className="absolute left-0 right-0 h-1 bg-gray-100"></div>
                     
-                    {sampleCamps.map((camp, index) => {
+                    {campData.map((camp, index) => {
                       const startDate = new Date(camp.startDate);
                       const endDate = new Date(camp.endDate);
                       const startMonth = startDate.getMonth();

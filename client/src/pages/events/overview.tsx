@@ -198,6 +198,8 @@ const TaskStatusIndicator = ({ status }: { status: string }) => {
 
 // Camp Details Component
 const CampDetails = ({ camp }: { camp: any }) => {
+  const [isTasksDialogOpen, setIsTasksDialogOpen] = useState(false);
+  
   return (
     <div className="mt-6">
       <div className="flex flex-col lg:flex-row gap-6">
@@ -308,10 +310,23 @@ const CampDetails = ({ camp }: { camp: any }) => {
               </div>
               
               <div className="flex justify-end mt-4">
-                <Button variant="outline" size="sm" className="text-xs">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-xs"
+                  onClick={() => setIsTasksDialogOpen(true)}
+                >
                   View All Tasks
                 </Button>
               </div>
+              
+              {isTasksDialogOpen && (
+                <TasksDialog
+                  camp={camp}
+                  isOpen={isTasksDialogOpen}
+                  onClose={() => setIsTasksDialogOpen(false)}
+                />
+              )}
             </CardContent>
           </Card>
           
@@ -383,6 +398,152 @@ const CampDetails = ({ camp }: { camp: any }) => {
         </div>
       </div>
     </div>
+  );
+};
+
+// Tasks Dialog Component
+const TasksDialog = ({ camp, isOpen, onClose }: { camp: any, isOpen: boolean, onClose: () => void }) => {
+  const [tasks, setTasks] = useState(camp.tasks);
+  const [newTask, setNewTask] = useState("");
+  
+  const handleAddTask = () => {
+    if (!newTask.trim()) return;
+    setTasks([...tasks, { name: newTask, status: "pending" }]);
+    setNewTask("");
+  };
+  
+  const handleChangeStatus = (index: number, status: string) => {
+    const updatedTasks = [...tasks];
+    updatedTasks[index] = { ...updatedTasks[index], status };
+    setTasks(updatedTasks);
+  };
+  
+  const handleDeleteTask = (index: number) => {
+    const updatedTasks = [...tasks];
+    updatedTasks.splice(index, 1);
+    setTasks(updatedTasks);
+  };
+  
+  const handleSave = () => {
+    // In a real app, you would update the server
+    console.log("Saving updated tasks:", tasks);
+    onClose();
+  };
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center">
+            <FileText className="h-5 w-5 mr-2" />
+            Camp Tasks & Checklist
+          </DialogTitle>
+          <DialogDescription>
+            Manage and track progress of tasks for {camp.name}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4 my-4">
+          <div className="flex items-center space-x-2">
+            <Input 
+              placeholder="Add a new task..."
+              value={newTask}
+              onChange={(e) => setNewTask(e.target.value)}
+              className="flex-1"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAddTask();
+              }}
+            />
+            <Button type="button" onClick={handleAddTask}>
+              Add Task
+            </Button>
+          </div>
+          
+          <div className="border rounded-md">
+            <div className="grid grid-cols-5 border-b bg-muted p-3 font-medium">
+              <div className="col-span-2">Task</div>
+              <div className="col-span-2">Status</div>
+              <div className="text-right">Actions</div>
+            </div>
+            
+            <div className="divide-y">
+              {tasks.map((task: any, index: number) => (
+                <div key={index} className="grid grid-cols-5 p-3 items-center">
+                  <div className="col-span-2">{task.name}</div>
+                  <div className="col-span-2">
+                    <Select 
+                      defaultValue={task.status}
+                      onValueChange={(value) => handleChangeStatus(index, value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">
+                          <div className="flex items-center">
+                            <div className="h-2 w-2 rounded-full bg-gray-300 mr-2"></div>
+                            Pending
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="in-progress">
+                          <div className="flex items-center">
+                            <div className="h-2 w-2 rounded-full bg-yellow-500 mr-2"></div>
+                            In Progress
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="completed">
+                          <div className="flex items-center">
+                            <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
+                            Completed
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDeleteTask(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              
+              {tasks.length === 0 && (
+                <div className="p-4 text-center text-muted-foreground">
+                  No tasks added yet. Add a task to get started.
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <div>
+              <span className="text-sm font-medium">Overall Completion: </span>
+              <span className="text-sm">
+                {Math.round((tasks.filter((t: any) => t.status === "completed").length / tasks.length) * 100 || 0)}%
+              </span>
+            </div>
+            <Progress 
+              value={Math.round((tasks.filter((t: any) => t.status === "completed").length / tasks.length) * 100 || 0)} 
+              className="h-2 w-1/2" 
+            />
+          </div>
+        </div>
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave}>
+            Save Changes
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -645,12 +806,12 @@ export default function CampOverview() {
   });
   
   // Filter camps based on search term and status
-  const filteredCamps = camps.filter((camp: any) => {
+  const filteredCamps = Array.isArray(camps) ? camps.filter((camp: any) => {
     const matchesSearch = camp.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          camp.venue.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || camp.status === statusFilter;
     return matchesSearch && matchesStatus;
-  });
+  }) : [];
 
   return (
     <div className="p-6">
@@ -782,36 +943,375 @@ export default function CampOverview() {
         
         <TabsContent value="timeline">
           <Card>
-            <CardHeader>
-              <CardTitle>Timeline View</CardTitle>
-              <CardDescription>
-                View your camps in a timeline format
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Timeline View</CardTitle>
+                <CardDescription>
+                  View your camps in a timeline format
+                </CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm">
+                  <Calendar className="h-4 w-4 mr-2" /> 
+                  Month
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Filter className="h-4 w-4 mr-2" /> 
+                  Filter
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent className="flex justify-center items-center h-[300px]">
-              <div className="text-center">
-                <p className="text-muted-foreground">Timeline view will be available soon</p>
-                <Button variant="outline" className="mt-4">Return to List View</Button>
+            <CardContent>
+              <div className="p-4 space-y-8">
+                {/* Timeline header */}
+                <div className="flex items-center gap-2 mb-6">
+                  <Button variant="outline" size="sm">
+                    <ChevronRight className="h-4 w-4 rotate-180" />
+                  </Button>
+                  <h3 className="text-lg font-medium">2025</h3>
+                  <Button variant="outline" size="sm">
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                {/* Timeline visualization */}
+                <div className="space-y-12">
+                  {/* Q1 */}
+                  <div>
+                    <h4 className="text-md font-medium mb-4">Q1 (Jan - Mar)</h4>
+                    <div className="relative">
+                      <div className="absolute left-0 right-0 h-1 bg-gray-100 top-8"></div>
+                      
+                      {/* Months labels */}
+                      <div className="relative grid grid-cols-3 mb-6">
+                        <div className="text-center text-sm text-gray-500">January</div>
+                        <div className="text-center text-sm text-gray-500">February</div>
+                        <div className="text-center text-sm text-gray-500">March</div>
+                      </div>
+                      
+                      {/* Events */}
+                      <div className="relative h-24 mb-6">
+                        {/* Winter Training Event (Jan) */}
+                        <div 
+                          className="absolute left-[5%] top-0 w-[25%] h-16 rounded-md bg-blue-50 border border-blue-200 p-2 cursor-pointer"
+                          style={{ width: 'calc(25%)' }}
+                        >
+                          <div className="font-medium text-sm">Winter Training Camp</div>
+                          <div className="text-xs text-gray-500">Jan 5 - Jan 10</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Q2 */}
+                  <div>
+                    <h4 className="text-md font-medium mb-4">Q2 (Apr - Jun)</h4>
+                    <div className="relative">
+                      <div className="absolute left-0 right-0 h-1 bg-gray-100 top-8"></div>
+                      
+                      {/* Months labels */}
+                      <div className="relative grid grid-cols-3 mb-6">
+                        <div className="text-center text-sm text-gray-500">April</div>
+                        <div className="text-center text-sm text-gray-500">May</div>
+                        <div className="text-center text-sm text-gray-500">June</div>
+                      </div>
+                      
+                      {/* Events */}
+                      <div className="relative h-24 mb-6">
+                        {/* Spring Training Clinic (Apr) */}
+                        <div 
+                          className="absolute left-[6%] top-0 w-[10%] h-16 rounded-md bg-green-50 border border-green-200 p-2 cursor-pointer"
+                          style={{ width: 'calc(10%)' }}
+                        >
+                          <div className="font-medium text-sm">Spring Training Clinic</div>
+                          <div className="text-xs text-gray-500">Apr 10 - Apr 12</div>
+                        </div>
+                        
+                        {/* Summer Wrestling Camp (Jun) */}
+                        <div 
+                          className="absolute left-[75%] top-0 w-[25%] h-16 rounded-md bg-amber-50 border border-amber-200 p-2 cursor-pointer"
+                          style={{ width: 'calc(25%)' }}
+                        >
+                          <div className="font-medium text-sm">Summer Wrestling Camp</div>
+                          <div className="text-xs text-gray-500">Jun 15 - Jun 22</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Q3 */}
+                  <div>
+                    <h4 className="text-md font-medium mb-4">Q3 (Jul - Sep)</h4>
+                    <div className="relative">
+                      <div className="absolute left-0 right-0 h-1 bg-gray-100 top-8"></div>
+                      
+                      {/* Months labels */}
+                      <div className="relative grid grid-cols-3 mb-6">
+                        <div className="text-center text-sm text-gray-500">July</div>
+                        <div className="text-center text-sm text-gray-500">August</div>
+                        <div className="text-center text-sm text-gray-500">September</div>
+                      </div>
+                      
+                      {/* Events */}
+                      <div className="relative h-24 mb-6">
+                        {/* Empty quarter */}
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-sm text-gray-400 italic">No events scheduled</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Q4 */}
+                  <div>
+                    <h4 className="text-md font-medium mb-4">Q4 (Oct - Dec)</h4>
+                    <div className="relative">
+                      <div className="absolute left-0 right-0 h-1 bg-gray-100 top-8"></div>
+                      
+                      {/* Months labels */}
+                      <div className="relative grid grid-cols-3 mb-6">
+                        <div className="text-center text-sm text-gray-500">October</div>
+                        <div className="text-center text-sm text-gray-500">November</div>
+                        <div className="text-center text-sm text-gray-500">December</div>
+                      </div>
+                      
+                      {/* Events */}
+                      <div className="relative h-24 mb-6">
+                        {/* Empty quarter */}
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-sm text-gray-400 italic">No events scheduled</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-center mt-6">
+                <Button variant="outline" size="sm" onClick={() => {
+                  const tabsList = document.querySelector('[role="tablist"]');
+                  const listTab = tabsList?.querySelector('[data-value="list"]');
+                  if (listTab) {
+                    (listTab as HTMLElement).click();
+                  }
+                }}>
+                  Return to List View
+                </Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
         
         <TabsContent value="stats">
-          <Card>
-            <CardHeader>
-              <CardTitle>Camp Statistics</CardTitle>
-              <CardDescription>
-                Analytics and statistics about your camps
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-center items-center h-[300px]">
-              <div className="text-center">
-                <p className="text-muted-foreground">Statistics will be available soon</p>
-                <Button variant="outline" className="mt-4">Return to List View</Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <div>
+                  <CardTitle className="text-xl">Camp Participants</CardTitle>
+                  <CardDescription>Total participants by camp</CardDescription>
+                </div>
+                <Button variant="outline" size="sm">
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="h-80">
+                  {/* Bar Chart Visualization */}
+                  <div className="flex flex-col h-full">
+                    <div className="flex justify-between mb-2">
+                      <div className="text-sm font-medium">Camp Name</div>
+                      <div className="text-sm font-medium">Participants</div>
+                    </div>
+                    
+                    {sampleCamps.map((camp) => (
+                      <div key={camp.id} className="mb-3">
+                        <div className="flex justify-between mb-1">
+                          <div className="text-sm truncate max-w-[180px]">{camp.name}</div>
+                          <div className="text-sm">{camp.participants}</div>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-2.5">
+                          <div 
+                            className="bg-brand-600 h-2.5 rounded-full" 
+                            style={{ width: `${(camp.participants / 50) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <div>
+                  <CardTitle className="text-xl">Budget Allocation</CardTitle>
+                  <CardDescription>Funds allocated per camp</CardDescription>
+                </div>
+                <Button variant="outline" size="sm">
+                  <PieChart className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="h-80">
+                  {/* Pie Chart Visualization */}
+                  <div className="h-full flex flex-col justify-between">
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="relative w-48 h-48">
+                        <div className="absolute inset-0 rounded-full bg-gray-100 overflow-hidden">
+                          <div className="absolute inset-0" style={{ 
+                            clipPath: 'polygon(50% 50%, 100% 0%, 100% 100%, 0% 100%, 0% 0%)',
+                            background: 'conic-gradient(#4f46e5 0% 40%, #f59e0b 40% 55%, #10b981 55% 100%)'
+                          }}></div>
+                          <div className="absolute inset-[15%] bg-white rounded-full flex items-center justify-center">
+                            <div className="text-lg font-semibold">
+                              ${sampleCamps.reduce((acc, camp) => acc + camp.budget, 0).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-6 grid grid-cols-1 gap-2">
+                      {sampleCamps.map((camp, index) => (
+                        <div key={camp.id} className="flex items-center">
+                          <div className={`h-3 w-3 rounded-full mr-2 ${
+                            index === 0 ? 'bg-indigo-500' : 
+                            index === 1 ? 'bg-amber-500' : 'bg-emerald-500'
+                          }`}></div>
+                          <div className="text-sm truncate flex-1">{camp.name}</div>
+                          <div className="text-sm font-medium">${camp.budget.toLocaleString()}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <div>
+                  <CardTitle className="text-xl">Task Completion</CardTitle>
+                  <CardDescription>Progress on camp preparation</CardDescription>
+                </div>
+                <Button variant="outline" size="sm">
+                  <Activity className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="space-y-6">
+                  {sampleCamps.map((camp) => (
+                    <div key={camp.id}>
+                      <div className="flex justify-between mb-1">
+                        <div className="text-sm font-medium">{camp.name}</div>
+                        <div className="text-sm">{camp.completionPercentage}%</div>
+                      </div>
+                      <Progress value={camp.completionPercentage} className="h-2" />
+                      <div className="mt-2 grid grid-cols-3 text-xs text-gray-500">
+                        <div className="flex items-center">
+                          <div className="h-2 w-2 rounded-full bg-green-500 mr-1"></div>
+                          <span>
+                            {camp.tasks.filter(t => t.status === 'completed').length} Completed
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="h-2 w-2 rounded-full bg-yellow-500 mr-1"></div>
+                          <span>
+                            {camp.tasks.filter(t => t.status === 'in-progress').length} In Progress
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="h-2 w-2 rounded-full bg-gray-300 mr-1"></div>
+                          <span>
+                            {camp.tasks.filter(t => t.status === 'pending').length} Pending
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <div>
+                  <CardTitle className="text-xl">Camp Timeline</CardTitle>
+                  <CardDescription>Duration and dates of camps</CardDescription>
+                </div>
+                <Button variant="outline" size="sm">
+                  <LineChart className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="h-80">
+                  {/* Timeline Visualization */}
+                  <div className="relative h-full flex flex-col justify-center">
+                    <div className="absolute left-0 right-0 h-1 bg-gray-100"></div>
+                    
+                    {sampleCamps.map((camp, index) => {
+                      const startDate = new Date(camp.startDate);
+                      const endDate = new Date(camp.endDate);
+                      const startMonth = startDate.getMonth();
+                      const startPercentage = (startMonth / 12) * 100;
+                      const duration = Math.max(5, (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 3));
+                      
+                      return (
+                        <div 
+                          key={camp.id} 
+                          className="absolute h-14 rounded-md p-2 flex flex-col justify-center"
+                          style={{ 
+                            left: `${startPercentage}%`, 
+                            width: `${duration}%`,
+                            top: `${20 + index * 20}%`,
+                            backgroundColor: index === 0 ? '#fef3c7' : 
+                                             index === 1 ? '#e0f2fe' : '#dcfce7',
+                            borderLeft: `4px solid ${index === 0 ? '#f59e0b' : 
+                                                     index === 1 ? '#0ea5e9' : '#10b981'}`
+                          }}
+                        >
+                          <div className="text-xs font-medium truncate">{camp.name}</div>
+                          <div className="text-xs text-gray-500">{formatDate(camp.startDate)} - {formatDate(camp.endDate)}</div>
+                        </div>
+                      );
+                    })}
+                    
+                    <div className="absolute -bottom-6 left-0 right-0 flex justify-between text-xs text-gray-500">
+                      <div>Jan</div>
+                      <div>Feb</div>
+                      <div>Mar</div>
+                      <div>Apr</div>
+                      <div>May</div>
+                      <div>Jun</div>
+                      <div>Jul</div>
+                      <div>Aug</div>
+                      <div>Sep</div>
+                      <div>Oct</div>
+                      <div>Nov</div>
+                      <div>Dec</div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="flex justify-center mt-6">
+            <Button variant="outline" onClick={() => {
+              const tabsList = document.querySelector('[role="tablist"]');
+              const listTab = tabsList?.querySelector('[data-value="list"]');
+              if (listTab) {
+                (listTab as HTMLElement).click();
+              }
+            }}>
+              Return to List View
+            </Button>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

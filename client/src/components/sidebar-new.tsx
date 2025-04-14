@@ -559,6 +559,47 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             icon: <LayoutDashboard className="mr-2" size={16} />,
           },
           {
+            name: "Leads",
+            href: "/leads",
+            icon: <Users className="mr-2" size={16} />,
+          },
+          {
+            name: "Orders",
+            href: "/orders",
+            icon: <ShoppingBag className="mr-2" size={16} />,
+          },
+          // Special pages always included for Charlie
+          {
+            name: "Design",
+            href: "/design",
+            icon: <Palette className="mr-2" size={16} />,
+          },
+          {
+            name: "Manufacturing",
+            href: "/manufacturing",
+            icon: <Factory className="mr-2" size={16} />,
+          },
+          {
+            name: "Organizations",
+            href: "/organizations",
+            icon: <Building2 className="mr-2" size={16} />,
+          },
+          {
+            name: "Design Communication",
+            href: "/design-communication",
+            icon: <Palette className="mr-2" size={16} />,
+          },
+          {
+            name: "Production Communication",
+            href: "/production-communication",
+            icon: <Factory className="mr-2" size={16} />,
+          },
+          {
+            name: "Messages",
+            href: "/messages",
+            icon: <MessageSquare className="mr-2" size={16} />,
+          },
+          {
             name: "Profile",
             href: "/profile",
             icon: <User className="mr-2" size={16} />,
@@ -567,6 +608,41 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             name: "Settings",
             href: "/settings",
             icon: <Settings className="mr-2" size={16} />,
+          },
+        ],
+      },
+      {
+        title: "Admin",
+        items: [
+          {
+            name: "Product Management",
+            href: "/admin/product-management",
+            icon: <PackageOpen className="mr-2" size={16} />,
+            id: "product-management",
+          },
+          {
+            name: "Sales Team",
+            href: "/admin/sales-team",
+            icon: <BriefcaseBusiness className="mr-2" size={16} />,
+            id: "sales-team",
+          },
+          {
+            name: "Design Team",
+            href: "/admin/design-team",
+            icon: <PenTool className="mr-2" size={16} />,
+            id: "design-team",
+          },
+          {
+            name: "Manufacturing Team",
+            href: "/admin/manufacturing-team",
+            icon: <HardHat className="mr-2" size={16} />,
+            id: "manufacturing-team",
+          },
+          {
+            name: "Product Creation",
+            href: "/admin/product-creation",
+            icon: <PackageOpen className="mr-2" size={16} />,
+            id: "product-creation",
           },
         ],
       },

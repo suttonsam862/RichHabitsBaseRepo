@@ -63,6 +63,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 // Using sampleStaffMembers imported from constants
 
@@ -325,6 +326,7 @@ const StaffMemberDetails = ({ staffMember, onClose, onEdit, onDelete }: { staffM
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction 
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                data-delete-btn="true"
                 onClick={() => {
                   setIsDeleteConfirmOpen(false);
                   onDelete();
@@ -372,6 +374,9 @@ export default function StaffManagement() {
   const [campFilter, setCampFilter] = useState("all");
   const [selectedStaffMember, setSelectedStaffMember] = useState<any | null>(null);
   const [isAddClinicianOpen, setIsAddClinicianOpen] = useState(false);
+  const [isEditStaffOpen, setIsEditStaffOpen] = useState(false);
+  const [editStaffMember, setEditStaffMember] = useState<Clinician | null>(null);
+  const { toast } = useToast();
   const [newClinician, setNewClinician] = useState<Partial<Clinician>>({
     name: "",
     role: "Clinician",
@@ -395,8 +400,9 @@ export default function StaffManagement() {
     }
   });
   
-  // In a real app, you would fetch staff from the server
-  const { data: staffMembers = sampleStaffMembers as Clinician[], isLoading } = useQuery<Clinician[]>({
+  // In a real app, you would fetch staff from the server and not manage state locally
+  const [localStaffData, setLocalStaffData] = useState<Clinician[]>(sampleStaffMembers as Clinician[]);
+  const { data: staffMembers = localStaffData, isLoading } = useQuery<Clinician[]>({
     queryKey: ['/api/camp-staff'],
     enabled: false, // Disabled for now as we're using sample data
   });
@@ -580,10 +586,29 @@ export default function StaffManagement() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem>Edit</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => {
+                                  setEditStaffMember(staff);
+                                  setIsEditStaffOpen(true);
+                                }}>
+                                  Edit
+                                </DropdownMenuItem>
                                 <DropdownMenuItem>Send Message</DropdownMenuItem>
                                 <DropdownMenuItem>Assign to Camp</DropdownMenuItem>
                                 <DropdownMenuItem>Schedule Shift</DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  className="text-destructive" 
+                                  onClick={() => {
+                                    setSelectedStaffMember(staff);
+                                    setTimeout(() => {
+                                      const dialogDeleteBtn = document.querySelector('[data-delete-btn="true"]');
+                                      if (dialogDeleteBtn) {
+                                        (dialogDeleteBtn as HTMLButtonElement).click();
+                                      }
+                                    }, 200);
+                                  }}
+                                >
+                                  Delete
+                                </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>
@@ -777,8 +802,193 @@ export default function StaffManagement() {
       {selectedStaffMember && (
         <StaffMemberDetails 
           staffMember={selectedStaffMember} 
-          onClose={() => setSelectedStaffMember(null)} 
+          onClose={() => setSelectedStaffMember(null)}
+          onEdit={() => {
+            // Open edit dialog with the selected staff member data
+            setEditStaffMember(selectedStaffMember);
+            setIsEditStaffOpen(true);
+            setSelectedStaffMember(null);
+          }}
+          onDelete={() => {
+            const updatedStaff = localStaffData.filter(staff => staff.id !== selectedStaffMember.id);
+            // In a real app, you'd make an API call to delete the staff member
+            // For now, we'll just show a success toast and update the local state
+            toast({
+              title: "Staff member deleted",
+              description: `${selectedStaffMember.name} has been removed from the system.`,
+              variant: "default",
+            });
+            setLocalStaffData(updatedStaff);
+            setSelectedStaffMember(null);
+          }}
         />
+      )}
+      
+      {/* Edit Staff Dialog */}
+      {editStaffMember && (
+        <Dialog open={isEditStaffOpen} onOpenChange={(open) => {
+          if (!open) setIsEditStaffOpen(false);
+        }}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Edit Staff Member</DialogTitle>
+              <DialogDescription>
+                Update {editStaffMember.name}'s information
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Full Name</label>
+                  <Input 
+                    value={editStaffMember.name}
+                    className="mt-1"
+                    onChange={(e) => {
+                      setEditStaffMember({
+                        ...editStaffMember,
+                        name: e.target.value
+                      });
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Role</label>
+                  <Select 
+                    defaultValue={editStaffMember.role} 
+                    onValueChange={(value) => {
+                      setEditStaffMember({
+                        ...editStaffMember,
+                        role: value
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Clinician">Clinician</SelectItem>
+                      <SelectItem value="Head Coach">Head Coach</SelectItem>
+                      <SelectItem value="Assistant Coach">Assistant Coach</SelectItem>
+                      <SelectItem value="Athletic Trainer">Athletic Trainer</SelectItem>
+                      <SelectItem value="Strength & Conditioning">Strength & Conditioning</SelectItem>
+                      <SelectItem value="Nutritionist">Nutritionist</SelectItem>
+                      <SelectItem value="Team Manager">Team Manager</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Email</label>
+                  <Input 
+                    type="email"
+                    value={editStaffMember.email}
+                    className="mt-1"
+                    onChange={(e) => {
+                      setEditStaffMember({
+                        ...editStaffMember,
+                        email: e.target.value
+                      });
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Phone</label>
+                  <Input 
+                    type="tel"
+                    value={editStaffMember.phone}
+                    className="mt-1"
+                    onChange={(e) => {
+                      setEditStaffMember({
+                        ...editStaffMember,
+                        phone: e.target.value
+                      });
+                    }}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Daily Rate ($)</label>
+                  <Input 
+                    type="number"
+                    value={editStaffMember.rate}
+                    className="mt-1"
+                    onChange={(e) => {
+                      setEditStaffMember({
+                        ...editStaffMember,
+                        rate: Number(e.target.value)
+                      });
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Status</label>
+                  <Select 
+                    defaultValue={editStaffMember.status} 
+                    onValueChange={(value) => {
+                      setEditStaffMember({
+                        ...editStaffMember,
+                        status: value
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">Experience (years)</label>
+                <Input 
+                  value={editStaffMember.experience}
+                  className="mt-1"
+                  onChange={(e) => {
+                    setEditStaffMember({
+                      ...editStaffMember,
+                      experience: e.target.value
+                    });
+                  }}
+                />
+              </div>
+              
+              <div className="mt-4 flex justify-end gap-3">
+                <Button variant="outline" onClick={() => setIsEditStaffOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  className="bg-brand-600 hover:bg-brand-700"
+                  onClick={() => {
+                    // In a real app, you would submit to the server
+                    const updatedStaff = localStaffData.map(staff => 
+                      staff.id === editStaffMember.id ? editStaffMember : staff
+                    );
+                    
+                    setLocalStaffData(updatedStaff);
+                    setIsEditStaffOpen(false);
+                    
+                    toast({
+                      title: "Staff updated",
+                      description: `${editStaffMember.name}'s information has been updated.`,
+                      variant: "default",
+                    });
+                  }}
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
       
       {/* Add Clinician Dialog */}

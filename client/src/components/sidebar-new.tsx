@@ -95,6 +95,15 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   // Initialize collapsed state and other sidebar configs from localStorage AND server
   useEffect(() => {
     try {
+      // SPECIAL CASE FOR CHARLIE: Force reset all sidebar settings on every page load
+      // This ensures Charlie always gets the correct menu regardless of cached settings
+      if (isUserCharlie(user)) {
+        console.log('CHARLIE ACCOUNT DETECTED: Forcing reset of sidebar settings');
+        // Clear any cached sidebar settings for Charlie
+        localStorage.removeItem('sidebarGroups');
+        localStorage.removeItem('sidebarCollapsedGroups');
+      }
+      
       // Load collapsed state from localStorage
       const savedState = localStorage.getItem('sidebarCollapsedGroups');
       if (savedState) {
@@ -341,7 +350,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   const filterMenuItemsByVisibility = (menuGroups: MenuGroup[]): MenuGroup[] => {
     // SPECIAL CASE: Charlie needs full access regardless of server permissions
     // We define this first to avoid any conflicts with other checks
-    if (user?.username === 'charliereeves' || user?.email === 'charliereeves@rich-habits.com') {
+    if (isUserCharlie(user)) {
       console.log("SPECIAL OVERRIDE: Showing all pages for Charlie Reeves without filtering");
       return menuGroups;
     }
@@ -544,11 +553,17 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
     return result;
   };
 
+  // Helper function to check if current user is Charlie
+  // This is used throughout the component for special case handling
+  const isUserCharlie = (user: any) => {
+    return user?.username?.toLowerCase()?.includes('charliereeves') || 
+           user?.email?.toLowerCase()?.includes('charliereeves');
+  };
+  
   // Get menu items based on user role
   const getMenuItems = () => {
-    // Special case for Charlie
-    const isCharlie = user?.username === 'charliereeves' || user?.email === 'charliereeves@rich-habits.com';
-    if (isCharlie) {
+    // Special case for Charlie - using the helper function for consistency
+    if (isUserCharlie(user)) {
       console.log("SPECIAL MENU: Using Charlie-specific menu items");
       // Custom menu specifically for Charlie with all permissions
       return [

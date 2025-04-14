@@ -28,7 +28,8 @@ import {
   Medal,
   Briefcase,
   DollarSign,
-  FileText
+  FileText,
+  X
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { 
@@ -52,6 +53,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Using sampleStaffMembers imported from constants
 
@@ -77,11 +88,13 @@ const getStatusColor = (status: string) => {
 };
 
 // Staff Member Details Component
-const StaffMemberDetails = ({ staffMember, onClose }: { staffMember: any, onClose: () => void }) => {
+const StaffMemberDetails = ({ staffMember, onClose, onEdit, onDelete }: { staffMember: any, onClose: () => void, onEdit: () => void, onDelete: () => void }) => {
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+        <DialogHeader className="sticky top-0 bg-white z-10 pb-3 pt-0">
           <DialogTitle>Staff Member Details</DialogTitle>
           <DialogDescription>
             Comprehensive profile information
@@ -258,7 +271,7 @@ const StaffMemberDetails = ({ staffMember, onClose }: { staffMember: any, onClos
                           </div>
                         </td>
                         <td className="p-2 text-sm">
-                          <Badge className={getStatusColor(doc.status)}>
+                          <Badge className={getDocumentStatusColor(doc.status)}>
                             {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
                           </Badge>
                         </td>
@@ -275,12 +288,54 @@ const StaffMemberDetails = ({ staffMember, onClose }: { staffMember: any, onClos
           </div>
         </div>
         
-        <div className="mt-6 flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>Close</Button>
-          <Button variant="outline">Send Message</Button>
-          <Button className="bg-brand-600 hover:bg-brand-700">Edit Profile</Button>
+        <div className="mt-6 flex justify-between gap-2">
+          <Button 
+            variant="outline" 
+            className="text-destructive border-destructive/20 hover:bg-destructive/10"
+            onClick={() => setIsDeleteConfirmOpen(true)}
+          >
+            Delete Staff
+          </Button>
+          
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>Close</Button>
+            <Button variant="outline">Send Message</Button>
+            <Button 
+              className="bg-brand-600 hover:bg-brand-700"
+              onClick={onEdit}
+            >
+              Edit Profile
+            </Button>
+          </div>
         </div>
       </DialogContent>
+      
+      {/* Delete Confirmation Dialog */}
+      {isDeleteConfirmOpen && (
+        <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete {staffMember.name}'s 
+                record and remove all associated data from the system.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => {
+                  setIsDeleteConfirmOpen(false);
+                  onDelete();
+                }}
+              >
+                Delete Staff
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </Dialog>
   );
 };

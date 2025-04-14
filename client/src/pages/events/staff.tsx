@@ -401,11 +401,10 @@ export default function StaffManagement() {
   });
   
   // In a real app, you would fetch staff from the server and not manage state locally
-  const [localStaffData, setLocalStaffData] = useState<Clinician[]>(sampleStaffMembers as Clinician[]);
-  const { data: staffMembers = localStaffData, isLoading } = useQuery<Clinician[]>({
-    queryKey: ['/api/camp-staff'],
-    enabled: false, // Disabled for now as we're using sample data
-  });
+  const [staffData, setStaffData] = useState<Clinician[]>(sampleStaffMembers as Clinician[]);
+  
+  // This will force the component to rerender when staffData changes
+  const staffMembers = staffData;
   
   // Filter staff based on search and filters
   const filteredStaff = staffMembers.filter((staff: Clinician) => {
@@ -599,8 +598,8 @@ export default function StaffManagement() {
                                   className="text-destructive" 
                                   onClick={() => {
                                     // Directly handle deletion without involving the dialog
-                                    const updatedStaff = localStaffData.filter(s => s.id !== staff.id);
-                                    setLocalStaffData(updatedStaff);
+                                    const updatedStaff = staffData.filter(s => s.id !== staff.id);
+                                    setStaffData(updatedStaff);
                                     
                                     toast({
                                       title: "Staff member deleted",
@@ -812,7 +811,7 @@ export default function StaffManagement() {
             setSelectedStaffMember(null);
           }}
           onDelete={() => {
-            const updatedStaff = localStaffData.filter(staff => staff.id !== selectedStaffMember.id);
+            const updatedStaff = staffData.filter(staff => staff.id !== selectedStaffMember.id);
             // In a real app, you'd make an API call to delete the staff member
             // For now, we'll just show a success toast and update the local state
             toast({
@@ -820,7 +819,7 @@ export default function StaffManagement() {
               description: `${selectedStaffMember.name} has been removed from the system.`,
               variant: "default",
             });
-            setLocalStaffData(updatedStaff);
+            setStaffData(updatedStaff);
             setSelectedStaffMember(null);
           }}
         />
@@ -971,11 +970,11 @@ export default function StaffManagement() {
                   className="bg-brand-600 hover:bg-brand-700"
                   onClick={() => {
                     // In a real app, you would submit to the server
-                    const updatedStaff = localStaffData.map(staff => 
+                    const updatedStaff = staffData.map(staff => 
                       staff.id === editStaffMember.id ? editStaffMember : staff
                     );
                     
-                    setLocalStaffData(updatedStaff);
+                    setStaffData(updatedStaff);
                     setIsEditStaffOpen(false);
                     
                     toast({
@@ -1138,7 +1137,7 @@ export default function StaffManagement() {
                 className="bg-brand-600 hover:bg-brand-700"
                 onClick={() => {
                   // Create a new clinician with a unique ID
-                  const newId = Math.max(0, ...localStaffData.map(s => s.id)) + 1;
+                  const newId = Math.max(0, ...staffData.map(s => s.id)) + 1;
                   const newStaffMember: Clinician = {
                     ...newClinician as Clinician,
                     id: newId,
@@ -1152,7 +1151,7 @@ export default function StaffManagement() {
                   };
                   
                   // Update local data
-                  setLocalStaffData([...localStaffData, newStaffMember]);
+                  setStaffData([...staffData, newStaffMember]);
                   
                   // Reset form and close dialog
                   setIsAddClinicianOpen(false);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { sampleStaffMembers, getDocumentStatusColor } from "@/lib/constants";
 import { 
@@ -400,11 +400,20 @@ export default function StaffManagement() {
     }
   });
   
-  // In a real app, you would fetch staff from the server and not manage state locally
-  const [staffData, setStaffData] = useState<Clinician[]>(sampleStaffMembers as Clinician[]);
+  // Create state for the raw staff data and the filtered staff data
+  const [staffData, setStaffData] = useState<Clinician[]>([]);
+  const [staffMembers, setStaffMembers] = useState<Clinician[]>([]);
   
-  // This will force the component to rerender when staffData changes
-  const staffMembers = staffData;
+  // Initialize staff data from the sample data
+  useEffect(() => {
+    setStaffData(sampleStaffMembers as Clinician[]);
+  }, []);
+  
+  // When staffData changes, update staffMembers
+  useEffect(() => {
+    setStaffMembers([...staffData]);
+    console.log("Staff data updated:", staffData.length, "members");
+  }, [staffData]);
   
   // Filter staff based on search and filters
   const filteredStaff = staffMembers.filter((staff: Clinician) => {
@@ -811,14 +820,18 @@ export default function StaffManagement() {
             setSelectedStaffMember(null);
           }}
           onDelete={() => {
-            const updatedStaff = staffData.filter(staff => staff.id !== selectedStaffMember.id);
             // In a real app, you'd make an API call to delete the staff member
-            // For now, we'll just show a success toast and update the local state
+            // Remove staff member from our state
+            const updatedStaff = [...staffData].filter(staff => staff.id !== selectedStaffMember.id);
+            
+            // Show success notification
             toast({
               title: "Staff member deleted",
               description: `${selectedStaffMember.name} has been removed from the system.`,
               variant: "default",
             });
+            
+            // Update state and close dialog
             setStaffData(updatedStaff);
             setSelectedStaffMember(null);
           }}

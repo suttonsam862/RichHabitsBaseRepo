@@ -1950,6 +1950,264 @@ export default function CampOverview() {
           </div>
         </TabsContent>
       </Tabs>
+      
+      {/* Edit Camp Dialog */}
+      {isEditCampOpen && selectedCamp && (
+        <Dialog open={isEditCampOpen} onOpenChange={(open) => {
+          if (!open) setIsEditCampOpen(false);
+        }}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Edit Camp</DialogTitle>
+              <DialogDescription>
+                Update the details for {selectedCamp.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Camp Name</label>
+                  <Input 
+                    defaultValue={selectedCamp.name}
+                    className="mt-1"
+                    onChange={(e) => {
+                      setSelectedCamp({
+                        ...selectedCamp,
+                        name: e.target.value
+                      });
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Camp Type</label>
+                  <Select 
+                    defaultValue={selectedCamp.type} 
+                    onValueChange={(value) => {
+                      setSelectedCamp({
+                        ...selectedCamp,
+                        type: value
+                      });
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Training Camp">Training Camp</SelectItem>
+                      <SelectItem value="Skills Clinic">Skills Clinic</SelectItem>
+                      <SelectItem value="Elite Training">Elite Training</SelectItem>
+                      <SelectItem value="Competition">Competition</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Start Date</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal mt-1"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {selectedCamp.startDate ? format(new Date(selectedCamp.startDate), "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <CalendarComponent
+                        mode="single"
+                        selected={new Date(selectedCamp.startDate)}
+                        onSelect={(date) => {
+                          if (date) {
+                            setSelectedCamp({
+                              ...selectedCamp,
+                              startDate: format(date, "yyyy-MM-dd")
+                            });
+                          }
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium">End Date</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal mt-1"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {selectedCamp.endDate ? format(new Date(selectedCamp.endDate), "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <CalendarComponent
+                        mode="single"
+                        selected={new Date(selectedCamp.endDate)}
+                        onSelect={(date) => {
+                          if (date) {
+                            setSelectedCamp({
+                              ...selectedCamp,
+                              endDate: format(date, "yyyy-MM-dd")
+                            });
+                          }
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">Venue</label>
+                <Input 
+                  defaultValue={selectedCamp.venue}
+                  className="mt-1"
+                  onChange={(e) => {
+                    setSelectedCamp({
+                      ...selectedCamp,
+                      venue: e.target.value
+                    });
+                  }}
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">Address</label>
+                <Input 
+                  defaultValue={selectedCamp.address}
+                  className="mt-1"
+                  onChange={(e) => {
+                    setSelectedCamp({
+                      ...selectedCamp,
+                      address: e.target.value
+                    });
+                  }}
+                />
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Participants</label>
+                  <Input 
+                    type="number"
+                    defaultValue={selectedCamp.participants}
+                    className="mt-1"
+                    onChange={(e) => {
+                      setSelectedCamp({
+                        ...selectedCamp,
+                        participants: parseInt(e.target.value)
+                      });
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Budget</label>
+                  <Input 
+                    type="number"
+                    defaultValue={selectedCamp.budget}
+                    className="mt-1"
+                    onChange={(e) => {
+                      setSelectedCamp({
+                        ...selectedCamp,
+                        budget: parseInt(e.target.value)
+                      });
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Status</label>
+                  <Select 
+                    defaultValue={selectedCamp.status} 
+                    onValueChange={(value) => {
+                      setSelectedCamp({
+                        ...selectedCamp,
+                        status: value
+                      });
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="upcoming">Upcoming</SelectItem>
+                      <SelectItem value="current">Current</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">Clinician</label>
+                <Input 
+                  defaultValue={selectedCamp.clinician}
+                  className="mt-1"
+                  onChange={(e) => {
+                    setSelectedCamp({
+                      ...selectedCamp,
+                      clinician: e.target.value
+                    });
+                  }}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditCampOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => {
+                // Calculate total days
+                const start = new Date(selectedCamp.startDate);
+                const end = new Date(selectedCamp.endDate);
+                const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
+                
+                // Update camp with new data
+                const updatedCamp = {
+                  ...selectedCamp,
+                  totalDays
+                };
+                
+                handleEditCamp(updatedCamp);
+                setIsEditCampOpen(false);
+              }}>
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      {/* Delete Camp Dialog */}
+      {isDeleteCampOpen && selectedCamp && (
+        <AlertDialog open={isDeleteCampOpen} onOpenChange={(open) => {
+          if (!open) setIsDeleteCampOpen(false);
+        }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete <strong>{selectedCamp.name}</strong> and all related data.
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setIsDeleteCampOpen(false)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteCamp} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }

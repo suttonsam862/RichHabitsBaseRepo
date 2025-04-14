@@ -56,6 +56,11 @@ import HybridDashboard from "./pages/hybrid/dashboard";
 
 // Events pages
 import EventCalendar from "./pages/events/calendar";
+import CampOverview from "./pages/events/overview";
+import TravelAccommodations from "./pages/events/travel";
+import FinancialManagement from "./pages/events/financial";
+import StaffManagement from "./pages/events/staff";
+import VendorsServices from "./pages/events/vendors";
 
 // Admin pages
 import SalesTeam from "./pages/admin/sales-team";

@@ -1449,8 +1449,8 @@ export default function CampOverview() {
                 Add New Camp
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl">
-              <DialogHeader>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-6">
+              <DialogHeader className="sticky top-0 bg-white z-10 pb-3 pt-0">
                 <DialogTitle>Create New Camp</DialogTitle>
                 <DialogDescription>
                   Fill in the details to create a new camp or event.
@@ -2142,8 +2142,8 @@ export default function CampOverview() {
         <Dialog open={isEditCampOpen} onOpenChange={(open) => {
           if (!open) setIsEditCampOpen(false);
         }}>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-6">
+            <DialogHeader className="sticky top-0 bg-white z-10 pb-3 pt-0">
               <DialogTitle>Edit Camp</DialogTitle>
               <DialogDescription>
                 Update the details for {selectedCamp.name}

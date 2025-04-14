@@ -2415,9 +2415,51 @@ export default function CampOverview() {
                     </Button>
                   </div>
                   
-                  {/* Mock clinician search results */}
+                  {/* Clinician search results */}
                   <div className="border rounded-md p-2 max-h-60 overflow-y-auto">
-                    {sampleStaffMembers
+                    {/* Mock data for clinician search */}
+                    {[
+                      {
+                        id: 1,
+                        name: "John Smith",
+                        role: "Head Coach",
+                        avatar: "",
+                        rate: 250,
+                        rateType: "daily"
+                      },
+                      {
+                        id: 2,
+                        name: "Sarah Thompson",
+                        role: "Assistant Coach",
+                        avatar: "",
+                        rate: 200,
+                        rateType: "daily"
+                      },
+                      {
+                        id: 3,
+                        name: "David Johnson",
+                        role: "Athletic Trainer",
+                        avatar: "",
+                        rate: 220,
+                        rateType: "daily"
+                      },
+                      {
+                        id: 4,
+                        name: "Michael Wilson",
+                        role: "Strength & Conditioning",
+                        avatar: "",
+                        rate: 200,
+                        rateType: "daily"
+                      },
+                      {
+                        id: 5,
+                        name: "Robert Davis",
+                        role: "Head Coach",
+                        avatar: "",
+                        rate: 275,
+                        rateType: "daily"
+                      }
+                    ]
                       .filter(staff => 
                         staff.name.toLowerCase().includes(clinicianSearchTerm.toLowerCase()) ||
                         staff.role.toLowerCase().includes(clinicianSearchTerm.toLowerCase())
@@ -2460,7 +2502,48 @@ export default function CampOverview() {
                         </div>
                       ))}
                       
-                    {clinicianSearchTerm && sampleStaffMembers.filter(staff => 
+                    {clinicianSearchTerm && [
+                      {
+                        id: 1,
+                        name: "John Smith",
+                        role: "Head Coach",
+                        avatar: "",
+                        rate: 250,
+                        rateType: "daily"
+                      },
+                      {
+                        id: 2,
+                        name: "Sarah Thompson",
+                        role: "Assistant Coach",
+                        avatar: "",
+                        rate: 200,
+                        rateType: "daily"
+                      },
+                      {
+                        id: 3,
+                        name: "David Johnson",
+                        role: "Athletic Trainer",
+                        avatar: "",
+                        rate: 220,
+                        rateType: "daily"
+                      },
+                      {
+                        id: 4,
+                        name: "Michael Wilson",
+                        role: "Strength & Conditioning",
+                        avatar: "",
+                        rate: 200,
+                        rateType: "daily"
+                      },
+                      {
+                        id: 5,
+                        name: "Robert Davis",
+                        role: "Head Coach",
+                        avatar: "",
+                        rate: 275,
+                        rateType: "daily"
+                      }
+                    ].filter(staff => 
                       staff.name.toLowerCase().includes(clinicianSearchTerm.toLowerCase()) ||
                       staff.role.toLowerCase().includes(clinicianSearchTerm.toLowerCase())
                     ).length === 0 && (

@@ -1539,31 +1539,17 @@ export default function CampOverview() {
                           </Badge>
                         </td>
                         <td className="p-4 text-right">
-                          <div className="flex justify-end space-x-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedCamp(camp);
-                                setIsEditCampOpen(true);
-                              }}
-                            >
-                              Edit
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-destructive hover:text-destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedCamp(camp);
-                                setIsDeleteCampOpen(true);
-                              }}
-                            >
-                              Delete
-                            </Button>
-                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedCamp(camp);
+                              setIsEditCampOpen(true);
+                            }}
+                          >
+                            Edit
+                          </Button>
                         </td>
                       </tr>
                     ))}
@@ -1627,14 +1613,62 @@ export default function CampOverview() {
                       
                       {/* Events */}
                       <div className="relative h-24 mb-6">
-                        {/* Winter Training Event (Jan) */}
-                        <div 
-                          className="absolute left-[5%] top-0 w-[25%] h-16 rounded-md bg-blue-50 border border-blue-200 p-2 cursor-pointer"
-                          style={{ width: 'calc(25%)' }}
-                        >
-                          <div className="font-medium text-sm">Winter Training Camp</div>
-                          <div className="text-xs text-gray-500">Jan 5 - Jan 10</div>
-                        </div>
+                        {campData
+                          .filter(camp => {
+                            const startDate = new Date(camp.startDate);
+                            return startDate.getMonth() >= 0 && startDate.getMonth() <= 2; // Jan-Mar (0-2)
+                          })
+                          .map(camp => {
+                            const startDate = new Date(camp.startDate);
+                            const endDate = new Date(camp.endDate);
+                            
+                            // Calculate position and width
+                            const monthPercentage = 100 / 3; // 3 months per quarter
+                            const startMonth = startDate.getMonth() % 3; // 0-2 within the quarter
+                            const startDay = startDate.getDate();
+                            const daysInMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
+                            
+                            // Position based on month and day
+                            const leftPosition = (startMonth * monthPercentage) + 
+                              ((startDay / daysInMonth) * monthPercentage);
+                            
+                            // Width based on duration (days)
+                            const campDuration = camp.totalDays;
+                            const daysIn90Days = 90; // Approximate days in a quarter
+                            const widthPercentage = (campDuration / daysIn90Days) * 100;
+                            
+                            // Color based on status
+                            const bgColor = 
+                              camp.status === 'upcoming' ? 'bg-blue-50 border-blue-200' :
+                              camp.status === 'current' ? 'bg-green-50 border-green-200' :
+                              'bg-gray-50 border-gray-200';
+                            
+                            return (
+                              <div 
+                                key={camp.id}
+                                className={`absolute top-0 h-16 rounded-md ${bgColor} p-2 cursor-pointer`}
+                                style={{ 
+                                  left: `${leftPosition}%`,
+                                  width: `${widthPercentage}%`,
+                                  minWidth: '80px'
+                                }}
+                                onClick={() => setSelectedCamp(camp)}
+                              >
+                                <div className="font-medium text-sm truncate">{camp.name}</div>
+                                <div className="text-xs text-gray-500">
+                                  {format(startDate, "MMM d")} - {format(endDate, "MMM d")}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        {campData.filter(camp => {
+                          const startDate = new Date(camp.startDate);
+                          return startDate.getMonth() >= 0 && startDate.getMonth() <= 2;
+                        }).length === 0 && (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="text-sm text-gray-400 italic">No events scheduled</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1654,23 +1688,62 @@ export default function CampOverview() {
                       
                       {/* Events */}
                       <div className="relative h-24 mb-6">
-                        {/* Spring Training Clinic (Apr) */}
-                        <div 
-                          className="absolute left-[6%] top-0 w-[10%] h-16 rounded-md bg-green-50 border border-green-200 p-2 cursor-pointer"
-                          style={{ width: 'calc(10%)' }}
-                        >
-                          <div className="font-medium text-sm">Spring Training Clinic</div>
-                          <div className="text-xs text-gray-500">Apr 10 - Apr 12</div>
-                        </div>
-                        
-                        {/* Summer Wrestling Camp (Jun) */}
-                        <div 
-                          className="absolute left-[75%] top-0 w-[25%] h-16 rounded-md bg-amber-50 border border-amber-200 p-2 cursor-pointer"
-                          style={{ width: 'calc(25%)' }}
-                        >
-                          <div className="font-medium text-sm">Summer Wrestling Camp</div>
-                          <div className="text-xs text-gray-500">Jun 15 - Jun 22</div>
-                        </div>
+                        {campData
+                          .filter(camp => {
+                            const startDate = new Date(camp.startDate);
+                            return startDate.getMonth() >= 3 && startDate.getMonth() <= 5; // Apr-Jun (3-5)
+                          })
+                          .map(camp => {
+                            const startDate = new Date(camp.startDate);
+                            const endDate = new Date(camp.endDate);
+                            
+                            // Calculate position and width
+                            const monthPercentage = 100 / 3; // 3 months per quarter
+                            const startMonth = startDate.getMonth() % 3; // 0-2 within the quarter
+                            const startDay = startDate.getDate();
+                            const daysInMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
+                            
+                            // Position based on month and day
+                            const leftPosition = (startMonth * monthPercentage) + 
+                              ((startDay / daysInMonth) * monthPercentage);
+                            
+                            // Width based on duration (days)
+                            const campDuration = camp.totalDays;
+                            const daysIn90Days = 90; // Approximate days in a quarter
+                            const widthPercentage = (campDuration / daysIn90Days) * 100;
+                            
+                            // Color based on status
+                            const bgColor = 
+                              camp.status === 'upcoming' ? 'bg-blue-50 border-blue-200' :
+                              camp.status === 'current' ? 'bg-green-50 border-green-200' :
+                              'bg-gray-50 border-gray-200';
+                            
+                            return (
+                              <div 
+                                key={camp.id}
+                                className={`absolute top-0 h-16 rounded-md ${bgColor} p-2 cursor-pointer`}
+                                style={{ 
+                                  left: `${leftPosition}%`,
+                                  width: `${widthPercentage}%`,
+                                  minWidth: '80px'
+                                }}
+                                onClick={() => setSelectedCamp(camp)}
+                              >
+                                <div className="font-medium text-sm truncate">{camp.name}</div>
+                                <div className="text-xs text-gray-500">
+                                  {format(startDate, "MMM d")} - {format(endDate, "MMM d")}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        {campData.filter(camp => {
+                          const startDate = new Date(camp.startDate);
+                          return startDate.getMonth() >= 3 && startDate.getMonth() <= 5;
+                        }).length === 0 && (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="text-sm text-gray-400 italic">No events scheduled</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1760,7 +1833,7 @@ export default function CampOverview() {
                       <div className="text-sm font-medium">Participants</div>
                     </div>
                     
-                    {sampleCamps.map((camp) => (
+                    {campData.map((camp) => (
                       <div key={camp.id} className="mb-3">
                         <div className="flex justify-between mb-1">
                           <div className="text-sm truncate max-w-[180px]">{camp.name}</div>
@@ -2158,27 +2231,40 @@ export default function CampOverview() {
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditCampOpen(false)}>
-                Cancel
+            <DialogFooter className="flex justify-between">
+              <Button 
+                variant="outline" 
+                type="button"
+                className="bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20 hover:text-destructive hover:border-destructive/30"
+                onClick={() => {
+                  setIsEditCampOpen(false);
+                  setIsDeleteCampOpen(true);
+                }}
+              >
+                Delete Camp
               </Button>
-              <Button onClick={() => {
-                // Calculate total days
-                const start = new Date(selectedCamp.startDate);
-                const end = new Date(selectedCamp.endDate);
-                const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
-                
-                // Update camp with new data
-                const updatedCamp = {
-                  ...selectedCamp,
-                  totalDays
-                };
-                
-                handleEditCamp(updatedCamp);
-                setIsEditCampOpen(false);
-              }}>
-                Save Changes
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setIsEditCampOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={() => {
+                  // Calculate total days
+                  const start = new Date(selectedCamp.startDate);
+                  const end = new Date(selectedCamp.endDate);
+                  const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
+                  
+                  // Update camp with new data
+                  const updatedCamp = {
+                    ...selectedCamp,
+                    totalDays
+                  };
+                  
+                  handleEditCamp(updatedCamp);
+                  setIsEditCampOpen(false);
+                }}>
+                  Save Changes
+                </Button>
+              </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>

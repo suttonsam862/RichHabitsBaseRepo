@@ -556,15 +556,34 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   // Helper function to check if current user is Charlie
   // This is used throughout the component for special case handling
   const isUserCharlie = (user: any) => {
-    return user?.username?.toLowerCase()?.includes('charliereeves') || 
-           user?.email?.toLowerCase()?.includes('charliereeves');
+    const isCharlie = user?.username?.toLowerCase()?.includes('charliereeves') || 
+                      user?.email?.toLowerCase()?.includes('charliereeves');
+    
+    // Add extra debug logging to help diagnose deployment issues
+    if (isCharlie) {
+      console.log('DEPLOYMENT DEBUG - Charlie account detected:', {
+        username: user?.username, 
+        email: user?.email,
+        environment: import.meta.env.MODE,
+        time: new Date().toISOString(),
+        visiblePages: user?.visiblePages
+      });
+    }
+    
+    return isCharlie;
   };
   
   // Get menu items based on user role
   const getMenuItems = () => {
     // Special case for Charlie - using the helper function for consistency
+    // This bypasses all server-side permissions and hardcodes a full menu
     if (isUserCharlie(user)) {
       console.log("SPECIAL MENU: Using Charlie-specific menu items");
+      
+      // If we're in production, add an extra console log to help debug deployment issues
+      if (import.meta.env.PROD) {
+        console.log("PRODUCTION ENVIRONMENT DETECTED - Charlie access activated!");
+      }
       // Custom menu specifically for Charlie with all permissions
       return [
         {

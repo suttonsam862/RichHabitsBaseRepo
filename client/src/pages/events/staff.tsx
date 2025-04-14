@@ -464,21 +464,69 @@ const StaffMemberDetails = ({ staffMember, onClose }: { staffMember: any, onClos
   );
 };
 
+// Define the Clinician interface
+interface Clinician {
+  id: number;
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+  avatar: string;
+  status: string;
+  experience: string;
+  skills: string[];
+  certifications: string[];
+  rate: number;
+  rateType: string;
+  availability: string;
+  camps: Array<{id: number, name: string}>;
+  assignedShifts: any[];
+  documents: any[];
+  emergencyContact: {
+    name: string;
+    relationship: string;
+    phone: string;
+  };
+}
+
 export default function StaffManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [campFilter, setCampFilter] = useState("all");
   const [selectedStaffMember, setSelectedStaffMember] = useState<any | null>(null);
+  const [isAddClinicianOpen, setIsAddClinicianOpen] = useState(false);
+  const [newClinician, setNewClinician] = useState<Partial<Clinician>>({
+    name: "",
+    role: "Clinician",
+    email: "",
+    phone: "",
+    avatar: "",
+    status: "pending",
+    experience: "",
+    skills: [],
+    certifications: [],
+    rate: 0,
+    rateType: "daily",
+    availability: "part-time",
+    camps: [],
+    assignedShifts: [],
+    documents: [],
+    emergencyContact: {
+      name: "",
+      relationship: "",
+      phone: ""
+    }
+  });
   
   // In a real app, you would fetch staff from the server
-  const { data: staffMembers = sampleStaffMembers, isLoading } = useQuery({
+  const { data: staffMembers = sampleStaffMembers as Clinician[], isLoading } = useQuery<Clinician[]>({
     queryKey: ['/api/camp-staff'],
     enabled: false, // Disabled for now as we're using sample data
   });
   
   // Filter staff based on search and filters
-  const filteredStaff = staffMembers.filter((staff: any) => {
+  const filteredStaff = staffMembers.filter((staff: Clinician) => {
     // Apply search term
     const matchesSearch = 
       staff.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -492,21 +540,21 @@ export default function StaffManagement() {
     const matchesStatus = statusFilter === "all" || staff.status.toLowerCase() === statusFilter.toLowerCase();
     
     // Apply camp filter
-    const matchesCamp = campFilter === "all" || staff.camps.some((camp: any) => camp.id.toString() === campFilter);
+    const matchesCamp = campFilter === "all" || staff.camps.some((camp) => camp.id.toString() === campFilter);
     
     return matchesSearch && matchesRole && matchesStatus && matchesCamp;
   });
   
   // Get unique roles for filter
-  const roles = Array.from(new Set(staffMembers.map((staff: any) => staff.role)));
+  const roles = Array.from(new Set(staffMembers.map((staff: Clinician) => staff.role)));
   
   // Get unique camps for filter
   const camps = Array.from(
     new Set(
-      staffMembers.flatMap((staff: any) => staff.camps)
-        .map(JSON.stringify)
+      staffMembers.flatMap((staff: Clinician) => staff.camps)
+        .map((camp) => JSON.stringify(camp))
     )
-  ).map(JSON.parse);
+  ).map((campString: string) => JSON.parse(campString));
   
   // Remove duplicates by id
   const uniqueCamps = Array.from(new Map(camps.map((camp: any) => [camp.id, camp])).values());
@@ -523,9 +571,9 @@ export default function StaffManagement() {
             <Plus className="mr-2 h-4 w-4" />
             Add Shift
           </Button>
-          <Button className="bg-brand-600 hover:bg-brand-700">
+          <Button className="bg-brand-600 hover:bg-brand-700" onClick={() => setIsAddClinicianOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            Add Staff Member
+            Add Clinician
           </Button>
         </div>
       </div>
@@ -610,7 +658,7 @@ export default function StaffManagement() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredStaff.map((staff: any) => (
+                    {filteredStaff.map((staff: Clinician) => (
                       <tr key={staff.id} className="border-b hover:bg-gray-50">
                         <td className="p-4">
                           <div className="flex items-center gap-3">
@@ -678,9 +726,13 @@ export default function StaffManagement() {
                 <Button variant="outline" size="sm" className="hidden md:flex">
                   Export Staff List
                 </Button>
-                <Button size="sm" className="bg-brand-600 hover:bg-brand-700">
+                <Button 
+                  size="sm" 
+                  className="bg-brand-600 hover:bg-brand-700"
+                  onClick={() => setIsAddClinicianOpen(true)}
+                >
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Staff Member
+                  Add Clinician
                 </Button>
               </div>
             </CardFooter>
@@ -795,7 +847,7 @@ export default function StaffManagement() {
                         </tr>
                       </thead>
                       <tbody>
-                        {staffMembers.map((staff: any) => {
+                        {staffMembers.map((staff: Clinician) => {
                           // Find document statuses
                           const contract = staff.documents.find((d: any) => d.name === "Contract");
                           const bgCheck = staff.documents.find((d: any) => d.name === "Background Check");
@@ -852,6 +904,164 @@ export default function StaffManagement() {
           onClose={() => setSelectedStaffMember(null)} 
         />
       )}
+      
+      {/* Add Clinician Dialog */}
+      <Dialog open={isAddClinicianOpen} onOpenChange={(open) => {
+        if (!open) setIsAddClinicianOpen(false);
+      }}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Add New Clinician</DialogTitle>
+            <DialogDescription>
+              Add a new clinician to the system for camp assignments
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Full Name</label>
+                <Input 
+                  value={newClinician.name}
+                  className="mt-1"
+                  onChange={(e) => {
+                    setNewClinician({
+                      ...newClinician,
+                      name: e.target.value
+                    });
+                  }}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Role</label>
+                <Select 
+                  defaultValue={newClinician.role} 
+                  onValueChange={(value) => {
+                    setNewClinician({
+                      ...newClinician,
+                      role: value
+                    });
+                  }}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Clinician">Clinician</SelectItem>
+                    <SelectItem value="Head Coach">Head Coach</SelectItem>
+                    <SelectItem value="Assistant Coach">Assistant Coach</SelectItem>
+                    <SelectItem value="Athletic Trainer">Athletic Trainer</SelectItem>
+                    <SelectItem value="Strength & Conditioning">Strength & Conditioning</SelectItem>
+                    <SelectItem value="Nutritionist">Nutritionist</SelectItem>
+                    <SelectItem value="Team Manager">Team Manager</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Email</label>
+                <Input 
+                  type="email"
+                  value={newClinician.email}
+                  className="mt-1"
+                  onChange={(e) => {
+                    setNewClinician({
+                      ...newClinician,
+                      email: e.target.value
+                    });
+                  }}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Phone</label>
+                <Input 
+                  type="tel"
+                  value={newClinician.phone}
+                  className="mt-1"
+                  onChange={(e) => {
+                    setNewClinician({
+                      ...newClinician,
+                      phone: e.target.value
+                    });
+                  }}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Daily Rate ($)</label>
+                <Input 
+                  type="number"
+                  value={newClinician.rate}
+                  className="mt-1"
+                  onChange={(e) => {
+                    setNewClinician({
+                      ...newClinician,
+                      rate: Number(e.target.value)
+                    });
+                  }}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Availability</label>
+                <Select 
+                  defaultValue={newClinician.availability} 
+                  onValueChange={(value) => {
+                    setNewClinician({
+                      ...newClinician,
+                      availability: value
+                    });
+                  }}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select availability" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="full-time">Full Time</SelectItem>
+                    <SelectItem value="part-time">Part Time</SelectItem>
+                    <SelectItem value="weekends">Weekends Only</SelectItem>
+                    <SelectItem value="evenings">Evenings Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium">Experience (years)</label>
+              <Input 
+                value={newClinician.experience}
+                className="mt-1"
+                onChange={(e) => {
+                  setNewClinician({
+                    ...newClinician,
+                    experience: e.target.value
+                  });
+                }}
+              />
+            </div>
+            
+            <div className="mt-4 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setIsAddClinicianOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                className="bg-brand-600 hover:bg-brand-700"
+                onClick={() => {
+                  // In a real app, you would submit to the server
+                  // For now, we'll just close the dialog
+                  setIsAddClinicianOpen(false);
+                  // Toast notification
+                  alert("Clinician added successfully!");
+                }}
+              >
+                Add Clinician
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

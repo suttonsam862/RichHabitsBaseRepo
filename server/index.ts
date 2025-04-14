@@ -1,15 +1,42 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import * as crypto from "crypto";
+
+// Generate a random SESSION_SECRET if one isn't provided
+if (!process.env.SESSION_SECRET) {
+  process.env.SESSION_SECRET = crypto.randomBytes(32).toString("hex");
+  console.log("Generated random SESSION_SECRET");
+}
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// Increase size limits for JSON and URL-encoded data to handle larger payloads (like image uploads)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+
+// Add CORS headers for better compatibility with Replit webview
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  
+  // Log the request body for debugging
+  if (req.method === 'POST' && path.startsWith("/api")) {
+    console.log(`[DEBUG] ${req.method} ${path} with body:`, req.body);
+  }
 
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
@@ -25,10 +52,7 @@ app.use((req, res, next) => {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
+      // No line length limit for debugging
       log(logLine);
     }
   });
@@ -56,13 +80,12 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
+  // Using port 5000 to match Replit workflow expectations in .replit
+  // The workflow is configured to wait for port 5000
+  const port = process.env.PORT || 5000;
   server.listen({
     port,
-    host: "0.0.0.0",
+    host: "0.0.0.0", 
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);

@@ -1,268 +1,527 @@
-import { pgTable, text, serial, integer, boolean, date, timestamp, jsonb, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, numeric, json } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Define available roles and their permissions
+export const ROLES = {
+  ADMIN: 'admin',
+  MANAGER: 'manager',
+  AGENT: 'agent',
+  DESIGNER: 'designer',
+  MANUFACTURER: 'manufacturer',
+  VIEWER: 'viewer',
+  HYBRID: 'hybrid',  // Combined sales and design role
+} as const;
+
+export type Role = typeof ROLES[keyof typeof ROLES];
+
+// Define permissions
+export const PERMISSIONS = {
+  // User management
+  MANAGE_USERS: 'manage_users',
+  VIEW_USERS: 'view_users',
+  
+  // Organization management
+  VIEW_ORGANIZATIONS: 'view_organizations',
+  REQUEST_ORGANIZATION: 'request_organization',
+  MANAGE_ORGANIZATIONS: 'manage_organizations',
+  
+  // Lead management
+  CREATE_LEADS: 'create_leads',
+  EDIT_LEADS: 'edit_leads',
+  DELETE_LEADS: 'delete_leads',
+  VIEW_LEADS: 'view_leads',
+  VIEW_ALL_LEADS: 'view_all_leads',
+  
+  // Order management
+  CREATE_ORDERS: 'create_orders',
+  EDIT_ORDERS: 'edit_orders',
+  DELETE_ORDERS: 'delete_orders',
+  VIEW_ORDERS: 'view_orders',
+  APPROVE_ORDERS: 'approve_orders',
+  VIEW_ALL_ORDERS: 'view_all_orders',
+  
+  // Design management
+  CREATE_DESIGNS: 'create_designs',
+  EDIT_DESIGNS: 'edit_designs',
+  DELETE_DESIGNS: 'delete_designs',
+  VIEW_DESIGNS: 'view_designs',
+  APPROVE_DESIGNS: 'approve_designs',
+  
+  // Manufacturing management
+  CREATE_PRODUCTION: 'create_production',
+  EDIT_PRODUCTION: 'edit_production',
+  VIEW_PRODUCTION: 'view_production',
+  COMPLETE_PRODUCTION: 'complete_production',
+  DELETE_PRODUCTION: 'delete_production',
+  
+  // Message management
+  SEND_MESSAGES: 'send_messages',
+  VIEW_MESSAGES: 'view_messages',
+  
+  // Catalog management
+  VIEW_CATALOG: 'view_catalog',
+  EDIT_CATALOG: 'edit_catalog',
+  MANAGE_CATALOG: 'manage_catalog',
+  
+  // Reports & Analytics
+  VIEW_REPORTS: 'view_reports',
+  VIEW_ANALYTICS: 'view_analytics',
+} as const;
+
+export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
+
+// User model
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   password: text("password").notNull(),
   fullName: text("full_name"),
-  email: text("email"),
-  role: text("role").default("user"),
   avatarUrl: text("avatar_url"),
+  role: text("role").default(ROLES.VIEWER).notNull(),
+  permissions: json("permissions").$type<Permission[]>(),
+  visiblePages: json("visible_pages").$type<string[]>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const camps = pgTable("camps", {
+// Lead model
+export const leads = pgTable("leads", {
   id: serial("id").primaryKey(),
-  campCode: text("camp_code").notNull().unique(),
+  userId: integer("user_id").references(() => users.id),
   name: text("name").notNull(),
-  description: text("description"),
-  startDate: date("start_date").notNull(),
-  endDate: date("end_date").notNull(),
-  location: text("location"),
-  city: text("city"),
-  state: text("state"),
-  country: text("country"),
-  maxParticipants: integer("max_participants"),
-  status: text("status").notNull().default("planning"), // planning, registration_open, active, completed, cancelled
-  totalBudget: doublePrecision("total_budget"),
-  createdBy: integer("created_by"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const participants = pgTable("participants", {
-  id: serial("id").primaryKey(),
-  campId: integer("camp_id").notNull(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  email: text("email"),
+  email: text("email").notNull(),
   phone: text("phone"),
-  age: integer("age"),
-  emergencyContactName: text("emergency_contact_name"),
-  emergencyContactPhone: text("emergency_contact_phone"),
-  specialNeeds: text("special_needs"),
-  registrationDate: timestamp("registration_date").defaultNow(),
-  status: text("status").default("registered"), // registered, confirmed, cancelled, attended
-  paymentStatus: text("payment_status").default("pending"), // pending, partial, paid
-  paymentAmount: doublePrecision("payment_amount").default(0),
-  formCompleted: boolean("form_completed").default(false),
+  source: text("source"),
+  status: text("status").default("new").notNull(),
   notes: text("notes"),
+  value: numeric("value"),
+  salesRepId: integer("sales_rep_id"),
+  claimed: boolean("claimed").default(false),
+  claimedById: integer("claimed_by_id").references(() => users.id),
+  claimedAt: timestamp("claimed_at"),
+  verifiedAt: timestamp("verified_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const staff = pgTable("staff", {
+// Order model
+export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
-  campId: integer("camp_id").notNull(),
-  userId: integer("user_id"),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  email: text("email"),
-  phone: text("phone"),
-  role: text("role").notNull(), // counselor, instructor, medical, admin, etc.
-  bio: text("bio"),
-  startDate: date("start_date"),
-  endDate: date("end_date"),
-  paymentStatus: text("payment_status").default("pending"), // pending, paid
-  paymentAmount: doublePrecision("payment_amount").default(0),
+  userId: integer("user_id").references(() => users.id),
+  orderId: text("order_id").notNull().unique(),
+  customerName: text("customer_name").notNull(),
+  customerEmail: text("customer_email"),
+  totalAmount: numeric("total_amount").notNull(),
+  status: text("status").default("pending").notNull(),
+  items: text("items"),
+  shippingAddress: text("shipping_address"),
   notes: text("notes"),
+  assignedSalesRepId: integer("assigned_sales_rep_id"),
+  assignedDesignerId: integer("assigned_designer_id"),
+  assignedManufacturerId: integer("assigned_manufacturer_id"),
+  organizationId: integer("organization_id"),
+  priorityLevel: text("priority_level").default("medium"),
+  dueDate: text("due_date"),
+  updatedAt: timestamp("updated_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const housing = pgTable("housing", {
+// Message model
+export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
-  campId: integer("camp_id").notNull(),
-  name: text("name").notNull(), // building/cabin name
-  type: text("type").notNull(), // cabin, dorm, hotel, etc.
-  capacity: integer("capacity").notNull(),
-  gender: text("gender"), // male, female, mixed
-  ageGroup: text("age_group"), // 8-10, 11-13, 14-16, staff, etc.
-  notes: text("notes"),
+  userId: integer("user_id").references(() => users.id),
+  conversationId: integer("conversation_id"),
+  sender: text("sender").notNull(),
+  senderEmail: text("sender_email"),
+  content: text("content").notNull(),
+  status: text("status").default("unread").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const housingAssignments = pgTable("housing_assignments", {
-  id: serial("id").primaryKey(),
-  housingId: integer("housing_id").notNull(),
-  participantId: integer("participant_id"),
-  staffId: integer("staff_id"),
-  assignedAt: timestamp("assigned_at").defaultNow(),
-  notes: text("notes"),
-});
-
-export const travel = pgTable("travel", {
-  id: serial("id").primaryKey(),
-  campId: integer("camp_id").notNull(),
-  participantId: integer("participant_id"),
-  staffId: integer("staff_id"),
-  travelType: text("travel_type").notNull(), // flight, bus, train, car, etc.
-  departureLocation: text("departure_location"),
-  departureDateTime: timestamp("departure_date_time"),
-  arrivalLocation: text("arrival_location"),
-  arrivalDateTime: timestamp("arrival_date_time"),
-  carrierName: text("carrier_name"), // airline, bus company, etc.
-  carrierNumber: text("carrier_number"), // flight number, etc.
-  status: text("status").default("scheduled"), // scheduled, confirmed, completed, cancelled
-  needsPickup: boolean("needs_pickup").default(false),
-  pickupAssigned: boolean("pickup_assigned").default(false),
-  notes: text("notes"),
-});
-
-export const scheduleEvents = pgTable("schedule_events", {
-  id: serial("id").primaryKey(),
-  campId: integer("camp_id").notNull(),
-  title: text("title").notNull(),
-  description: text("description"),
-  location: text("location"),
-  startDateTime: timestamp("start_date_time").notNull(),
-  endDateTime: timestamp("end_date_time").notNull(),
-  type: text("type").default("activity"), // activity, meal, free time, etc.
-  staffAssigned: jsonb("staff_assigned"), // array of staff IDs
-  notes: text("notes"),
-});
-
-export const budgetItems = pgTable("budget_items", {
-  id: serial("id").primaryKey(),
-  campId: integer("camp_id").notNull(),
-  category: text("category").notNull(), // lodging, food, transportation, staffing, etc.
-  description: text("description").notNull(),
-  amount: doublePrecision("amount").notNull(),
-  type: text("type").notNull(), // income, expense
-  dueDate: date("due_date"),
-  paid: boolean("paid").default(false),
-  paidDate: date("paid_date"),
-  receiptUrl: text("receipt_url"),
-  notes: text("notes"),
-});
-
-export const documents = pgTable("documents", {
-  id: serial("id").primaryKey(),
-  campId: integer("camp_id").notNull(),
-  title: text("title").notNull(),
-  description: text("description"),
-  fileUrl: text("file_url").notNull(),
-  fileType: text("file_type"), // pdf, doc, xls, etc.
-  category: text("category"), // waiver, schedule, map, etc.
-  uploadedBy: integer("uploaded_by"),
-  uploadedAt: timestamp("uploaded_at").defaultNow(),
-  isPublic: boolean("is_public").default(false),
-});
-
-export const tasks = pgTable("tasks", {
-  id: serial("id").primaryKey(),
-  campId: integer("camp_id").notNull(),
-  title: text("title").notNull(),
-  description: text("description"),
-  assignedTo: integer("assigned_to"),
-  dueDate: date("due_date"),
-  priority: text("priority").default("medium"), // low, medium, high
-  status: text("status").default("pending"), // pending, in_progress, completed
-  completedAt: timestamp("completed_at"),
-  notes: text("notes"),
-});
-
+// Activity model
 export const activities = pgTable("activities", {
   id: serial("id").primaryKey(),
-  campId: integer("camp_id"),
-  userId: integer("user_id").notNull(),
-  action: text("action").notNull(),
-  entity: text("entity").notNull(), // camp, participant, staff, housing, etc.
-  entityId: integer("entity_id"),
-  details: jsonb("details"),
-  timestamp: timestamp("timestamp").defaultNow(),
+  userId: integer("user_id").references(() => users.id),
+  type: text("type").notNull(),
+  content: text("content").notNull(),
+  relatedId: integer("related_id"),
+  relatedType: text("related_type"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Insert schemas
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  fullName: true,
-  email: true,
-  role: true,
-  avatarUrl: true,
-});
+export const insertUserSchema = createInsertSchema(users).omit({ id: true });
+export const insertLeadSchema = createInsertSchema(leads).omit({ id: true, createdAt: true });
+export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
+export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
+export const insertActivitySchema = createInsertSchema(activities).omit({ id: true, createdAt: true });
 
-export const insertCampSchema = createInsertSchema(camps).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertParticipantSchema = createInsertSchema(participants).omit({
-  id: true,
-  registrationDate: true,
-});
-
-export const insertStaffSchema = createInsertSchema(staff).omit({
-  id: true,
-});
-
-export const insertHousingSchema = createInsertSchema(housing).omit({
-  id: true,
-});
-
-export const insertHousingAssignmentSchema = createInsertSchema(housingAssignments).omit({
-  id: true,
-  assignedAt: true,
-});
-
-export const insertTravelSchema = createInsertSchema(travel).omit({
-  id: true,
-});
-
-export const insertScheduleEventSchema = createInsertSchema(scheduleEvents).omit({
-  id: true,
-});
-
-export const insertBudgetItemSchema = createInsertSchema(budgetItems).omit({
-  id: true,
-});
-
-export const insertDocumentSchema = createInsertSchema(documents).omit({
-  id: true,
-  uploadedAt: true,
-});
-
-export const insertTaskSchema = createInsertSchema(tasks).omit({
-  id: true,
-  completedAt: true,
-});
-
-export const insertActivitySchema = createInsertSchema(activities).omit({
-  id: true,
-  timestamp: true,
-});
+// Insert types
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertLead = z.infer<typeof insertLeadSchema>;
+export type InsertOrder = z.infer<typeof insertOrderSchema>;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type InsertActivity = z.infer<typeof insertActivitySchema>;
 
 // Types
-export type InsertUser = z.infer<typeof insertUserSchema>;
+// Products schema
+export const products = pgTable('products', {
+  id: serial('id').primaryKey(),
+  sku: text('sku').notNull().unique(),
+  name: text('name').notNull(),
+  description: text('description'),
+  sport: text('sport').notNull(),
+  category: text('category').notNull(),
+  gender: text('gender'),
+  item: text('item').notNull(),
+  fabricOptions: text('fabric_options').notNull(),
+  cogs: text('cogs').notNull(),
+  wholesalePrice: text('wholesale_price').notNull(),
+  price: numeric('price'),
+  minOrder: integer('min_order').default(1),
+  leadTime: integer('lead_time').default(14),
+  imageUrl: text('image_url'),
+  fabricDetails: json('fabric_details'),
+  measurementGrid: json('measurement_grid'),
+  productImages: json('product_images').$type<string[]>(),
+  isActive: boolean('is_active').default(true),
+  lineItemManagement: text('line_item_management'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Fabric Options schema
+export const fabricOptions = pgTable('fabric_options', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  materialType: text('material_type'),
+  weight: text('weight'),
+  colors: json('colors').$type<string[]>(),
+  priceModifier: numeric('price_modifier').default('0'),
+  imageUrl: text('image_url'),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Fabric Cuts schema 
+export const fabricCuts = pgTable('fabric_cuts', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  applicationMethod: text('application_method'),
+  priceModifier: numeric('price_modifier').default('0'),
+  imageUrl: text('image_url'),
+  pdfUrl: text('pdf_url'),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Product Customization Options schema
+export const customizationOptions = pgTable('customization_options', {
+  id: serial('id').primaryKey(),
+  productId: integer('product_id').references(() => products.id, { onDelete: 'cascade' }),
+  optionName: text('option_name').notNull(),
+  optionType: text('option_type').notNull(), // 'fabric', 'cut', 'size', 'color', etc.
+  optionValues: text('option_values').notNull(), // JSON array of possible values
+  isRequired: boolean('is_required').default(false),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertFabricOptionSchema = createInsertSchema(fabricOptions).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertFabricCutSchema = createInsertSchema(fabricCuts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCustomizationOptionSchema = createInsertSchema(customizationOptions).omit({ id: true, createdAt: true, updatedAt: true });
+
+// Insert types for catalogs
+export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type InsertFabricOption = z.infer<typeof insertFabricOptionSchema>;
+export type InsertFabricCut = z.infer<typeof insertFabricCutSchema>;
+export type InsertCustomizationOption = z.infer<typeof insertCustomizationOptionSchema>;
+// Organizations table
+export const organizations = pgTable('organizations', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  type: text('type').notNull().default('client'), // 'client', 'vendor', 'partner', 'school', 'sports_team', 'club', 'gym'
+  industry: text('industry').notNull(),
+  website: text('website'),
+  phone: text('phone'),
+  email: text('email'),
+  address: text('address'),
+  city: text('city'),
+  state: text('state'),
+  zip: text('zip'),
+  country: text('country').default('USA'),
+  logoUrl: text('logo_url'),
+  notes: text('notes'),
+  status: text('status').notNull().default('active'), // 'active', 'inactive'
+  primaryContactId: integer('primary_contact_id'),
+  assignedSalesRepId: integer('assigned_sales_rep_id'),  // Will be linked later
+  totalRevenue: numeric('total_revenue').default('0.00'),
+  icon: text('icon'), // Icon identifier for UI: 'building', 'school', 'gym', 'team', 'club'
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Sales team table
+export const salesTeamMembers = pgTable('sales_team_members', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  email: text('email').notNull(),
+  phone: text('phone').notNull(),
+  role: text('role').notNull().default('Junior Sales Rep'),
+  status: text('status').notNull().default('active'),
+  avatarUrl: text('avatar_url'),
+  hireDate: text('hire_date').default(sql`CURRENT_DATE`),
+  leadCount: integer('lead_count').default(0),
+  orderCount: integer('order_count').default(0),
+  totalRevenue: text('total_revenue').default('$0'),
+  commissionRate: text('commission_rate').notNull().default('5.00'),
+  earnedCommission: text('earned_commission').default('$0'),
+  lastActiveAt: timestamp('last_active_at').defaultNow(),
+  assignedRegions: text('assigned_regions').array(),
+  assignedIndustries: text('assigned_industries').array(),
+  specialization: text('specialization').default('General'),
+  notes: text('notes'),
+  // User account fields
+  username: text('username'),
+  password: text('password'),
+  systemRole: text('system_role'),
+  systemPermissions: text('system_permissions').array(),
+  userId: integer('user_id').references(() => users.id),
+  createUserAccount: boolean('create_user_account').default(false),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Create insert schemas
+export const insertSalesTeamMemberSchema = createInsertSchema(salesTeamMembers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertOrganizationSchema = createInsertSchema(organizations).omit({ id: true, createdAt: true, updatedAt: true });
+
+// Create types from insert schemas
+export type InsertSalesTeamMember = z.infer<typeof insertSalesTeamMemberSchema>;
+export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
+
 export type User = typeof users.$inferSelect;
-
-export type InsertCamp = z.infer<typeof insertCampSchema>;
-export type Camp = typeof camps.$inferSelect;
-
-export type InsertParticipant = z.infer<typeof insertParticipantSchema>;
-export type Participant = typeof participants.$inferSelect;
-
-export type InsertStaff = z.infer<typeof insertStaffSchema>;
-export type Staff = typeof staff.$inferSelect;
-
-export type InsertHousing = z.infer<typeof insertHousingSchema>;
-export type Housing = typeof housing.$inferSelect;
-
-export type InsertHousingAssignment = z.infer<typeof insertHousingAssignmentSchema>;
-export type HousingAssignment = typeof housingAssignments.$inferSelect;
-
-export type InsertTravel = z.infer<typeof insertTravelSchema>;
-export type Travel = typeof travel.$inferSelect;
-
-export type InsertScheduleEvent = z.infer<typeof insertScheduleEventSchema>;
-export type ScheduleEvent = typeof scheduleEvents.$inferSelect;
-
-export type InsertBudgetItem = z.infer<typeof insertBudgetItemSchema>;
-export type BudgetItem = typeof budgetItems.$inferSelect;
-
-export type InsertDocument = z.infer<typeof insertDocumentSchema>;
-export type Document = typeof documents.$inferSelect;
-
-export type InsertTask = z.infer<typeof insertTaskSchema>;
-export type Task = typeof tasks.$inferSelect;
-
-export type InsertActivity = z.infer<typeof insertActivitySchema>;
+export type Lead = typeof leads.$inferSelect;
+export type Order = typeof orders.$inferSelect;
+export type Message = typeof messages.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
+export type Product = typeof products.$inferSelect;
+export type FabricOption = typeof fabricOptions.$inferSelect;
+export type FabricCut = typeof fabricCuts.$inferSelect;
+export type CustomizationOption = typeof customizationOptions.$inferSelect;
+export type SalesTeamMember = typeof salesTeamMembers.$inferSelect;
+export type Organization = typeof organizations.$inferSelect;
+
+// Define feedback table
+export const feedback = pgTable('feedback', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id),
+  type: text('type').notNull().default('feedback'), // 'feedback', 'bug', 'feature'
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  status: text('status').notNull().default('new'), // 'new', 'in_review', 'in_progress', 'completed', 'rejected'
+  priority: text('priority').notNull().default('medium'), // 'low', 'medium', 'high', 'critical'
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at'),
+  assignedTo: integer('assigned_to').references(() => users.id),
+  category: text('category'),
+  screenshotUrl: text('screenshot_url'),
+  voteCount: integer('vote_count').default(0),
+});
+
+// Define feedback comments table
+export const feedbackComments = pgTable('feedback_comments', {
+  id: serial('id').primaryKey(),
+  feedbackId: integer('feedback_id').notNull().references(() => feedback.id),
+  userId: integer('user_id').notNull().references(() => users.id),
+  comment: text('comment').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Define feedback votes table
+export const feedbackVotes = pgTable('feedback_votes', {
+  id: serial('id').primaryKey(),
+  feedbackId: integer('feedback_id').notNull().references(() => feedback.id),
+  userId: integer('user_id').notNull().references(() => users.id),
+  voteType: text('vote_type').notNull().default('upvote'), // 'upvote' or 'downvote'
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Create insert schemas
+export const insertFeedbackSchema = createInsertSchema(feedback).omit({ id: true, createdAt: true, updatedAt: true, voteCount: true });
+export const insertFeedbackCommentSchema = createInsertSchema(feedbackComments).omit({ id: true, createdAt: true });
+export const insertFeedbackVoteSchema = createInsertSchema(feedbackVotes).omit({ id: true, createdAt: true });
+
+// Design Projects table
+export const designProjects = pgTable('design_projects', {
+  id: serial('id').primaryKey(),
+  orderId: text('order_id').notNull().references(() => orders.orderId),
+  customerName: text('customer_name').notNull(),
+  customerEmail: text('customer_email'),
+  status: text('status').default('new').notNull(), // 'new', 'in_progress', 'review', 'approved', 'rejected', 'completed'
+  designerId: integer('designer_id').references(() => users.id),
+  designerName: text('designer_name'),
+  description: text('description').notNull(),
+  requirements: text('requirements'),
+  attachments: json('attachments').$type<string[]>(),
+  thumbnailUrl: text('thumbnail_url'),
+  feedback: text('feedback'),
+  approvedVersion: integer('approved_version'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Design Versions table
+export const designVersions = pgTable('design_versions', {
+  id: serial('id').primaryKey(),
+  projectId: integer('project_id').notNull().references(() => designProjects.id, { onDelete: 'cascade' }),
+  versionNumber: integer('version_number').notNull(),
+  designUrl: text('design_url').notNull(),
+  thumbnailUrl: text('thumbnail_url'),
+  description: text('description'),
+  status: text('status').default('draft').notNull(), // 'draft', 'submitted', 'approved', 'rejected'
+  feedback: text('feedback'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Design Revision Requests
+export const designRevisions = pgTable('design_revisions', {
+  id: serial('id').primaryKey(),
+  designId: integer('design_id').notNull().references(() => designProjects.id, { onDelete: 'cascade' }),
+  requestedById: integer('requested_by_id').notNull().references(() => users.id),
+  requestedByName: text('requested_by_name').notNull(),
+  description: text('description').notNull(),
+  status: text('status').default('pending').notNull(), // 'pending', 'completed'
+  requestedAt: timestamp('requested_at').defaultNow(),
+  completedAt: timestamp('completed_at'),
+});
+
+// Design Messages
+export const designMessages = pgTable('design_messages', {
+  id: serial('id').primaryKey(),
+  designId: integer('design_id').notNull().references(() => designProjects.id, { onDelete: 'cascade' }),
+  senderId: integer('sender_id').notNull().references(() => users.id),
+  senderName: text('sender_name').notNull(),
+  senderRole: text('sender_role').notNull(),
+  message: text('message').notNull(),
+  attachments: json('attachments').$type<string[]>(),
+  sentAt: timestamp('sent_at').defaultNow(),
+});
+
+// Create insert schemas for design tables
+export const insertDesignProjectSchema = createInsertSchema(designProjects).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertDesignVersionSchema = createInsertSchema(designVersions).omit({ id: true, createdAt: true });
+export const insertDesignRevisionSchema = createInsertSchema(designRevisions).omit({ id: true, requestedAt: true, completedAt: true });
+export const insertDesignMessageSchema = createInsertSchema(designMessages).omit({ id: true, sentAt: true });
+
+// Define types
+export type InsertDesignProject = z.infer<typeof insertDesignProjectSchema>;
+export type InsertDesignVersion = z.infer<typeof insertDesignVersionSchema>;
+export type InsertDesignRevision = z.infer<typeof insertDesignRevisionSchema>;
+export type InsertDesignMessage = z.infer<typeof insertDesignMessageSchema>;
+export type DesignProject = typeof designProjects.$inferSelect;
+export type DesignVersion = typeof designVersions.$inferSelect;
+export type DesignRevision = typeof designRevisions.$inferSelect;
+export type DesignMessage = typeof designMessages.$inferSelect;
+
+// Outlook integrations for users
+export const outlookIntegrations = pgTable('outlook_integrations', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  accessToken: text('access_token').notNull(),
+  refreshToken: text('refresh_token').notNull(),
+  tokenExpiry: timestamp('token_expiry').notNull(),
+  email: text('email').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const insertOutlookIntegrationSchema = createInsertSchema(outlookIntegrations).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
+});
+
+export type InsertOutlookIntegration = z.infer<typeof insertOutlookIntegrationSchema>;
+export type OutlookIntegration = typeof outlookIntegrations.$inferSelect;
+
+// Define types for feedback
+export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
+export type InsertFeedbackComment = z.infer<typeof insertFeedbackCommentSchema>;
+export type InsertFeedbackVote = z.infer<typeof insertFeedbackVoteSchema>;
+export type Feedback = typeof feedback.$inferSelect;
+export type FeedbackComment = typeof feedbackComments.$inferSelect;
+export type FeedbackVote = typeof feedbackVotes.$inferSelect;
+
+// Sidebar Configuration
+export const sidebarGroups = pgTable('sidebar_groups', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  displayOrder: integer('display_order').notNull(),
+  isCollapsible: boolean('is_collapsible').default(true),
+  isCollapsed: boolean('is_collapsed').default(false),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const sidebarItems = pgTable('sidebar_items', {
+  id: serial('id').primaryKey(),
+  groupId: integer('group_id').notNull().references(() => sidebarGroups.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  href: text('href').notNull(),
+  icon: text('icon').notNull(),
+  displayOrder: integer('display_order').notNull(),
+  isVisible: boolean('is_visible').default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// User Settings configuration
+export const userSettings = pgTable('user_settings', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  settingType: text('setting_type').notNull(),
+  settings: json('settings').notNull().$type<any>(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const insertSidebarGroupSchema = createInsertSchema(sidebarGroups).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSidebarItemSchema = createInsertSchema(sidebarItems).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertUserSettingsSchema = createInsertSchema(userSettings).omit({ id: true, createdAt: true, updatedAt: true });
+
+export type InsertSidebarGroup = z.infer<typeof insertSidebarGroupSchema>;
+export type InsertSidebarItem = z.infer<typeof insertSidebarItemSchema>;
+export type InsertUserSettings = z.infer<typeof insertUserSettingsSchema>;
+export type SidebarGroup = typeof sidebarGroups.$inferSelect;
+export type SidebarItem = typeof sidebarItems.$inferSelect;
+export type UserSettings = typeof userSettings.$inferSelect;
+
+// Events table
+export const events = pgTable('events', {
+  id: serial('id').primaryKey(),
+  title: text('title').notNull(),
+  description: text('description'),
+  startDate: timestamp('start_date').notNull(),
+  endDate: timestamp('end_date').notNull(),
+  location: text('location'),
+  type: text('type').notNull(),
+  capacity: integer('capacity').default(0),
+  registered: integer('registered').default(0),
+  status: text('status').default('upcoming'),
+  createdById: integer('created_by_id').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const insertEventSchema = createInsertSchema(events).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertEvent = z.infer<typeof insertEventSchema>;
+export type Event = typeof events.$inferSelect;

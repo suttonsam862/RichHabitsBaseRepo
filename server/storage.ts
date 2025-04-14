@@ -1,582 +1,1630 @@
 import { 
-  users, type User, type InsertUser,
-  camps, type Camp, type InsertCamp,
-  participants, type Participant, type InsertParticipant,
-  staff, type Staff, type InsertStaff,
-  housing, type Housing, type InsertHousing,
-  housingAssignments, type HousingAssignment, type InsertHousingAssignment,
-  travel, type Travel, type InsertTravel,
-  scheduleEvents, type ScheduleEvent, type InsertScheduleEvent,
-  budgetItems, type BudgetItem, type InsertBudgetItem,
-  documents, type Document, type InsertDocument,
-  tasks, type Task, type InsertTask,
-  activities, type Activity, type InsertActivity
+  users, 
+  leads, 
+  orders, 
+  messages, 
+  activities,
+  products,
+  fabricOptions,
+  fabricCuts,
+  customizationOptions,
+  salesTeamMembers,
+  organizations,
+  feedback,
+  feedbackComments,
+  feedbackVotes,
+  designProjects,
+  designVersions,
+  designRevisions,
+  designMessages,
+  events,
+  sidebarGroups,
+  sidebarItems,
+  userSettings,
+  ROLES,
+  type User, 
+  type InsertUser, 
+  type Lead, 
+  type InsertLead, 
+  type Order, 
+  type InsertOrder, 
+  type Message, 
+  type InsertMessage, 
+  type Activity, 
+  type InsertActivity,
+  type Product,
+  type InsertProduct,
+  type FabricOption,
+  type InsertFabricOption,
+  type FabricCut,
+  type InsertFabricCut,
+  type CustomizationOption,
+  type InsertCustomizationOption,
+  type SalesTeamMember,
+  type InsertSalesTeamMember,
+  type Organization,
+  type InsertOrganization,
+  type DesignProject,
+  type InsertDesignProject,
+  type DesignVersion,
+  type InsertDesignVersion,
+  type DesignRevision,
+  type InsertDesignRevision,
+  type DesignMessage,
+  type InsertDesignMessage,
+  type Feedback,
+  type FeedbackComment,
+  type FeedbackVote,
+  type InsertFeedback,
+  type InsertFeedbackComment,
+  type InsertFeedbackVote,
+  type Permission,
+  type Event,
+  type InsertEvent
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc, sql, and, or, isNull, asc, inArray } from "drizzle-orm";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 
+// Expanded interface with additional CRUD methods
 export interface IStorage {
-  // User operations
+  // Session store for authentication
+  sessionStore: session.Store;
+  
+  // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserCount(): Promise<number>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserSettings(userId: number, settingType: string, settings: any): Promise<void>;
+  getUserSettings(userId: number, settingType: string): Promise<any>;
+  getAllUsers(): Promise<User[]>;
+  updateUserRole(userId: number, role: string): Promise<User>;
+  updateUserPermissions(userId: number, permissions: Permission[]): Promise<User>;
+  updateUserVisiblePages(userId: number, visiblePages: string[]): Promise<User>;
   
-  // Camp operations
-  getCamps(): Promise<Camp[]>;
-  getCamp(id: number): Promise<Camp | undefined>;
-  getCampByCode(code: string): Promise<Camp | undefined>;
-  createCamp(camp: InsertCamp): Promise<Camp>;
-  updateCamp(id: number, camp: Partial<InsertCamp>): Promise<Camp | undefined>;
-  deleteCamp(id: number): Promise<boolean>;
+  // Sales Team methods
+  getSalesTeamMembers(): Promise<SalesTeamMember[]>;
+  getSalesTeamMemberById(id: number): Promise<SalesTeamMember | undefined>;
+  createSalesTeamMember(member: InsertSalesTeamMember): Promise<SalesTeamMember>;
+  updateSalesTeamMember(id: number, member: Partial<InsertSalesTeamMember>): Promise<SalesTeamMember>;
+  deleteSalesTeamMember(id: number): Promise<void>;
+  getSalesTeamPerformance(): Promise<any>;
   
-  // Participant operations
-  getParticipants(campId: number): Promise<Participant[]>;
-  getParticipant(id: number): Promise<Participant | undefined>;
-  createParticipant(participant: InsertParticipant): Promise<Participant>;
-  updateParticipant(id: number, participant: Partial<InsertParticipant>): Promise<Participant | undefined>;
-  deleteParticipant(id: number): Promise<boolean>;
+  // Lead methods
+  getLeads(userId?: number, includeOpenLeads?: boolean): Promise<Lead[]>;
+  getRecentLeads(limit?: number): Promise<Lead[]>;
+  createLead(lead: InsertLead): Promise<Lead>;
+  getLeadById(id: number): Promise<Lead | undefined>;
+  updateLead(lead: Lead): Promise<Lead>;
+  deleteLead(id: number): Promise<void>;
+  getUnassignedLeads(): Promise<Lead[]>;
+  getLeadAssignments(): Promise<any[]>;
+  assignLeadToSalesRep(leadId: number, salesRepId: number): Promise<any>;
   
-  // Staff operations
-  getStaffMembers(campId: number): Promise<Staff[]>;
-  getStaffMember(id: number): Promise<Staff | undefined>;
-  createStaffMember(staff: InsertStaff): Promise<Staff>;
-  updateStaffMember(id: number, staff: Partial<InsertStaff>): Promise<Staff | undefined>;
-  deleteStaffMember(id: number): Promise<boolean>;
+  // Order methods
+  getOrders(): Promise<Order[]>;
+  getRecentOrders(limit?: number): Promise<Order[]>;
+  createOrder(order: InsertOrder): Promise<Order>;
+  updateOrder(id: number, orderData: Partial<Order>): Promise<Order>;
+  getOrderById(id: number): Promise<Order | undefined>;
+  deleteOrder(id: number): Promise<void>;
   
-  // Housing operations
-  getHousingUnits(campId: number): Promise<Housing[]>;
-  getHousingUnit(id: number): Promise<Housing | undefined>;
-  createHousingUnit(housing: InsertHousing): Promise<Housing>;
-  updateHousingUnit(id: number, housing: Partial<InsertHousing>): Promise<Housing | undefined>;
-  deleteHousingUnit(id: number): Promise<boolean>;
+  // Message methods
+  getConversations(): Promise<any[]>;
+  getMessagesByConversation(conversationId: number): Promise<Message[]>;
+  createMessage(message: InsertMessage): Promise<Message>;
   
-  // Housing Assignment operations
-  getHousingAssignments(housingId: number): Promise<HousingAssignment[]>;
-  createHousingAssignment(assignment: InsertHousingAssignment): Promise<HousingAssignment>;
-  deleteHousingAssignment(id: number): Promise<boolean>;
-  
-  // Travel operations
-  getTravelArrangements(campId: number): Promise<Travel[]>;
-  getTravelArrangement(id: number): Promise<Travel | undefined>;
-  createTravelArrangement(travel: InsertTravel): Promise<Travel>;
-  updateTravelArrangement(id: number, travel: Partial<InsertTravel>): Promise<Travel | undefined>;
-  deleteTravelArrangement(id: number): Promise<boolean>;
-  
-  // Schedule operations
-  getScheduleEvents(campId: number): Promise<ScheduleEvent[]>;
-  getScheduleEvent(id: number): Promise<ScheduleEvent | undefined>;
-  createScheduleEvent(event: InsertScheduleEvent): Promise<ScheduleEvent>;
-  updateScheduleEvent(id: number, event: Partial<InsertScheduleEvent>): Promise<ScheduleEvent | undefined>;
-  deleteScheduleEvent(id: number): Promise<boolean>;
-  
-  // Budget operations
-  getBudgetItems(campId: number): Promise<BudgetItem[]>;
-  getBudgetItem(id: number): Promise<BudgetItem | undefined>;
-  createBudgetItem(item: InsertBudgetItem): Promise<BudgetItem>;
-  updateBudgetItem(id: number, item: Partial<InsertBudgetItem>): Promise<BudgetItem | undefined>;
-  deleteBudgetItem(id: number): Promise<boolean>;
-  
-  // Document operations
-  getDocuments(campId: number): Promise<Document[]>;
-  getDocument(id: number): Promise<Document | undefined>;
-  createDocument(document: InsertDocument): Promise<Document>;
-  updateDocument(id: number, document: Partial<InsertDocument>): Promise<Document | undefined>;
-  deleteDocument(id: number): Promise<boolean>;
-  
-  // Task operations
-  getTasks(campId: number): Promise<Task[]>;
-  getTask(id: number): Promise<Task | undefined>;
-  createTask(task: InsertTask): Promise<Task>;
-  updateTask(id: number, task: Partial<InsertTask>): Promise<Task | undefined>;
-  deleteTask(id: number): Promise<boolean>;
-  
-  // Activity operations
-  getActivities(campId: number): Promise<Activity[]>;
+  // Activity methods
+  getRecentActivities(limit?: number): Promise<Activity[]>;
+  getRecentActivitiesFiltered(
+    limit: number, 
+    userId: number, 
+    includeTeam?: boolean, 
+    includeRelated?: boolean,
+    includeSystem?: boolean
+  ): Promise<Activity[]>;
   createActivity(activity: InsertActivity): Promise<Activity>;
+  
+  // Product methods
+  getProducts(): Promise<Product[]>;
+  getProductsBySport(sport: string): Promise<Product[]>;
+  getProductsByCategory(category: string): Promise<Product[]>;
+  getProductById(id: number): Promise<Product | undefined>;
+  getProductBySku(sku: string): Promise<Product | undefined>;
+  createProduct(product: InsertProduct): Promise<Product>;
+  updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product>;
+  deleteProduct(id: number): Promise<void>;
+  
+  // Fabric Options methods
+  getFabricOptions(): Promise<FabricOption[]>;
+  getFabricOptionById(id: number): Promise<FabricOption | undefined>;
+  createFabricOption(option: InsertFabricOption): Promise<FabricOption>;
+  updateFabricOption(id: number, option: Partial<InsertFabricOption>): Promise<FabricOption>;
+  deleteFabricOption(id: number): Promise<void>;
+  
+  // Fabric Cuts methods
+  getFabricCuts(): Promise<FabricCut[]>;
+  getFabricCutById(id: number): Promise<FabricCut | undefined>;
+  createFabricCut(cut: InsertFabricCut): Promise<FabricCut>;
+  updateFabricCut(id: number, cut: Partial<InsertFabricCut>): Promise<FabricCut>;
+  deleteFabricCut(id: number): Promise<void>;
+  
+  // Customization Options methods
+  getCustomizationOptions(productId: number): Promise<CustomizationOption[]>;
+  getCustomizationOptionById(id: number): Promise<CustomizationOption | undefined>;
+  createCustomizationOption(option: InsertCustomizationOption): Promise<CustomizationOption>;
+  updateCustomizationOption(id: number, option: Partial<InsertCustomizationOption>): Promise<CustomizationOption>;
+  deleteCustomizationOption(id: number): Promise<void>;
+  
+  // Organization methods
+  getOrganizations(): Promise<Organization[]>;
+  getOrganizationsBySalesRep(salesRepId: number): Promise<Organization[]>;
+  getOrganizationById(id: number): Promise<Organization | undefined>;
+  createOrganization(organization: InsertOrganization): Promise<Organization>;
+  updateOrganization(id: number, organization: Partial<InsertOrganization>): Promise<Organization>;
+  deleteOrganization(id: number): Promise<void>;
+  
+  // Analytics methods
+  getRevenueData(period: string): Promise<any[]>;
+  getCustomerAcquisitionData(period: string): Promise<any[]>;
+  getConversionFunnelData(): Promise<any[]>;
+  getSalesByProductData(period: string): Promise<any[]>;
+  getSalesByChannelData(period: string): Promise<any[]>;
+  getLeadConversionData(period: string): Promise<any[]>;
+  
+  // Data management
+  clearExampleData(): Promise<void>;
+  clearAllProducts(): Promise<void>;
+  
+  // Feedback system
+  getFeedback(options?: { status?: string; type?: string; limit?: number }): Promise<Feedback[]>;
+  getFeedbackById(id: number): Promise<Feedback | undefined>;
+  createFeedback(feedback: InsertFeedback): Promise<Feedback>;
+  updateFeedback(id: number, feedback: Partial<InsertFeedback>): Promise<Feedback>;
+  deleteFeedback(id: number): Promise<void>;
+  getFeedbackByUser(userId: number): Promise<Feedback[]>;
+  
+  // Feedback comments
+  getFeedbackComments(feedbackId: number): Promise<FeedbackComment[]>;
+  addFeedbackComment(comment: InsertFeedbackComment): Promise<FeedbackComment>;
+  deleteFeedbackComment(id: number): Promise<void>;
+  
+  // Feedback votes
+  getFeedbackVotes(feedbackId: number): Promise<FeedbackVote[]>;
+  addFeedbackVote(vote: InsertFeedbackVote): Promise<FeedbackVote>;
+  removeFeedbackVote(userId: number, feedbackId: number): Promise<void>;
+  updateFeedbackVoteCount(feedbackId: number): Promise<void>;
+  
+  // Design Projects methods
+  getDesignProjects(): Promise<DesignProject[]>;
+  getDesignProject(id: number): Promise<DesignProject | undefined>;
+  getDesignProjectsByUserId(userId: number): Promise<DesignProject[]>;
+  getDesignProjectsByDesignerId(designerId: number): Promise<DesignProject[]>;
+  getUnassignedDesignProjects(): Promise<DesignProject[]>;
+  createDesignProject(project: InsertDesignProject): Promise<DesignProject>;
+  updateDesignProject(id: number, project: Partial<InsertDesignProject>): Promise<DesignProject>;
+  deleteDesignProject(id: number): Promise<void>;
+  assignDesignProject(id: number, designerId: number, designerName: string): Promise<DesignProject>;
+  
+  // Design Versions methods
+  getDesignVersions(projectId: number): Promise<DesignVersion[]>;
+  getDesignVersion(id: number): Promise<DesignVersion | undefined>;
+  createDesignVersion(version: InsertDesignVersion): Promise<DesignVersion>;
+  updateDesignVersion(id: number, version: Partial<InsertDesignVersion>): Promise<DesignVersion>;
+  deleteDesignVersion(id: number): Promise<void>;
+  
+  // Design Revisions methods
+  getDesignRevisions(designId: number): Promise<DesignRevision[]>;
+  getDesignRevision(id: number): Promise<DesignRevision | undefined>;
+  createDesignRevision(revision: InsertDesignRevision): Promise<DesignRevision>;
+  updateDesignRevision(id: number, revision: Partial<InsertDesignRevision>): Promise<DesignRevision>;
+  completeDesignRevision(id: number): Promise<DesignRevision>;
+  deleteDesignRevision(id: number): Promise<void>;
+  
+  // Design Messages methods
+  getDesignMessages(designId: number): Promise<DesignMessage[]>;
+  createDesignMessage(message: InsertDesignMessage): Promise<DesignMessage>;
+  deleteDesignMessage(id: number): Promise<void>;
+  
+  // Events methods
+  getEvents(): Promise<Event[]>;
+  getEventById(id: number): Promise<Event | undefined>;
+  createEvent(event: InsertEvent): Promise<Event>;
+  updateEvent(id: number, event: Partial<InsertEvent>): Promise<Event>;
+  deleteEvent(id: number): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private camps: Map<number, Camp>;
-  private participants: Map<number, Participant>;
-  private staffMembers: Map<number, Staff>;
-  private housingUnits: Map<number, Housing>;
-  private housingAssignments: Map<number, HousingAssignment>;
-  private travelArrangements: Map<number, Travel>;
-  private scheduleEvents: Map<number, ScheduleEvent>;
-  private budgetItems: Map<number, BudgetItem>;
-  private documents: Map<number, Document>;
-  private tasks: Map<number, Task>;
-  private activities: Map<number, Activity>;
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.Store;
   
-  private userId: number;
-  private campId: number;
-  private participantId: number;
-  private staffId: number;
-  private housingId: number;
-  private housingAssignmentId: number;
-  private travelId: number;
-  private scheduleEventId: number;
-  private budgetItemId: number;
-  private documentId: number;
-  private taskId: number;
-  private activityId: number;
-
   constructor() {
-    this.users = new Map();
-    this.camps = new Map();
-    this.participants = new Map();
-    this.staffMembers = new Map();
-    this.housingUnits = new Map();
-    this.housingAssignments = new Map();
-    this.travelArrangements = new Map();
-    this.scheduleEvents = new Map();
-    this.budgetItems = new Map();
-    this.documents = new Map();
-    this.tasks = new Map();
-    this.activities = new Map();
-    
-    this.userId = 1;
-    this.campId = 1;
-    this.participantId = 1;
-    this.staffId = 1;
-    this.housingId = 1;
-    this.housingAssignmentId = 1;
-    this.travelId = 1;
-    this.scheduleEventId = 1;
-    this.budgetItemId = 1;
-    this.documentId = 1;
-    this.taskId = 1;
-    this.activityId = 1;
-    
-    // Create initial admin user
-    this.createUser({
-      username: "admin",
-      password: "password", // In a real app, this would be hashed
-      fullName: "Admin User",
-      email: "admin@example.com",
-      role: "admin"
-    });
-    
-    // Add some demo camps
-    this.createCamp({
-      campCode: "CAMP-2023-001",
-      name: "Summer Music Academy",
-      description: "Two-week intensive music program for youth",
-      startDate: new Date("2023-07-15"),
-      endDate: new Date("2023-07-28"),
-      location: "Alpine Retreat Center",
-      city: "Boulder",
-      state: "CO",
-      country: "USA",
-      maxParticipants: 150,
-      status: "registration_open",
-      totalBudget: 62000,
-      createdBy: 1
-    });
-    
-    this.createCamp({
-      campCode: "CAMP-2023-002",
-      name: "Youth Leadership Retreat",
-      description: "One-week leadership development for teens",
-      startDate: new Date("2023-08-05"),
-      endDate: new Date("2023-08-12"),
-      location: "Lakeview Conference Center",
-      city: "Chicago",
-      state: "IL",
-      country: "USA",
-      maxParticipants: 100,
-      status: "planning",
-      totalBudget: 35000,
-      createdBy: 1
-    });
-    
-    this.createCamp({
-      campCode: "CAMP-2023-003",
-      name: "STEM Explorer Camp",
-      description: "Science and technology exploration for middle schoolers",
-      startDate: new Date("2023-09-02"),
-      endDate: new Date("2023-09-09"),
-      location: "Tech Innovation Campus",
-      city: "San Jose",
-      state: "CA",
-      country: "USA",
-      maxParticipants: 80,
-      status: "registration_open",
-      totalBudget: 45000,
-      createdBy: 1
+    const PostgresStore = connectPg(session);
+    this.sessionStore = new PostgresStore({
+      pool,
+      createTableIfMissing: true
     });
   }
-
-  // User operations
+  
+  // User methods
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+  
+  async getUserCount(): Promise<number> {
+    const result = await db.select({ count: sql`count(*)` }).from(users);
+    return Number(result[0].count);
+  }
+  
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users).orderBy(asc(users.fullName));
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser as any)
+      .returning();
     return user;
   }
   
-  // Camp operations
-  async getCamps(): Promise<Camp[]> {
-    return Array.from(this.camps.values());
+  async updateUserRole(userId: number, role: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ role })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
   }
   
-  async getCamp(id: number): Promise<Camp | undefined> {
-    return this.camps.get(id);
+  async updateUserPermissions(userId: number, permissions: Permission[]): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ permissions: permissions as any })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
   }
   
-  async getCampByCode(code: string): Promise<Camp | undefined> {
-    return Array.from(this.camps.values()).find(
-      (camp) => camp.campCode === code,
-    );
+  async updateUserVisiblePages(userId: number, visiblePages: string[]): Promise<User> {
+    try {
+      // Make sure the visiblePages is an array and convert it correctly
+      if (!Array.isArray(visiblePages)) {
+        throw new Error("visiblePages must be an array");
+      }
+      
+      console.log(`Updating visible pages for user ${userId}:`, visiblePages);
+      
+      // Ensure proper SQL JSON array formatting for PostgreSQL
+      const [updatedUser] = await db
+        .update(users)
+        .set({ 
+          visiblePages: visiblePages as any
+          // Note: updatedAt is handled automatically by the schema
+        })
+        .where(eq(users.id, userId))
+        .returning();
+      
+      console.log(`User ${userId} pages updated successfully:`, updatedUser.visiblePages);
+      
+      return updatedUser;
+    } catch (error) {
+      console.error(`Error updating visible pages for user ${userId}:`, error);
+      throw error;
+    }
   }
   
-  async createCamp(insertCamp: InsertCamp): Promise<Camp> {
-    const id = this.campId++;
-    const now = new Date();
-    const camp: Camp = { 
-      ...insertCamp, 
-      id, 
-      createdAt: now, 
-      updatedAt: now 
-    };
-    this.camps.set(id, camp);
-    return camp;
+  async getUserSettings(userId: number, settingType: string): Promise<any> {
+    try {
+      if (settingType === 'navigation') {
+        // First, get the user's visiblePages
+        const user = await this.getUser(userId);
+        
+        // Next, try to get any saved custom menu groups from user_settings table
+        let result;
+        try {
+          // Look for any saved navigation settings
+          const [navSettings] = await db.select()
+            .from(userSettings)
+            .where(and(
+              eq(userSettings.userId, userId),
+              eq(userSettings.settingType, 'navigation')
+            ));
+            
+          if (navSettings && navSettings.settings) {
+            // We have custom navigation settings
+            let settings = navSettings.settings;
+            
+            // Make sure the settings include visiblePages
+            if (user && user.visiblePages) {
+              settings.visiblePages = user.visiblePages;
+            }
+            
+            console.log(`Returning saved navigation settings for user ${userId}:`, settings);
+            return { settings };
+          }
+        } catch (dbError) {
+          console.error('Error fetching navigation settings from database:', dbError);
+        }
+        
+        // If we don't have saved settings, return just the visiblePages
+        if (user && user.visiblePages && user.visiblePages.length > 0) {
+          console.log(`Returning navigation settings for user ${userId} based on visiblePages:`, user.visiblePages);
+          
+          // Return the visible pages directly - the sidebar will handle filtering
+          return { 
+            settings: {
+              visiblePages: user.visiblePages 
+            }
+          };
+        }
+      }
+      
+      // Default response if no settings found
+      return { settings: {} };
+    } catch (error) {
+      console.error(`Error getting ${settingType} settings for user ${userId}:`, error);
+      return { settings: {} };
+    }
   }
   
-  async updateCamp(id: number, campData: Partial<InsertCamp>): Promise<Camp | undefined> {
-    const camp = this.camps.get(id);
-    if (!camp) return undefined;
+  async updateUserSettings(userId: number, settingType: string, settings: any): Promise<void> {
+    try {
+      console.log(`Updating ${settingType} settings for user ${userId}:`, settings);
+      
+      // First check if there's an existing record
+      const [existingSettings] = await db.select()
+        .from(userSettings)
+        .where(and(
+          eq(userSettings.userId, userId),
+          eq(userSettings.settingType, settingType)
+        ));
+      
+      if (existingSettings) {
+        // Update existing settings
+        await db.update(userSettings)
+          .set({
+            settings: settings,
+            updatedAt: new Date()
+          })
+          .where(and(
+            eq(userSettings.userId, userId),
+            eq(userSettings.settingType, settingType)
+          ));
+          
+        console.log(`Updated existing ${settingType} settings for user ${userId}`);
+      } else {
+        // Insert new settings
+        await db.insert(userSettings)
+          .values({
+            userId,
+            settingType,
+            settings
+          });
+          
+        console.log(`Inserted new ${settingType} settings for user ${userId}`);
+      }
+      
+      return Promise.resolve();
+    } catch (error) {
+      console.error(`Error updating ${settingType} settings for user ${userId}:`, error);
+      throw error;
+    }
+  }
+  
+  // Lead methods
+  async getLeads(userId?: number, includeOpenLeads?: boolean): Promise<Lead[]> {
+    if (userId && includeOpenLeads) {
+      // For salespeople: return both leads assigned to them and unassigned (open) leads
+      return db.select()
+        .from(leads)
+        .where(
+          or(
+            eq(leads.salesRepId, userId),
+            isNull(leads.salesRepId)
+          )
+        )
+        .orderBy(desc(leads.createdAt));
+    } else if (userId) {
+      // Only return leads assigned to this user
+      return db.select()
+        .from(leads)
+        .where(eq(leads.salesRepId, userId))
+        .orderBy(desc(leads.createdAt));
+    } else {
+      // Return all leads (for admin)
+      return db.select().from(leads).orderBy(desc(leads.createdAt));
+    }
+  }
+  
+  async getRecentLeads(limit: number = 5, userId?: number, includeOpenLeads?: boolean): Promise<Lead[]> {
+    if (userId && includeOpenLeads) {
+      // For salespeople: return both leads assigned to them and unassigned (open) leads
+      return db.select()
+        .from(leads)
+        .where(
+          or(
+            eq(leads.salesRepId, userId),
+            isNull(leads.salesRepId)
+          )
+        )
+        .orderBy(desc(leads.createdAt))
+        .limit(limit);
+    } else if (userId) {
+      // Only return leads assigned to this user
+      return db.select()
+        .from(leads)
+        .where(eq(leads.salesRepId, userId))
+        .orderBy(desc(leads.createdAt))
+        .limit(limit);
+    } else {
+      // Return all leads (for admin)
+      return db.select().from(leads).orderBy(desc(leads.createdAt)).limit(limit);
+    }
+  }
+  
+  async createLead(lead: InsertLead): Promise<Lead> {
+    const [newLead] = await db
+      .insert(leads)
+      .values(lead)
+      .returning();
+    return newLead;
+  }
+  
+  async getLeadById(id: number): Promise<Lead | undefined> {
+    const [lead] = await db.select().from(leads).where(eq(leads.id, id));
+    return lead || undefined;
+  }
+  
+  async updateLead(lead: Lead): Promise<Lead> {
+    try {
+      // Remove id from the lead data to avoid updating the primary key
+      const { id, ...updateData } = lead;
+      
+      // Update the lead
+      const [updatedLead] = await db
+        .update(leads)
+        .set(updateData)
+        .where(eq(leads.id, id))
+        .returning();
+      
+      return updatedLead;
+    } catch (error) {
+      console.error("Error updating lead:", error);
+      throw error;
+    }
+  }
+  
+  async deleteLead(id: number): Promise<void> {
+    await db.delete(leads).where(eq(leads.id, id));
+  }
+  
+  // Order methods
+  async getOrders(userId?: number): Promise<Order[]> {
+    if (userId) {
+      // If userId is provided, filter by assigned sales rep
+      return db.select()
+        .from(orders)
+        .where(eq(orders.assignedSalesRepId, userId))
+        .orderBy(desc(orders.createdAt));
+    } else {
+      // If no userId, return all orders
+      return db.select().from(orders).orderBy(desc(orders.createdAt));
+    }
+  }
+  
+  async getOrdersByUserId(userId: number): Promise<Order[]> {
+    // This is specifically for filtering by the assigned sales rep
+    return db.select()
+      .from(orders)
+      .where(eq(orders.assignedSalesRepId, userId))
+      .orderBy(desc(orders.createdAt));
+  }
+  
+  async getRecentOrders(limit: number = 5, userId?: number): Promise<Order[]> {
+    if (userId) {
+      // If userId is provided, filter by assigned sales rep
+      return db.select()
+        .from(orders)
+        .where(eq(orders.assignedSalesRepId, userId))
+        .orderBy(desc(orders.createdAt))
+        .limit(limit);
+    } else {
+      // If no userId, return all recent orders
+      return db.select().from(orders).orderBy(desc(orders.createdAt)).limit(limit);
+    }
+  }
+  
+  async createOrder(order: InsertOrder): Promise<Order> {
+    const [newOrder] = await db
+      .insert(orders)
+      .values(order)
+      .returning();
+    return newOrder;
+  }
+  
+  async getOrderById(id: number): Promise<Order | undefined> {
+    const [order] = await db.select().from(orders).where(eq(orders.id, id));
+    return order || undefined;
+  }
+  
+  async updateOrder(id: number, orderData: Partial<Order>): Promise<Order> {
+    try {
+      // Make sure the order exists
+      const order = await this.getOrderById(id);
+      if (!order) {
+        throw new Error("Order not found");
+      }
+      
+      // Remove id from the update data if it exists
+      const { id: _, ...updateData } = orderData;
+      
+      // Update the order
+      const [updatedOrder] = await db
+        .update(orders)
+        .set(updateData)
+        .where(eq(orders.id, id))
+        .returning();
+      
+      return updatedOrder;
+    } catch (error) {
+      console.error("Error updating order:", error);
+      throw error;
+    }
+  }
+  
+  async deleteOrder(id: number): Promise<void> {
+    try {
+      // First, get the order to find its orderId
+      const order = await this.getOrderById(id);
+      if (!order) {
+        throw new Error("Order not found");
+      }
+      
+      // First, try to delete any associated design projects
+      // We need to do this in a specific order to respect foreign key constraints
+      // 1. Get all design projects associated with this order
+      // 2. For each design project, delete associated versions, revisions, and messages
+      // 3. Delete the design project
+      // 4. Then finally delete the order
+      
+      console.log(`Deleting order: ${order.orderId} (ID: ${id})`);
+      
+      // Step 1: Get all design projects for this order
+      const designProjectsResult = await db.execute(sql`
+        SELECT * FROM design_projects 
+        WHERE order_id = ${order.orderId}
+      `);
+      
+      const designProjects = designProjectsResult.rows;
+      console.log(`Found ${designProjects.length} design projects to delete for order ${order.orderId}`);
+      
+      // Step 2: Delete related records for each design project
+      for (const project of designProjects) {
+        console.log(`Deleting design project ${project.id} and its related records`);
+        
+        // Delete design versions
+        await db.execute(sql`
+          DELETE FROM design_versions 
+          WHERE project_id = ${project.id}
+        `);
+        
+        // Delete design revisions
+        await db.execute(sql`
+          DELETE FROM design_revisions 
+          WHERE design_id = ${project.id}
+        `);
+        
+        // Delete design messages
+        await db.execute(sql`
+          DELETE FROM design_messages 
+          WHERE design_id = ${project.id}
+        `);
+      }
+      
+      // Step 3: Delete all design projects for this order
+      if (designProjects.length > 0) {
+        await db.execute(sql`
+          DELETE FROM design_projects 
+          WHERE order_id = ${order.orderId}
+        `);
+        console.log(`Deleted ${designProjects.length} design projects for order ${order.orderId}`);
+      }
+      
+      // Step 4: Finally delete the order
+      await db.delete(orders).where(eq(orders.id, id));
+      console.log(`Successfully deleted order ${order.orderId}`);
+    } catch (error) {
+      console.error("Error deleting order:", error);
+      throw error;
+    }
+  }
+  
+  // Message methods
+  async getConversations(): Promise<any[]> {
+    // Group messages by conversationId and get latest message
+    const result = await db.execute(sql`
+      SELECT DISTINCT ON (conversation_id)
+        m.conversation_id,
+        m.sender,
+        m.sender_email,
+        m.content,
+        m.status,
+        m.created_at,
+        (
+          SELECT COUNT(*)
+          FROM messages
+          WHERE conversation_id = m.conversation_id
+          AND status = 'unread'
+        ) as unread_count
+      FROM messages m
+      ORDER BY m.conversation_id, m.created_at DESC
+    `);
     
-    const updatedCamp: Camp = { 
-      ...camp, 
-      ...campData, 
-      updatedAt: new Date() 
-    };
-    this.camps.set(id, updatedCamp);
-    return updatedCamp;
+    return result.rows;
   }
   
-  async deleteCamp(id: number): Promise<boolean> {
-    return this.camps.delete(id);
+  async getMessagesByConversation(conversationId: number): Promise<Message[]> {
+    return db
+      .select()
+      .from(messages)
+      .where(eq(messages.conversationId, conversationId))
+      .orderBy(asc(messages.createdAt));
   }
   
-  // Participant operations
-  async getParticipants(campId: number): Promise<Participant[]> {
-    return Array.from(this.participants.values()).filter(
-      (participant) => participant.campId === campId,
-    );
+  async createMessage(message: InsertMessage): Promise<Message> {
+    const [newMessage] = await db
+      .insert(messages)
+      .values(message)
+      .returning();
+    return newMessage;
   }
   
-  async getParticipant(id: number): Promise<Participant | undefined> {
-    return this.participants.get(id);
+  // Activity methods
+  async getRecentActivities(limit: number = 5): Promise<Activity[]> {
+    return db.select().from(activities).orderBy(desc(activities.createdAt)).limit(limit);
   }
   
-  async createParticipant(insertParticipant: InsertParticipant): Promise<Participant> {
-    const id = this.participantId++;
-    const registrationDate = new Date();
-    const participant: Participant = { ...insertParticipant, id, registrationDate };
-    this.participants.set(id, participant);
-    return participant;
+  async getRecentActivitiesFiltered(
+    limit: number = 5, 
+    userId: number, 
+    includeTeam: boolean = false, 
+    includeRelated: boolean = false,
+    includeSystem: boolean = false
+  ): Promise<Activity[]> {
+    try {
+      // Start building the query with basic filters
+      let query = db.select().from(activities);
+      
+      // Filter conditions array
+      const conditions = [];
+      
+      // Direct user activities (always included)
+      conditions.push(eq(activities.userId, userId));
+      
+      // Activities related to the user (if requested)
+      if (includeRelated) {
+        conditions.push(
+          and(
+            eq(activities.relatedType, 'user'),
+            eq(activities.relatedId, userId)
+          )
+        );
+        
+        // Include activities for leads assigned to this user
+        conditions.push(
+          and(
+            eq(activities.relatedType, 'lead'),
+            sql`EXISTS (SELECT 1 FROM leads WHERE leads.id = activities.related_id AND leads.user_id = ${userId})`
+          )
+        );
+        
+        // Include activities for orders assigned to this user
+        conditions.push(
+          and(
+            eq(activities.relatedType, 'order'),
+            sql`EXISTS (SELECT 1 FROM orders WHERE orders.id = activities.related_id AND orders.assigned_sales_rep_id = ${userId})`
+          )
+        );
+      }
+      
+      // Team activities (only if requested)
+      if (includeTeam) {
+        conditions.push(
+          and(
+            eq(activities.type, 'team'),
+            or(
+              isNull(activities.relatedId),
+              activities.relatedId > 0
+            )
+          )
+        );
+      }
+      
+      // System activities (only if requested)
+      if (includeSystem) {
+        conditions.push(
+          and(
+            eq(activities.type, 'system'),
+            or(
+              isNull(activities.relatedId),
+              activities.relatedId > 0
+            )
+          )
+        );
+      }
+      
+      // Apply the conditions
+      query = query.where(or(...conditions));
+      
+      // Order by created date and limit results
+      query = query.orderBy(desc(activities.createdAt)).limit(limit);
+      
+      return await query;
+    } catch (error) {
+      console.error("Error in getRecentActivitiesFiltered:", error);
+      return []; // Return empty array on error
+    }
   }
   
-  async updateParticipant(id: number, participantData: Partial<InsertParticipant>): Promise<Participant | undefined> {
-    const participant = this.participants.get(id);
-    if (!participant) return undefined;
+  async createActivity(activity: InsertActivity): Promise<Activity> {
+    const [newActivity] = await db
+      .insert(activities)
+      .values(activity)
+      .returning();
+    return newActivity;
+  }
+  
+  // Analytics methods
+  async getRevenueData(period: string): Promise<any[]> {
+    // Sample implementation for monthly revenue data
+    if (period === 'monthly') {
+      const result = await db.execute(sql`
+        SELECT 
+          DATE_TRUNC('month', "created_at") as month,
+          SUM("total_amount") as revenue
+        FROM 
+          ${orders}
+        WHERE 
+          "status" = 'paid' OR "status" = 'delivered'
+        GROUP BY 
+          month
+        ORDER BY 
+          month DESC
+        LIMIT 12
+      `);
+      
+      return result.rows;
+    }
     
-    const updatedParticipant: Participant = { 
-      ...participant, 
-      ...participantData 
-    };
-    this.participants.set(id, updatedParticipant);
-    return updatedParticipant;
+    // Return empty array for other periods for now
+    return [];
   }
   
-  async deleteParticipant(id: number): Promise<boolean> {
-    return this.participants.delete(id);
+  async getCustomerAcquisitionData(period: string): Promise<any[]> {
+    // For demo purposes - in a real app we would query the database
+    return [];
   }
   
-  // Staff operations
-  async getStaffMembers(campId: number): Promise<Staff[]> {
-    return Array.from(this.staffMembers.values()).filter(
-      (staff) => staff.campId === campId,
-    );
+  async getConversionFunnelData(): Promise<any[]> {
+    // For demo purposes - in a real app we would query the database
+    return [];
   }
   
-  async getStaffMember(id: number): Promise<Staff | undefined> {
-    return this.staffMembers.get(id);
+  async getSalesByProductData(period: string): Promise<any[]> {
+    // For demo purposes - in a real app we would query the database
+    return [];
   }
   
-  async createStaffMember(insertStaff: InsertStaff): Promise<Staff> {
-    const id = this.staffId++;
-    const staff: Staff = { ...insertStaff, id };
-    this.staffMembers.set(id, staff);
-    return staff;
+  async getSalesByChannelData(period: string): Promise<any[]> {
+    // For demo purposes - in a real app we would query the database
+    return [];
   }
   
-  async updateStaffMember(id: number, staffData: Partial<InsertStaff>): Promise<Staff | undefined> {
-    const staff = this.staffMembers.get(id);
-    if (!staff) return undefined;
+  async getLeadConversionData(period: string): Promise<any[]> {
+    // For demo purposes - in a real app we would query the database
+    return [];
+  }
+  
+  // Sales Team methods
+  async getSalesTeamMembers(): Promise<SalesTeamMember[]> {
+    return db.select().from(salesTeamMembers).orderBy(asc(salesTeamMembers.name));
+  }
+  
+  async getSalesTeamMemberById(id: number): Promise<SalesTeamMember | undefined> {
+    const [member] = await db.select().from(salesTeamMembers).where(eq(salesTeamMembers.id, id));
+    return member || undefined;
+  }
+  
+  async createSalesTeamMember(member: InsertSalesTeamMember): Promise<SalesTeamMember> {
+    // If createUserAccount is true, we'll create a user account too
+    if (member.createUserAccount) {
+      if (!member.username || !member.password) {
+        throw new Error("Username and password are required when creating a user account");
+      }
+      
+      // Check if username already exists
+      const existingUser = await this.getUserByUsername(member.username);
+      if (existingUser) {
+        throw new Error("Username already exists");
+      }
+      
+      // Create user account
+      const newUser = await this.createUser({
+        username: member.username,
+        password: member.password,
+        email: member.email,
+        fullName: member.name,
+        role: member.systemRole || ROLES.AGENT,
+        permissions: member.systemPermissions,
+      });
+      
+      // Add user ID to sales team member
+      member.userId = newUser.id;
+    }
     
-    const updatedStaff: Staff = { 
-      ...staff, 
-      ...staffData 
-    };
-    this.staffMembers.set(id, updatedStaff);
-    return updatedStaff;
+    const [newMember] = await db
+      .insert(salesTeamMembers)
+      .values(member)
+      .returning();
+    return newMember;
   }
   
-  async deleteStaffMember(id: number): Promise<boolean> {
-    return this.staffMembers.delete(id);
+  async updateSalesTeamMember(id: number, member: Partial<InsertSalesTeamMember>): Promise<SalesTeamMember> {
+    const [updatedMember] = await db
+      .update(salesTeamMembers)
+      .set({ ...member, updatedAt: new Date() })
+      .where(eq(salesTeamMembers.id, id))
+      .returning();
+    return updatedMember;
   }
   
-  // Housing operations
-  async getHousingUnits(campId: number): Promise<Housing[]> {
-    return Array.from(this.housingUnits.values()).filter(
-      (housing) => housing.campId === campId,
-    );
+  async deleteSalesTeamMember(id: number): Promise<void> {
+    const member = await this.getSalesTeamMemberById(id);
+    if (member && member.userId) {
+      // Delete associated user account if it exists
+      await db.delete(users).where(eq(users.id, member.userId));
+    }
+    await db.delete(salesTeamMembers).where(eq(salesTeamMembers.id, id));
   }
   
-  async getHousingUnit(id: number): Promise<Housing | undefined> {
-    return this.housingUnits.get(id);
-  }
-  
-  async createHousingUnit(insertHousing: InsertHousing): Promise<Housing> {
-    const id = this.housingId++;
-    const housing: Housing = { ...insertHousing, id };
-    this.housingUnits.set(id, housing);
-    return housing;
-  }
-  
-  async updateHousingUnit(id: number, housingData: Partial<InsertHousing>): Promise<Housing | undefined> {
-    const housing = this.housingUnits.get(id);
-    if (!housing) return undefined;
+  async getSalesTeamPerformance(): Promise<any> {
+    // Get some basic stats
+    const allMembers = await this.getSalesTeamMembers();
+    const activeMembers = allMembers.filter(m => m.status === 'active');
     
-    const updatedHousing: Housing = { 
-      ...housing, 
-      ...housingData 
-    };
-    this.housingUnits.set(id, updatedHousing);
-    return updatedHousing;
-  }
-  
-  async deleteHousingUnit(id: number): Promise<boolean> {
-    return this.housingUnits.delete(id);
-  }
-  
-  // Housing Assignment operations
-  async getHousingAssignments(housingId: number): Promise<HousingAssignment[]> {
-    return Array.from(this.housingAssignments.values()).filter(
-      (assignment) => assignment.housingId === housingId,
-    );
-  }
-  
-  async createHousingAssignment(insertAssignment: InsertHousingAssignment): Promise<HousingAssignment> {
-    const id = this.housingAssignmentId++;
-    const assignedAt = new Date();
-    const assignment: HousingAssignment = { ...insertAssignment, id, assignedAt };
-    this.housingAssignments.set(id, assignment);
-    return assignment;
-  }
-  
-  async deleteHousingAssignment(id: number): Promise<boolean> {
-    return this.housingAssignments.delete(id);
-  }
-  
-  // Travel operations
-  async getTravelArrangements(campId: number): Promise<Travel[]> {
-    return Array.from(this.travelArrangements.values()).filter(
-      (travel) => travel.campId === campId,
-    );
-  }
-  
-  async getTravelArrangement(id: number): Promise<Travel | undefined> {
-    return this.travelArrangements.get(id);
-  }
-  
-  async createTravelArrangement(insertTravel: InsertTravel): Promise<Travel> {
-    const id = this.travelId++;
-    const travel: Travel = { ...insertTravel, id };
-    this.travelArrangements.set(id, travel);
-    return travel;
-  }
-  
-  async updateTravelArrangement(id: number, travelData: Partial<InsertTravel>): Promise<Travel | undefined> {
-    const travel = this.travelArrangements.get(id);
-    if (!travel) return undefined;
+    // Calculate total revenue
+    let totalRevenue = 0;
+    let totalLeads = 0;
+    let totalOrders = 0;
     
-    const updatedTravel: Travel = { 
-      ...travel, 
-      ...travelData 
-    };
-    this.travelArrangements.set(id, updatedTravel);
-    return updatedTravel;
-  }
-  
-  async deleteTravelArrangement(id: number): Promise<boolean> {
-    return this.travelArrangements.delete(id);
-  }
-  
-  // Schedule operations
-  async getScheduleEvents(campId: number): Promise<ScheduleEvent[]> {
-    return Array.from(this.scheduleEvents.values()).filter(
-      (event) => event.campId === campId,
-    );
-  }
-  
-  async getScheduleEvent(id: number): Promise<ScheduleEvent | undefined> {
-    return this.scheduleEvents.get(id);
-  }
-  
-  async createScheduleEvent(insertEvent: InsertScheduleEvent): Promise<ScheduleEvent> {
-    const id = this.scheduleEventId++;
-    const event: ScheduleEvent = { ...insertEvent, id };
-    this.scheduleEvents.set(id, event);
-    return event;
-  }
-  
-  async updateScheduleEvent(id: number, eventData: Partial<InsertScheduleEvent>): Promise<ScheduleEvent | undefined> {
-    const event = this.scheduleEvents.get(id);
-    if (!event) return undefined;
+    // In real implementation, this would be calculated from actual orders data
+    // For now, we'll just return some mock data for demonstration purposes
     
-    const updatedEvent: ScheduleEvent = { 
-      ...event, 
-      ...eventData 
+    return {
+      totalMembers: allMembers.length,
+      activeMembers: activeMembers.length,
+      totalRevenue: "$0",
+      totalLeads: 0,
+      totalOrders: 0,
+      conversionRate: "0%",
+      avgDealSize: "$0",
+      topPerformer: {
+        name: allMembers.length > 0 ? allMembers[0].name : "N/A",
+        revenue: "$0"
+      }
     };
-    this.scheduleEvents.set(id, updatedEvent);
-    return updatedEvent;
   }
   
-  async deleteScheduleEvent(id: number): Promise<boolean> {
-    return this.scheduleEvents.delete(id);
+  // Lead assignment methods
+  async getUnassignedLeads(): Promise<Lead[]> {
+    return db.select()
+      .from(leads)
+      .where(eq(leads.status, 'new'))
+      .orderBy(desc(leads.createdAt));
   }
   
-  // Budget operations
-  async getBudgetItems(campId: number): Promise<BudgetItem[]> {
-    return Array.from(this.budgetItems.values()).filter(
-      (item) => item.campId === campId,
-    );
-  }
-  
-  async getBudgetItem(id: number): Promise<BudgetItem | undefined> {
-    return this.budgetItems.get(id);
-  }
-  
-  async createBudgetItem(insertItem: InsertBudgetItem): Promise<BudgetItem> {
-    const id = this.budgetItemId++;
-    const item: BudgetItem = { ...insertItem, id };
-    this.budgetItems.set(id, item);
-    return item;
-  }
-  
-  async updateBudgetItem(id: number, itemData: Partial<InsertBudgetItem>): Promise<BudgetItem | undefined> {
-    const item = this.budgetItems.get(id);
-    if (!item) return undefined;
+  async getLeadAssignments(): Promise<any[]> {
+    // In a real implementation, we would have a lead_assignments table
+    // For now, we'll just return leads with salesRepId populated
+    const assignedLeads = await db.select()
+      .from(leads)
+      .where(sql`sales_rep_id IS NOT NULL`)
+      .orderBy(desc(leads.createdAt));
     
-    const updatedItem: BudgetItem = { 
-      ...item, 
-      ...itemData 
-    };
-    this.budgetItems.set(id, updatedItem);
-    return updatedItem;
+    return assignedLeads;
   }
   
-  async deleteBudgetItem(id: number): Promise<boolean> {
-    return this.budgetItems.delete(id);
-  }
-  
-  // Document operations
-  async getDocuments(campId: number): Promise<Document[]> {
-    return Array.from(this.documents.values()).filter(
-      (document) => document.campId === campId,
-    );
-  }
-  
-  async getDocument(id: number): Promise<Document | undefined> {
-    return this.documents.get(id);
-  }
-  
-  async createDocument(insertDocument: InsertDocument): Promise<Document> {
-    const id = this.documentId++;
-    const uploadedAt = new Date();
-    const document: Document = { ...insertDocument, id, uploadedAt };
-    this.documents.set(id, document);
-    return document;
-  }
-  
-  async updateDocument(id: number, documentData: Partial<InsertDocument>): Promise<Document | undefined> {
-    const document = this.documents.get(id);
-    if (!document) return undefined;
+  async assignLeadToSalesRep(leadId: number, salesRepId: number): Promise<any> {
+    // Update the lead with the sales rep id
+    const [updatedLead] = await db.update(leads)
+      .set({ 
+        salesRepId: salesRepId,
+        status: 'assigned'
+      })
+      .where(eq(leads.id, leadId))
+      .returning();
     
-    const updatedDocument: Document = { 
-      ...document, 
-      ...documentData 
-    };
-    this.documents.set(id, updatedDocument);
-    return updatedDocument;
-  }
-  
-  async deleteDocument(id: number): Promise<boolean> {
-    return this.documents.delete(id);
-  }
-  
-  // Task operations
-  async getTasks(campId: number): Promise<Task[]> {
-    return Array.from(this.tasks.values()).filter(
-      (task) => task.campId === campId,
-    );
-  }
-  
-  async getTask(id: number): Promise<Task | undefined> {
-    return this.tasks.get(id);
-  }
-  
-  async createTask(insertTask: InsertTask): Promise<Task> {
-    const id = this.taskId++;
-    const task: Task = { ...insertTask, id, completedAt: null };
-    this.tasks.set(id, task);
-    return task;
-  }
-  
-  async updateTask(id: number, taskData: Partial<InsertTask>): Promise<Task | undefined> {
-    const task = this.tasks.get(id);
-    if (!task) return undefined;
+    // Update the sales rep's lead count
+    // In a real application, we would use a transaction here
+    const [salesRep] = await db.select().from(salesTeamMembers).where(eq(salesTeamMembers.id, salesRepId));
+    if (salesRep) {
+      await db.update(salesTeamMembers)
+        .set({ 
+          leadCount: Number(salesRep.leadCount) + 1,
+          lastActiveAt: new Date()
+        })
+        .where(eq(salesTeamMembers.id, salesRepId));
+    }
     
-    const updatedTask: Task = { 
-      ...task, 
-      ...taskData,
-      completedAt: taskData.status === 'completed' && !task.completedAt ? new Date() : task.completedAt
-    };
-    this.tasks.set(id, updatedTask);
-    return updatedTask;
+    return updatedLead;
   }
   
-  async deleteTask(id: number): Promise<boolean> {
-    return this.tasks.delete(id);
+  // Product methods
+  async getProducts(): Promise<Product[]> {
+    return db.select().from(products).orderBy(asc(products.name));
   }
   
-  // Activity operations
-  async getActivities(campId: number): Promise<Activity[]> {
-    return Array.from(this.activities.values())
-      .filter(activity => !campId || activity.campId === campId)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  async getProductsBySport(sport: string): Promise<Product[]> {
+    return db.select().from(products).where(eq(products.sport, sport)).orderBy(asc(products.name));
   }
   
-  async createActivity(insertActivity: InsertActivity): Promise<Activity> {
-    const id = this.activityId++;
-    const timestamp = new Date();
-    const activity: Activity = { ...insertActivity, id, timestamp };
-    this.activities.set(id, activity);
-    return activity;
+  async getProductsByCategory(category: string): Promise<Product[]> {
+    return db.select().from(products).where(eq(products.category, category)).orderBy(asc(products.name));
+  }
+  
+  async getProductById(id: number): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.id, id));
+    return product || undefined;
+  }
+  
+  async getProductBySku(sku: string): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.sku, sku));
+    return product || undefined;
+  }
+  
+  async createProduct(product: InsertProduct): Promise<Product> {
+    const [newProduct] = await db
+      .insert(products)
+      .values(product)
+      .returning();
+    return newProduct;
+  }
+  
+  async updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product> {
+    const [updatedProduct] = await db
+      .update(products)
+      .set({ ...product, updatedAt: new Date() })
+      .where(eq(products.id, id))
+      .returning();
+    return updatedProduct;
+  }
+  
+  async deleteProduct(id: number): Promise<void> {
+    await db.delete(products).where(eq(products.id, id));
+  }
+  
+  // Fabric Options methods
+  async getFabricOptions(): Promise<FabricOption[]> {
+    return db.select().from(fabricOptions).orderBy(asc(fabricOptions.name));
+  }
+  
+  async getFabricOptionById(id: number): Promise<FabricOption | undefined> {
+    const [option] = await db.select().from(fabricOptions).where(eq(fabricOptions.id, id));
+    return option || undefined;
+  }
+  
+  async createFabricOption(option: InsertFabricOption): Promise<FabricOption> {
+    const [newOption] = await db
+      .insert(fabricOptions)
+      .values(option)
+      .returning();
+    return newOption;
+  }
+  
+  async updateFabricOption(id: number, option: Partial<InsertFabricOption>): Promise<FabricOption> {
+    const [updatedOption] = await db
+      .update(fabricOptions)
+      .set({ ...option, updatedAt: new Date() })
+      .where(eq(fabricOptions.id, id))
+      .returning();
+    return updatedOption;
+  }
+  
+  async deleteFabricOption(id: number): Promise<void> {
+    await db.delete(fabricOptions).where(eq(fabricOptions.id, id));
+  }
+  
+  // Fabric Cuts methods
+  async getFabricCuts(): Promise<FabricCut[]> {
+    return db.select().from(fabricCuts).orderBy(asc(fabricCuts.name));
+  }
+  
+  async getFabricCutById(id: number): Promise<FabricCut | undefined> {
+    const [cut] = await db.select().from(fabricCuts).where(eq(fabricCuts.id, id));
+    return cut || undefined;
+  }
+  
+  async createFabricCut(cut: InsertFabricCut): Promise<FabricCut> {
+    const [newCut] = await db
+      .insert(fabricCuts)
+      .values(cut)
+      .returning();
+    return newCut;
+  }
+  
+  async updateFabricCut(id: number, cut: Partial<InsertFabricCut>): Promise<FabricCut> {
+    const [updatedCut] = await db
+      .update(fabricCuts)
+      .set({ ...cut, updatedAt: new Date() })
+      .where(eq(fabricCuts.id, id))
+      .returning();
+    return updatedCut;
+  }
+  
+  async deleteFabricCut(id: number): Promise<void> {
+    await db.delete(fabricCuts).where(eq(fabricCuts.id, id));
+  }
+  
+  // Customization Options methods
+  async getCustomizationOptions(productId: number): Promise<CustomizationOption[]> {
+    return db.select()
+      .from(customizationOptions)
+      .where(eq(customizationOptions.productId, productId))
+      .orderBy(asc(customizationOptions.optionName));
+  }
+  
+  async getCustomizationOptionById(id: number): Promise<CustomizationOption | undefined> {
+    const [option] = await db.select().from(customizationOptions).where(eq(customizationOptions.id, id));
+    return option || undefined;
+  }
+  
+  async createCustomizationOption(option: InsertCustomizationOption): Promise<CustomizationOption> {
+    const [newOption] = await db
+      .insert(customizationOptions)
+      .values(option)
+      .returning();
+    return newOption;
+  }
+  
+  async updateCustomizationOption(id: number, option: Partial<InsertCustomizationOption>): Promise<CustomizationOption> {
+    const [updatedOption] = await db
+      .update(customizationOptions)
+      .set({ ...option, updatedAt: new Date() })
+      .where(eq(customizationOptions.id, id))
+      .returning();
+    return updatedOption;
+  }
+  
+  async deleteCustomizationOption(id: number): Promise<void> {
+    await db.delete(customizationOptions).where(eq(customizationOptions.id, id));
+  }
+  
+  // Organization methods
+  async getOrganizations(): Promise<Organization[]> {
+    return db.select().from(organizations).orderBy(asc(organizations.name));
+  }
+  
+  async getOrganizationsBySalesRep(salesRepId: number): Promise<Organization[]> {
+    return db.select()
+      .from(organizations)
+      .where(eq(organizations.assignedSalesRepId, salesRepId))
+      .orderBy(asc(organizations.name));
+  }
+
+  async getOrganizationById(id: number): Promise<Organization | undefined> {
+    const [organization] = await db.select().from(organizations).where(eq(organizations.id, id));
+    return organization || undefined;
+  }
+
+  async createOrganization(organization: InsertOrganization): Promise<Organization> {
+    const [newOrganization] = await db
+      .insert(organizations)
+      .values(organization)
+      .returning();
+    return newOrganization;
+  }
+
+  async updateOrganization(id: number, organization: Partial<InsertOrganization>): Promise<Organization> {
+    const [updatedOrganization] = await db
+      .update(organizations)
+      .set({ ...organization, updatedAt: new Date() })
+      .where(eq(organizations.id, id))
+      .returning();
+    return updatedOrganization;
+  }
+
+  async deleteOrganization(id: number): Promise<void> {
+    await db.delete(organizations).where(eq(organizations.id, id));
+  }
+  
+  async clearExampleData(): Promise<void> {
+    // We'll preserve the admin user only (id=1), but clear all other data
+    try {
+      // Clear all tables in the correct order to handle foreign key constraints
+      // Start with tables that reference other tables
+      await db.delete(feedbackVotes);
+      await db.delete(feedbackComments);
+      await db.delete(feedback);
+      await db.delete(designMessages);
+      await db.delete(designRevisions);
+      await db.delete(designVersions);
+      await db.delete(designProjects);
+      await db.delete(customizationOptions);
+      await db.delete(activities);
+      await db.delete(messages);
+      await db.delete(orders);
+      await db.delete(leads);
+      await db.delete(fabricCuts);
+      await db.delete(fabricOptions);
+      await db.delete(products);
+      await db.delete(organizations);
+      
+      // First delete sales_team_members where user_id is not 1 (not admin)
+      await db.delete(salesTeamMembers).where(sql`user_id != 1 OR user_id IS NULL`);
+      
+      // Keep user 1 (admin) but delete all other users
+      await db.delete(users).where(sql`id != 1`);
+      
+      console.log("Example data cleared successfully");
+    } catch (error) {
+      console.error("Error clearing example data:", error);
+      throw error;
+    }
+  }
+  
+  async clearAllProducts(): Promise<void> {
+    try {
+      // Delete all products and related data
+      await db.delete(customizationOptions);
+      await db.delete(fabricCuts);
+      await db.delete(fabricOptions);
+      await db.delete(products);
+      
+      console.log("All products have been deleted successfully");
+    } catch (error) {
+      console.error("Error deleting products:", error);
+      throw error;
+    }
+  }
+  
+  // Feedback system methods
+  async getFeedback(options?: { status?: string; type?: string; limit?: number }): Promise<Feedback[]> {
+    let query = db.select().from(feedback);
+    
+    if (options?.status) {
+      query = query.where(eq(feedback.status, options.status));
+    }
+    
+    if (options?.type) {
+      query = query.where(eq(feedback.type, options.type));
+    }
+    
+    const results = await query.orderBy(desc(feedback.createdAt));
+    
+    if (options?.limit) {
+      return results.slice(0, options.limit);
+    }
+    
+    return results;
+  }
+  
+  async getFeedbackById(id: number): Promise<Feedback | undefined> {
+    const [result] = await db.select().from(feedback).where(eq(feedback.id, id));
+    return result || undefined;
+  }
+  
+  async createFeedback(feedbackItem: InsertFeedback): Promise<Feedback> {
+    const [result] = await db
+      .insert(feedback)
+      .values(feedbackItem)
+      .returning();
+    return result;
+  }
+  
+  async updateFeedback(id: number, feedbackUpdate: Partial<InsertFeedback>): Promise<Feedback> {
+    const [result] = await db
+      .update(feedback)
+      .set({ ...feedbackUpdate, updatedAt: new Date() })
+      .where(eq(feedback.id, id))
+      .returning();
+    return result;
+  }
+  
+  async deleteFeedback(id: number): Promise<void> {
+    // First delete all comments and votes for this feedback
+    await db.delete(feedbackComments).where(eq(feedbackComments.feedbackId, id));
+    await db.delete(feedbackVotes).where(eq(feedbackVotes.feedbackId, id));
+    
+    // Then delete the feedback itself
+    await db.delete(feedback).where(eq(feedback.id, id));
+  }
+  
+  async getFeedbackByUser(userId: number): Promise<Feedback[]> {
+    return db.select().from(feedback).where(eq(feedback.userId, userId)).orderBy(desc(feedback.createdAt));
+  }
+  
+  // Feedback comments methods
+  async getFeedbackComments(feedbackId: number): Promise<FeedbackComment[]> {
+    return db.select()
+      .from(feedbackComments)
+      .where(eq(feedbackComments.feedbackId, feedbackId))
+      .orderBy(asc(feedbackComments.createdAt));
+  }
+  
+  async addFeedbackComment(comment: InsertFeedbackComment): Promise<FeedbackComment> {
+    const [result] = await db
+      .insert(feedbackComments)
+      .values(comment)
+      .returning();
+    return result;
+  }
+  
+  async deleteFeedbackComment(id: number): Promise<void> {
+    await db.delete(feedbackComments).where(eq(feedbackComments.id, id));
+  }
+  
+  // Feedback votes methods
+  async getFeedbackVotes(feedbackId: number): Promise<FeedbackVote[]> {
+    return db.select()
+      .from(feedbackVotes)
+      .where(eq(feedbackVotes.feedbackId, feedbackId));
+  }
+  
+  async addFeedbackVote(vote: InsertFeedbackVote): Promise<FeedbackVote> {
+    // Check if the user already voted on this feedback
+    const existingVote = await db.select()
+      .from(feedbackVotes)
+      .where(and(
+        eq(feedbackVotes.feedbackId, vote.feedbackId),
+        eq(feedbackVotes.userId, vote.userId)
+      ));
+    
+    if (existingVote.length > 0) {
+      // If the vote type is the same, do nothing
+      if (existingVote[0].voteType === vote.voteType) {
+        return existingVote[0];
+      }
+      
+      // If the vote type is different, update it
+      const [result] = await db
+        .update(feedbackVotes)
+        .set({ voteType: vote.voteType })
+        .where(eq(feedbackVotes.id, existingVote[0].id))
+        .returning();
+      
+      await this.updateFeedbackVoteCount(vote.feedbackId);
+      return result;
+    }
+    
+    // Otherwise, add the new vote
+    const [result] = await db
+      .insert(feedbackVotes)
+      .values(vote)
+      .returning();
+    
+    await this.updateFeedbackVoteCount(vote.feedbackId);
+    return result;
+  }
+  
+  async removeFeedbackVote(userId: number, feedbackId: number): Promise<void> {
+    await db.delete(feedbackVotes)
+      .where(and(
+        eq(feedbackVotes.userId, userId),
+        eq(feedbackVotes.feedbackId, feedbackId)
+      ));
+    
+    await this.updateFeedbackVoteCount(feedbackId);
+  }
+  
+  async updateFeedbackVoteCount(feedbackId: number): Promise<void> {
+    // Count upvotes and downvotes
+    const upvotesResult = await db.select({ count: sql`count(*)` })
+      .from(feedbackVotes)
+      .where(and(
+        eq(feedbackVotes.feedbackId, feedbackId),
+        eq(feedbackVotes.voteType, 'upvote')
+      ));
+    
+    const downvotesResult = await db.select({ count: sql`count(*)` })
+      .from(feedbackVotes)
+      .where(and(
+        eq(feedbackVotes.feedbackId, feedbackId),
+        eq(feedbackVotes.voteType, 'downvote')
+      ));
+    
+    const upvotes = Number(upvotesResult[0].count);
+    const downvotes = Number(downvotesResult[0].count);
+    
+    // Update the feedback vote count (upvotes - downvotes)
+    await db.update(feedback)
+      .set({ voteCount: upvotes - downvotes })
+      .where(eq(feedback.id, feedbackId));
+  }
+  
+  // Design Projects methods
+  async getDesignProjects(): Promise<DesignProject[]> {
+    return db.select().from(designProjects).orderBy(desc(designProjects.createdAt));
+  }
+  
+  async getDesignProject(id: number): Promise<DesignProject | undefined> {
+    const [project] = await db.select().from(designProjects).where(eq(designProjects.id, id));
+    return project;
+  }
+  
+  async getDesignProjectsByUserId(userId: number): Promise<DesignProject[]> {
+    // Get orders created by this user, then find design projects related to those orders
+    const userOrders = await db.select().from(orders).where(eq(orders.userId, userId));
+    const orderIds = userOrders.map(order => order.orderId);
+    
+    if (orderIds.length === 0) return [];
+    
+    return db.select()
+      .from(designProjects)
+      .where(inArray(designProjects.orderId, orderIds))
+      .orderBy(desc(designProjects.createdAt));
+  }
+  
+  async getDesignProjectsByDesignerId(designerId: number): Promise<DesignProject[]> {
+    return db.select()
+      .from(designProjects)
+      .where(eq(designProjects.designerId, designerId))
+      .orderBy(desc(designProjects.createdAt));
+  }
+  
+  async getUnassignedDesignProjects(): Promise<DesignProject[]> {
+    return db.select()
+      .from(designProjects)
+      .where(sql`designer_id IS NULL`)
+      .orderBy(desc(designProjects.createdAt));
+  }
+  
+  async createDesignProject(project: InsertDesignProject): Promise<DesignProject> {
+    const [newProject] = await db
+      .insert(designProjects)
+      .values(project)
+      .returning();
+    return newProject;
+  }
+  
+  async updateDesignProject(id: number, project: Partial<InsertDesignProject>): Promise<DesignProject> {
+    const [updatedProject] = await db
+      .update(designProjects)
+      .set({ ...project, updatedAt: new Date() })
+      .where(eq(designProjects.id, id))
+      .returning();
+    return updatedProject;
+  }
+  
+  async deleteDesignProject(id: number): Promise<void> {
+    // First delete all related versions and revisions (cascading should handle this, but being explicit)
+    await db.delete(designVersions).where(eq(designVersions.projectId, id));
+    await db.delete(designRevisions).where(eq(designRevisions.designId, id));
+    await db.delete(designMessages).where(eq(designMessages.designId, id));
+    
+    // Then delete the project itself
+    await db.delete(designProjects).where(eq(designProjects.id, id));
+  }
+  
+  async assignDesignProject(id: number, designerId: number, designerName: string): Promise<DesignProject> {
+    const [updatedProject] = await db
+      .update(designProjects)
+      .set({ 
+        designerId,
+        designerName,
+        status: 'in_progress',
+        updatedAt: new Date()
+      })
+      .where(eq(designProjects.id, id))
+      .returning();
+    return updatedProject;
+  }
+  
+  // Design Versions methods
+  async getDesignVersions(projectId: number): Promise<DesignVersion[]> {
+    return db.select()
+      .from(designVersions)
+      .where(eq(designVersions.projectId, projectId))
+      .orderBy(asc(designVersions.versionNumber));
+  }
+  
+  async getDesignVersion(id: number): Promise<DesignVersion | undefined> {
+    const [version] = await db.select().from(designVersions).where(eq(designVersions.id, id));
+    return version;
+  }
+  
+  async createDesignVersion(version: InsertDesignVersion): Promise<DesignVersion> {
+    // Get the current highest version number for this project
+    const result = await db.execute(sql`
+      SELECT MAX(version_number) as max_version
+      FROM ${designVersions}
+      WHERE project_id = ${version.projectId}
+    `);
+    
+    const maxVersion = parseInt(result.rows[0]?.max_version as string) || 0;
+    const versionNumber = maxVersion + 1;
+    
+    // Create the new version
+    const [newVersion] = await db
+      .insert(designVersions)
+      .values({ ...version, versionNumber })
+      .returning();
+    
+    // Update the project status to 'review' if it was 'in_progress'
+    const [project] = await db.select().from(designProjects).where(eq(designProjects.id, version.projectId));
+    if (project && project.status === 'in_progress') {
+      await db.update(designProjects)
+        .set({ 
+          status: 'review',
+          updatedAt: new Date()
+        })
+        .where(eq(designProjects.id, version.projectId));
+    }
+    
+    return newVersion;
+  }
+  
+  async updateDesignVersion(id: number, version: Partial<InsertDesignVersion>): Promise<DesignVersion> {
+    const [updatedVersion] = await db
+      .update(designVersions)
+      .set(version)
+      .where(eq(designVersions.id, id))
+      .returning();
+    return updatedVersion;
+  }
+  
+  async deleteDesignVersion(id: number): Promise<void> {
+    await db.delete(designVersions).where(eq(designVersions.id, id));
+  }
+  
+  // Design Revisions methods
+  async getDesignRevisions(designId: number): Promise<DesignRevision[]> {
+    return db.select()
+      .from(designRevisions)
+      .where(eq(designRevisions.designId, designId))
+      .orderBy(desc(designRevisions.requestedAt));
+  }
+  
+  async getDesignRevision(id: number): Promise<DesignRevision | undefined> {
+    const [revision] = await db.select().from(designRevisions).where(eq(designRevisions.id, id));
+    return revision;
+  }
+  
+  async createDesignRevision(revision: InsertDesignRevision): Promise<DesignRevision> {
+    const [newRevision] = await db
+      .insert(designRevisions)
+      .values(revision)
+      .returning();
+    
+    // Update the design project status to indicate revisions needed
+    await db.update(designProjects)
+      .set({ 
+        status: 'in_progress',
+        feedback: revision.description,
+        updatedAt: new Date()
+      })
+      .where(eq(designProjects.id, revision.designId));
+    
+    return newRevision;
+  }
+  
+  async updateDesignRevision(id: number, revision: Partial<InsertDesignRevision>): Promise<DesignRevision> {
+    const [updatedRevision] = await db
+      .update(designRevisions)
+      .set(revision)
+      .where(eq(designRevisions.id, id))
+      .returning();
+    return updatedRevision;
+  }
+  
+  async completeDesignRevision(id: number): Promise<DesignRevision> {
+    const [updatedRevision] = await db
+      .update(designRevisions)
+      .set({ 
+        status: 'completed',
+        completedAt: new Date()
+      })
+      .where(eq(designRevisions.id, id))
+      .returning();
+    return updatedRevision;
+  }
+  
+  async deleteDesignRevision(id: number): Promise<void> {
+    await db.delete(designRevisions).where(eq(designRevisions.id, id));
+  }
+  
+  // Design Messages methods
+  async getDesignMessages(designId: number): Promise<DesignMessage[]> {
+    return db.select()
+      .from(designMessages)
+      .where(eq(designMessages.designId, designId))
+      .orderBy(asc(designMessages.sentAt));
+  }
+  
+  async createDesignMessage(message: InsertDesignMessage): Promise<DesignMessage> {
+    const [newMessage] = await db
+      .insert(designMessages)
+      .values(message)
+      .returning();
+    return newMessage;
+  }
+  
+  async deleteDesignMessage(id: number): Promise<void> {
+    await db.delete(designMessages).where(eq(designMessages.id, id));
+  }
+  
+  // Events methods
+  async getEvents(): Promise<Event[]> {
+    return db.select().from(events).orderBy(asc(events.startDate));
+  }
+  
+  async getEventById(id: number): Promise<Event | undefined> {
+    const [event] = await db.select().from(events).where(eq(events.id, id));
+    return event || undefined;
+  }
+  
+  async createEvent(event: InsertEvent): Promise<Event> {
+    const [newEvent] = await db
+      .insert(events)
+      .values(event)
+      .returning();
+    return newEvent;
+  }
+  
+  async updateEvent(id: number, eventData: Partial<InsertEvent>): Promise<Event> {
+    try {
+      // Make sure the event exists
+      const event = await this.getEventById(id);
+      if (!event) {
+        throw new Error("Event not found");
+      }
+      
+      // Update the event
+      const [updatedEvent] = await db
+        .update(events)
+        .set({
+          ...eventData,
+          updatedAt: new Date()
+        })
+        .where(eq(events.id, id))
+        .returning();
+      
+      return updatedEvent;
+    } catch (error) {
+      console.error("Error updating event:", error);
+      throw error;
+    }
+  }
+  
+  async deleteEvent(id: number): Promise<void> {
+    try {
+      // Make sure the event exists
+      const event = await this.getEventById(id);
+      if (!event) {
+        throw new Error("Event not found");
+      }
+      
+      // Delete the event
+      await db.delete(events).where(eq(events.id, id));
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      throw error;
+    }
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

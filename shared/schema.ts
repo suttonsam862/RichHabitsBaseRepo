@@ -380,6 +380,56 @@ export const designProjects = pgTable('design_projects', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+// Staff Members table
+export const staffMembers = pgTable('staff_members', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  role: text('role').notNull(),
+  email: text('email'),
+  phone: text('phone'),
+  specialization: text('specialization'),
+  status: text('status').notNull().default('active'), // 'active', 'inactive', 'pending'
+  address: text('address'),
+  city: text('city'),
+  state: text('state'),
+  zipCode: text('zip_code'),
+  emergencyContact: text('emergency_contact'),
+  emergencyPhone: text('emergency_phone'),
+  certifications: json('certifications').$type<string[]>(),
+  notes: text('notes'),
+  payRate: numeric('pay_rate'),
+  payType: text('pay_type').default('hourly'), // 'hourly', 'daily', 'fixed'
+  totalPaid: numeric('total_paid').default('0'),
+  availableDates: json('available_dates').$type<string[]>(),
+  assignedDates: json('assigned_dates').$type<string[]>(),
+  campAssignments: json('camp_assignments').$type<{campId: number; campName: string}[]>(),
+  travelPlans: json('travel_plans').$type<{
+    id: number;
+    type: string;
+    departureDate?: string;
+    departureLocation?: string;
+    arrivalDate?: string;
+    arrivalLocation?: string;
+    confirmationCode?: string;
+  }[]>(),
+  accommodations: json('accommodations').$type<{
+    id: number;
+    type: string;
+    location?: string;
+    checkIn?: string;
+    checkOut?: string;
+    confirmationCode?: string;
+    roomNumber?: string;
+  }[]>(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Create insert schema for staff
+export const insertStaffMemberSchema = createInsertSchema(staffMembers).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertStaffMember = z.infer<typeof insertStaffMemberSchema>;
+export type StaffMember = typeof staffMembers.$inferSelect;
+
 // Design Versions table
 export const designVersions = pgTable('design_versions', {
   id: serial('id').primaryKey(),

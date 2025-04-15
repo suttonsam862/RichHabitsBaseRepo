@@ -21,6 +21,7 @@ import {
   sidebarGroups,
   sidebarItems,
   userSettings,
+  staffMembers,
   ROLES,
   type User, 
   type InsertUser, 
@@ -60,7 +61,9 @@ import {
   type InsertFeedbackVote,
   type Permission,
   type Event,
-  type InsertEvent
+  type InsertEvent,
+  type StaffMember,
+  type InsertStaffMember
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, or, isNull, asc, inArray } from "drizzle-orm";
@@ -237,6 +240,13 @@ export interface IStorage {
   createEvent(event: InsertEvent): Promise<Event>;
   updateEvent(id: number, event: Partial<InsertEvent>): Promise<Event>;
   deleteEvent(id: number): Promise<void>;
+  
+  // Staff methods
+  getStaffMembers(): Promise<StaffMember[]>;
+  getStaffMemberById(id: number): Promise<StaffMember | undefined>;
+  createStaffMember(staffMember: InsertStaffMember): Promise<StaffMember>;
+  updateStaffMember(id: number, staffMember: Partial<InsertStaffMember>): Promise<StaffMember>;
+  deleteStaffMember(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {

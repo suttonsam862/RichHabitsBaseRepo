@@ -56,6 +56,16 @@ import {
   DotFilledIcon,
   MixerHorizontalIcon,
 } from "@radix-ui/react-icons";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
 
 // Define the StaffMember interface
 interface StaffMember {
@@ -267,13 +277,27 @@ const StaffMemberCard = ({
 // Main StaffManagement Component
 export default function StaffManagement() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
-  // State for staff list with initial dummy data
-  const [staffList, setStaffList] = useState<StaffMember[]>([
-    { id: 1, name: "John Smith", role: "Coach", email: "john@example.com", phone: "555-1234", specialization: "Basketball", status: 'active' },
-    { id: 2, name: "Jane Doe", role: "Trainer", email: "jane@example.com", phone: "555-5678", specialization: "Swimming", status: 'active' },
-    { id: 3, name: "Bob Johnson", role: "Manager", email: "bob@example.com", phone: "555-9012", specialization: "Administration", status: 'active' },
-  ]);
+  // State for staff list using React Query
+  const { 
+    data: staffListData, 
+    isLoading: isLoadingStaff, 
+    isError: isErrorStaff,
+    error: staffError
+  } = useQuery({
+    queryKey: ['/api/staff'],
+    queryFn: async () => {
+      console.log('Fetching staff members from API');
+      const response = await apiRequest('GET', '/api/staff');
+      const data = await response.json();
+      console.log('Received staff data:', data);
+      return data.data || [];
+    }
+  });
+  
+  // Derived staff list from React Query data
+  const staffList = staffListData || [];
   
   // Add a refresh key to force re-renders
   const [refreshKey, setRefreshKey] = useState(0);
@@ -316,6 +340,48 @@ export default function StaffManagement() {
     setNewStaff(prev => ({ ...prev, status: value as 'active' | 'inactive' | 'pending' }));
   };
   
+  // Mutation for adding staff
+  const addStaffMutation = useMutation({
+    mutationFn: async (staffData: Omit<StaffMember, 'id'>) => {
+      console.log('Adding staff member with data:', staffData);
+      const response = await apiRequest('POST', '/api/staff', staffData);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add staff member');
+      }
+      return await response.json();
+    },
+    onSuccess: () => {
+      // Invalidate the staff list query to trigger a refetch
+      queryClient.invalidateQueries({ queryKey: ['/api/staff'] });
+      
+      // Reset form and close dialog
+      setNewStaff({
+        name: '',
+        role: '',
+        email: '',
+        phone: '',
+        specialization: '',
+        status: 'active'
+      });
+      setIsAddingStaff(false);
+      
+      // Show success toast
+      toast({
+        title: "Staff added",
+        description: `${newStaff.name} has been added to the staff list.`
+      });
+    },
+    onError: (error: Error) => {
+      console.error('Error adding staff:', error);
+      toast({
+        title: "Error adding staff",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+  
   // Function to add a new staff member
   const handleAddStaff = () => {
     // Validate required fields
@@ -328,37 +394,8 @@ export default function StaffManagement() {
       return;
     }
     
-    // Generate a new ID
-    const newId = Math.max(0, ...staffList.map(s => s.id)) + 1;
-    
-    // Create a full staff member object
-    const staffMemberToAdd: StaffMember = {
-      id: newId,
-      ...newStaff
-    };
-    
-    // Update the staff list
-    setStaffList(prevList => [...prevList, staffMemberToAdd]);
-    
-    // Reset form and close dialog
-    setNewStaff({
-      name: '',
-      role: '',
-      email: '',
-      phone: '',
-      specialization: '',
-      status: 'active'
-    });
-    setIsAddingStaff(false);
-    
-    // Force a re-render
-    forceRefresh();
-    
-    // Show success toast
-    toast({
-      title: "Staff added",
-      description: `${newStaff.name} has been added to the staff list.`
-    });
+    // Execute the mutation
+    addStaffMutation.mutate(newStaff);
   };
   
   // Function to start editing a staff member
@@ -412,6 +449,44 @@ export default function StaffManagement() {
     setCurrentEditingStaff(updatedStaff);
   };
   
+  // Mutation for updating staff
+  const updateStaffMutation = useMutation({
+    mutationFn: async (staffData: StaffMember) => {
+      console.log('Updating staff member with data:', staffData);
+      const response = await apiRequest('PUT', `/api/staff/${staffData.id}`, staffData);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update staff member');
+      }
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      // Invalidate the staff list query to trigger a refetch
+      queryClient.invalidateQueries({ queryKey: ['/api/staff'] });
+      
+      // Close dialog and reset state
+      setIsEditingStaff(false);
+      setCurrentEditingStaff(null);
+      
+      // Force a re-render for any local state dependencies
+      forceRefresh();
+      
+      // Show success toast
+      toast({
+        title: "Staff updated",
+        description: `${data.data.name}'s information has been updated.`
+      });
+    },
+    onError: (error: Error) => {
+      console.error('Error updating staff:', error);
+      toast({
+        title: "Error updating staff",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+  
   // Function to save staff edits
   const saveStaffEdit = () => {
     if (!currentEditingStaff) {
@@ -419,40 +494,55 @@ export default function StaffManagement() {
       return;
     }
     
-    console.log("Before saving edits - current staff list:", JSON.stringify(staffList));
     console.log("Saving edits for staff member:", JSON.stringify(currentEditingStaff));
     
     // Create a deep copy of the editing staff
     const updatedStaff = JSON.parse(JSON.stringify(currentEditingStaff)) as StaffMember;
     
-    // Update the staff list with an immediate state update approach
-    const newStaffList = staffList.map(staff => 
-      staff.id === updatedStaff.id ? {...updatedStaff} : staff
-    );
-    
-    console.log("Updated staff list will be:", JSON.stringify(newStaffList));
-    
-    // Set state with the new list
-    setStaffList(newStaffList);
-    
-    // Close dialog and reset state
-    setIsEditingStaff(false);
-    setCurrentEditingStaff(null);
-    
-    // Force a re-render
-    forceRefresh();
-    
-    // Small delay to ensure state has updated before showing toast
-    setTimeout(() => {
-      console.log("After saving - current staff list:", JSON.stringify(staffList));
+    // Execute the mutation
+    updateStaffMutation.mutate(updatedStaff);
+  };
+  
+  // Mutation for deleting staff
+  const deleteStaffMutation = useMutation({
+    mutationFn: async (staffId: number) => {
+      console.log('Deleting staff member with ID:', staffId);
+      const response = await apiRequest('DELETE', `/api/staff/${staffId}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete staff member');
+      }
+      return await response.json();
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate the staff list query to trigger a refetch
+      queryClient.invalidateQueries({ queryKey: ['/api/staff'] });
+      
+      // Reset state and close dialog
+      setIsDeleteModalOpen(false);
+      
+      // Get the name from our saved reference for the toast
+      const nameToDelete = staffToDelete?.name || 'Staff member';
+      setStaffToDelete(null);
+      
+      // Force a re-render for any local state dependencies
+      forceRefresh();
       
       // Show success toast
       toast({
-        title: "Staff updated",
-        description: `${updatedStaff.name}'s information has been updated.`
+        title: "Staff removed",
+        description: `${nameToDelete} has been removed from the staff list.`
       });
-    }, 100);
-  };
+    },
+    onError: (error: Error) => {
+      console.error('Error deleting staff:', error);
+      toast({
+        title: "Error deleting staff",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
   
   // Functions for deleting staff
   const handleDeleteClick = (staff: StaffMember) => {
@@ -465,27 +555,8 @@ export default function StaffManagement() {
   const confirmDelete = () => {
     if (!staffToDelete) return;
     
-    // Save a reference to name for toast message
-    const nameToDelete = staffToDelete.name;
-    const idToDelete = staffToDelete.id;
-    
-    // Update staff list by filtering out the deleted member
-    setStaffList(prevList => 
-      prevList.filter(staff => staff.id !== idToDelete)
-    );
-    
-    // Reset state and close dialog
-    setIsDeleteModalOpen(false);
-    setStaffToDelete(null);
-    
-    // Force a re-render
-    forceRefresh();
-    
-    // Show success toast
-    toast({
-      title: "Staff removed",
-      description: `${nameToDelete} has been removed from the staff list.`
-    });
+    // Execute the mutation
+    deleteStaffMutation.mutate(staffToDelete.id);
   };
   
   return (
@@ -501,74 +572,115 @@ export default function StaffManagement() {
         </Button>
       </div>
       
-      {/* Staff Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center space-x-4">
-              <PersonIcon className="h-8 w-8 text-blue-500" />
-              <div>
-                <div className="text-sm text-gray-500">Total Staff</div>
-                <div className="text-2xl font-bold">{staffList.length}</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center space-x-4">
-              <DotFilledIcon className="h-8 w-8 text-green-500" />
-              <div>
-                <div className="text-sm text-gray-500">Active Staff</div>
-                <div className="text-2xl font-bold">
-                  {staffList.filter(m => m.status === 'active').length}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center space-x-4">
-              <CalendarIcon className="h-8 w-8 text-purple-500" />
-              <div>
-                <div className="text-sm text-gray-500">Assigned Camps</div>
-                <div className="text-2xl font-bold">
-                  {staffList.reduce((total, member) => total + (member.campAssignments?.length || 0), 0)}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Staff List */}
-      {staffList.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {staffList.map(member => (
-            <StaffMemberCard
-              key={`${member.id}-${refreshKey}`}
-              member={member}
-              onEdit={startEditing}
-              onDelete={handleDeleteClick}
-              refreshKey={refreshKey}
-            />
-          ))}
+      {/* Loading and error states */}
+      {isLoadingStaff && (
+        <div className="flex justify-center items-center py-12">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            <p className="text-lg text-gray-600">Loading staff data...</p>
+          </div>
         </div>
-      ) : (
-        <Card>
-          <CardContent className="text-center py-10">
-            <PersonIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-xl font-medium mb-2">No Staff Members Yet</h3>
-            <p className="text-gray-500 mb-6">Add your first staff member to get started managing your camp personnel.</p>
-            <Button onClick={() => setIsAddingStaff(true)}>
-              <PlusIcon className="mr-2 h-4 w-4" />
-              Add First Staff Member
-            </Button>
-          </CardContent>
-        </Card>
+      )}
+      
+      {isErrorStaff && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error loading staff data</h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>{staffError?.message || 'An unknown error occurred. Please try again later.'}</p>
+              </div>
+              <div className="mt-4">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/staff'] })}
+                >
+                  Retry
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {!isLoadingStaff && !isErrorStaff && (
+        <>
+          {/* Staff Overview Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center space-x-4">
+                  <PersonIcon className="h-8 w-8 text-blue-500" />
+                  <div>
+                    <div className="text-sm text-gray-500">Total Staff</div>
+                    <div className="text-2xl font-bold">{staffList.length}</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center space-x-4">
+                  <DotFilledIcon className="h-8 w-8 text-green-500" />
+                  <div>
+                    <div className="text-sm text-gray-500">Active Staff</div>
+                    <div className="text-2xl font-bold">
+                      {staffList.filter((m: StaffMember) => m.status === 'active').length}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center space-x-4">
+                  <CalendarIcon className="h-8 w-8 text-purple-500" />
+                  <div>
+                    <div className="text-sm text-gray-500">Assigned Camps</div>
+                    <div className="text-2xl font-bold">
+                      {staffList.reduce((total: number, member: StaffMember) => total + (member.campAssignments?.length || 0), 0)}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Staff List */}
+          {staffList.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {staffList.map((member: StaffMember) => (
+                <StaffMemberCard
+                  key={`${member.id}-${refreshKey}`}
+                  member={member}
+                  onEdit={startEditing}
+                  onDelete={handleDeleteClick}
+                  refreshKey={refreshKey}
+                />
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="text-center py-10">
+                <PersonIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                <h3 className="text-xl font-medium mb-2">No Staff Members Yet</h3>
+                <p className="text-gray-500 mb-6">Add your first staff member to get started managing your camp personnel.</p>
+                <Button onClick={() => setIsAddingStaff(true)}>
+                  <PlusIcon className="mr-2 h-4 w-4" />
+                  Add First Staff Member
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
       
       {/* Add Staff Dialog */}
@@ -837,14 +949,10 @@ export default function StaffManagement() {
                         <Select 
                           defaultValue={currentEditingStaff.payType || 'hourly'} 
                           onValueChange={(value) => {
-                            console.log(`Changing pay type to: ${value}`);
-                            
-                            // Create a new object based on the current staff
                             const updatedStaff = {
                               ...currentEditingStaff,
                               payType: value as 'hourly' | 'daily' | 'fixed'
                             };
-                            
                             setCurrentEditingStaff(updatedStaff);
                           }}
                         >
@@ -863,26 +971,33 @@ export default function StaffManagement() {
                 </ScrollArea>
               </TabsContent>
               
-              {/* Schedule Tab */}
+              {/* Other tabs content would go here */}
               <TabsContent value="schedule" className="flex-grow overflow-hidden">
                 <ScrollArea className="h-[50vh]">
-                  <div className="space-y-6 py-4 px-2">
-                    <div className="space-y-2">
-                      <Label>Camp Assignments</Label>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-sm text-gray-500">
-                          Camp assignments are managed through the Camp Overview page.
-                        </p>
-                      </div>
-                    </div>
+                  <div className="py-4 px-2">
+                    <p className="text-gray-500">Schedule information will be managed here.</p>
                   </div>
                 </ScrollArea>
               </TabsContent>
               
-              {/* Other tabs would go here */}
+              <TabsContent value="contact" className="flex-grow overflow-hidden">
+                <ScrollArea className="h-[50vh]">
+                  <div className="py-4 px-2">
+                    <p className="text-gray-500">Contact information will be managed here.</p>
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+              
+              <TabsContent value="travel" className="flex-grow overflow-hidden">
+                <ScrollArea className="h-[50vh]">
+                  <div className="py-4 px-2">
+                    <p className="text-gray-500">Travel information will be managed here.</p>
+                  </div>
+                </ScrollArea>
+              </TabsContent>
             </Tabs>
             
-            <DialogFooter className="mt-4 flex-shrink-0">
+            <DialogFooter className="border-t pt-4 mt-4">
               <Button variant="outline" onClick={() => setIsEditingStaff(false)}>Cancel</Button>
               <Button onClick={saveStaffEdit}>Save Changes</Button>
             </DialogFooter>
@@ -892,17 +1007,21 @@ export default function StaffManagement() {
       
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-red-600">Confirm Deletion</DialogTitle>
+            <DialogTitle>Delete Staff Member</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete {staffToDelete?.name}? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <p className="text-gray-500 text-sm">
-              All information related to this staff member will be permanently removed from the system.
-            </p>
+          <div className="mt-4 bg-red-50 p-4 rounded-md text-red-800 text-sm">
+            <p>All data associated with this staff member will be permanently removed, including:</p>
+            <ul className="list-disc ml-5 mt-2 space-y-1">
+              <li>Personal information</li>
+              <li>Financial records</li>
+              <li>Camp assignments</li>
+              <li>Travel arrangements</li>
+            </ul>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>Cancel</Button>

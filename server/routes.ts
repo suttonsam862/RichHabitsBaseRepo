@@ -3647,7 +3647,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Only admin or event manager can create camps
       const user = req.user as User;
-      if (user.role !== 'admin' && user.role !== 'event_manager') {
+      if (user.role !== 'admin') {
         return res.status(403).json({ error: "Unauthorized access" });
       }
       
@@ -3708,9 +3708,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
       
-      // Only admin or event manager can update camps
+      // Only admin can update camps
       const user = req.user as User;
-      if (user.role !== 'admin' && user.role !== 'event_manager') {
+      if (user.role !== 'admin') {
         return res.status(403).json({ error: "Unauthorized access" });
       }
       
@@ -3835,9 +3835,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
       
-      // Only admin or event manager can update camp schedules
+      // Only admin can update camp schedules
       const user = req.user as User;
-      if (user.role !== 'admin' && user.role !== 'event_manager') {
+      if (user.role !== 'admin') {
         return res.status(403).json({ error: "Unauthorized access" });
       }
       

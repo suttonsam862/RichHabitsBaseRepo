@@ -3114,6 +3114,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Staff management endpoints
+  app.get("/api/staff", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Get all staff members
+      const staffMembers = await storage.getStaffMembers();
+      res.json({ data: staffMembers });
+    } catch (error: any) {
+      console.error("Error fetching staff members:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/staff/:id", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid staff ID" });
+      }
+      
+      // Get the staff member by ID
+      const staffMember = await storage.getStaffMemberById(id);
+      if (!staffMember) {
+        return res.status(404).json({ error: "Staff member not found" });
+      }
+      
+      res.json({ data: staffMember });
+    } catch (error: any) {
+      console.error(`Error fetching staff member #${req.params.id}:`, error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/staff", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      console.log('Creating staff member with data:', req.body);
+      
+      // Validate the request body
+      const validatedData = insertStaffMemberSchema.parse(req.body);
+      
+      // Create the staff member
+      const newStaffMember = await storage.createStaffMember(validatedData);
+      
+      // Log the created staff member
+      console.log('Staff member created:', newStaffMember);
+      
+      // Create an activity record for this creation
+      await storage.createActivity({
+        userId: (req.user as User).id,
+        type: "staff",
+        content: `Staff member "${newStaffMember.name}" created`,
+        relatedId: newStaffMember.id,
+        relatedType: "staff"
+      });
+      
+      res.status(201).json({ data: newStaffMember, success: true });
+    } catch (error: any) {
+      console.error("Error creating staff member:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  app.put("/api/staff/:id", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid staff ID" });
+      }
+      
+      // Log the update attempt with data
+      console.log(`Updating staff member #${id} with data:`, req.body);
+      
+      // Check if the staff member exists
+      const existingStaff = await storage.getStaffMemberById(id);
+      if (!existingStaff) {
+        return res.status(404).json({ error: "Staff member not found" });
+      }
+      
+      // Update the staff member
+      const updatedStaff = await storage.updateStaffMember(id, req.body);
+      
+      // Log the update result
+      console.log('Staff member updated successfully:', updatedStaff);
+      
+      // Create an activity record for this update
+      await storage.createActivity({
+        userId: (req.user as User).id,
+        type: "staff",
+        content: `Staff member "${updatedStaff.name}" updated`,
+        relatedId: id,
+        relatedType: "staff"
+      });
+      
+      res.json({ data: updatedStaff, success: true });
+    } catch (error: any) {
+      console.error(`Error updating staff member #${req.params.id}:`, error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  app.delete("/api/staff/:id", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid staff ID" });
+      }
+      
+      // Check if the staff member exists
+      const staffMember = await storage.getStaffMemberById(id);
+      if (!staffMember) {
+        return res.status(404).json({ error: "Staff member not found" });
+      }
+      
+      // Delete the staff member
+      await storage.deleteStaffMember(id);
+      
+      // Create an activity record for this deletion
+      await storage.createActivity({
+        userId: (req.user as User).id,
+        type: "staff",
+        content: `Staff member "${staffMember.name}" deleted`,
+        relatedId: id,
+        relatedType: "staff"
+      });
+      
+      res.json({ success: true, message: "Staff member deleted successfully" });
+    } catch (error: any) {
+      console.error(`Error deleting staff member #${req.params.id}:`, error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
   // User lookup by email - Admin only
   app.get("/api/users/email/:email", isAdmin, async (req, res) => {
     try {

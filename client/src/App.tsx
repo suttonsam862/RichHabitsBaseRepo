@@ -59,7 +59,7 @@ import EventCalendar from "./pages/events/calendar";
 import CampOverview from "./pages/events/overview";
 import TravelAccommodations from "./pages/events/travel";
 import FinancialManagement from "./pages/events/financial";
-import StaffManagement from "./pages/events/staff";
+import StaffManagement from "./pages/events/staff-new";
 import VendorsServices from "./pages/events/vendors";
 
 // Admin pages

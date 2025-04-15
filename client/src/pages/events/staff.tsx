@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState } from "react";
 import { sampleStaffMembers, getDocumentStatusColor } from "@/lib/constants";
 import { 
   Card, 
@@ -29,7 +28,8 @@ import {
   Briefcase,
   DollarSign,
   FileText,
-  X
+  X,
+  Trash2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { 
@@ -65,8 +65,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
-// Using sampleStaffMembers imported from constants
-
 // Format date for display
 const formatDate = (dateString: string) => {
   if (!dateString) return "";
@@ -76,382 +74,473 @@ const formatDate = (dateString: string) => {
 
 // Get status badge color for staff status
 const getStatusColor = (status: string) => {
-  switch(status.toLowerCase()) {
+  switch(status?.toLowerCase()) {
     case 'active':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+      return 'bg-green-100 text-green-800 hover:bg-green-200';
     case 'pending':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+      return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
     case 'inactive':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+      return 'bg-red-100 text-red-800 hover:bg-red-200';
+    case 'completed':
+      return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+    case 'not started':
+      return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
+    case 'in progress':
+      return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+      return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
   }
 };
 
-// Staff Member Details Component
-const StaffMemberDetails = ({ staffMember, onClose, onEdit, onDelete }: { staffMember: any, onClose: () => void, onEdit: () => void, onDelete: () => void }) => {
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  
-  return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="sticky top-0 bg-white z-10 pb-3 pt-0">
-          <DialogTitle>Staff Member Details</DialogTitle>
-          <DialogDescription>
-            Comprehensive profile information
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Main Information Column */}
-          <div className="md:col-span-1">
-            <div className="flex flex-col items-center mb-6">
-              <Avatar className="h-24 w-24 mb-4">
-                <AvatarImage src={staffMember.avatar} />
-                <AvatarFallback className="text-lg">
-                  {staffMember.name.split(' ').map((n: string) => n[0]).join('')}
-                </AvatarFallback>
-              </Avatar>
-              <h2 className="text-xl font-bold text-center">{staffMember.name}</h2>
-              <p className="text-sm text-gray-500 mb-2">{staffMember.role}</p>
-              <Badge className={getStatusColor(staffMember.status)}>
-                {staffMember.status.charAt(0).toUpperCase() + staffMember.status.slice(1)}
-              </Badge>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-start gap-2">
-                <Mail className="h-4 w-4 text-gray-400 mt-1" />
-                <div>
-                  <p className="font-medium text-sm">Email</p>
-                  <p className="text-sm">{staffMember.email}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-2">
-                <Phone className="h-4 w-4 text-gray-400 mt-1" />
-                <div>
-                  <p className="font-medium text-sm">Phone</p>
-                  <p className="text-sm">{staffMember.phone}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-2">
-                <Medal className="h-4 w-4 text-gray-400 mt-1" />
-                <div>
-                  <p className="font-medium text-sm">Experience</p>
-                  <p className="text-sm">{staffMember.experience}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-2">
-                <Briefcase className="h-4 w-4 text-gray-400 mt-1" />
-                <div>
-                  <p className="font-medium text-sm">Availability</p>
-                  <p className="text-sm capitalize">{staffMember.availability}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-2">
-                <DollarSign className="h-4 w-4 text-gray-400 mt-1" />
-                <div>
-                  <p className="font-medium text-sm">Compensation</p>
-                  <p className="text-sm">${staffMember.rate} {staffMember.rateType}</p>
-                </div>
-              </div>
-            </div>
-            
-            <Separator className="my-4" />
-            
-            <div>
-              <h3 className="font-medium text-sm mb-2">Emergency Contact</h3>
-              <div className="space-y-2">
-                <p className="text-sm">{staffMember.emergencyContact.name}</p>
-                <p className="text-sm text-gray-500">{staffMember.emergencyContact.relationship}</p>
-                <p className="text-sm">{staffMember.emergencyContact.phone}</p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Details Column */}
-          <div className="md:col-span-2 space-y-6">
-            <div>
-              <h3 className="font-medium mb-3">Skills & Certifications</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500 mb-2">Skills</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {staffMember.skills.map((skill: string, index: number) => (
-                      <Badge key={index} variant="outline" className="bg-gray-50">
-                        {skill}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500 mb-2">Certifications</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {staffMember.certifications.map((cert: string, index: number) => (
-                      <Badge key={index} variant="outline" className="bg-gray-50">
-                        {cert}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="font-medium mb-3">Assigned Camps</h3>
-              <div className="space-y-2">
-                {staffMember.camps.length > 0 ? (
-                  staffMember.camps.map((camp: any) => (
-                    <div key={camp.id} className="flex items-center p-2 border rounded-md">
-                      <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                      <span>{camp.name}</span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500">No camps assigned yet</p>
-                )}
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="font-medium mb-3">Scheduled Shifts</h3>
-              {staffMember.assignedShifts.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-2 text-sm font-medium">Date</th>
-                        <th className="text-left p-2 text-sm font-medium">Time</th>
-                        <th className="text-left p-2 text-sm font-medium">Camp</th>
-                        <th className="text-left p-2 text-sm font-medium">Role</th>
-                        <th className="text-left p-2 text-sm font-medium">Location</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {staffMember.assignedShifts.map((shift: any) => (
-                        <tr key={shift.id} className="border-b hover:bg-gray-50">
-                          <td className="p-2 text-sm">{formatDate(shift.date)}</td>
-                          <td className="p-2 text-sm">{shift.startTime} - {shift.endTime}</td>
-                          <td className="p-2 text-sm">{shift.campName}</td>
-                          <td className="p-2 text-sm">{shift.role}</td>
-                          <td className="p-2 text-sm">{shift.location}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">No shifts scheduled yet</p>
-              )}
-            </div>
-            
-            <div>
-              <h3 className="font-medium mb-3">Documents</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2 text-sm font-medium">Document</th>
-                      <th className="text-left p-2 text-sm font-medium">Status</th>
-                      <th className="text-left p-2 text-sm font-medium">Date</th>
-                      <th className="text-right p-2 text-sm font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {staffMember.documents.map((doc: any) => (
-                      <tr key={doc.id} className="border-b hover:bg-gray-50">
-                        <td className="p-2 text-sm">
-                          <div className="flex items-center">
-                            <FileText className="h-4 w-4 text-gray-400 mr-2" />
-                            {doc.name}
-                          </div>
-                        </td>
-                        <td className="p-2 text-sm">
-                          <Badge className={getDocumentStatusColor(doc.status)}>
-                            {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
-                          </Badge>
-                        </td>
-                        <td className="p-2 text-sm">{doc.date ? formatDate(doc.date) : "N/A"}</td>
-                        <td className="p-2 text-sm text-right">
-                          <Button variant="ghost" size="sm">View</Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="mt-6 flex justify-between gap-2">
-          <Button 
-            variant="outline" 
-            className="text-destructive border-destructive/20 hover:bg-destructive/10"
-            onClick={() => setIsDeleteConfirmOpen(true)}
-          >
-            Delete Staff
-          </Button>
-          
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>Close</Button>
-            <Button variant="outline">Send Message</Button>
-            <Button 
-              className="bg-brand-600 hover:bg-brand-700"
-              onClick={onEdit}
-            >
-              Edit Profile
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-      
-      {/* Delete Confirmation Dialog */}
-      {isDeleteConfirmOpen && (
-        <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete {staffMember.name}'s 
-                record and remove all associated data from the system.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction 
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                data-delete-btn="true"
-                onClick={() => {
-                  setIsDeleteConfirmOpen(false);
-                  onDelete();
-                }}
-              >
-                Delete Staff
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
-    </Dialog>
-  );
-};
-
-// Define the Clinician interface
+// Staff member interface
 interface Clinician {
   id: number;
   name: string;
   role: string;
   email: string;
   phone: string;
-  avatar: string;
   status: string;
+  avatar?: string;
   experience: string;
+  rate: number;
+  rateType?: string;
+  availability: string;
   skills: string[];
   certifications: string[];
-  rate: number;
-  rateType: string;
-  availability: string;
-  camps: Array<{id: number, name: string}>;
-  assignedShifts: any[];
-  documents: any[];
-  emergencyContact: {
+  camps: { id: number; name: string }[];
+  documents: { id: number; name: string; status: string; date: string }[];
+  assignedShifts: { id: number; campId: number; date: string; startTime: string; endTime: string; campName?: string; role?: string; location?: string }[];
+  emergencyContact?: {
     name: string;
     relationship: string;
     phone: string;
   };
 }
 
+// StaffMemberDetails component
+interface StaffMemberDetailsProps {
+  staffMember: Clinician;
+  onClose: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+const StaffMemberDetails: React.FC<StaffMemberDetailsProps> = ({ staffMember, onClose, onEdit, onDelete }) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="sticky top-0 z-10 bg-white pb-4">
+          <div className="flex justify-between items-center">
+            <DialogTitle className="text-2xl font-bold">{staffMember.name}</DialogTitle>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="flex items-center mt-2">
+            <Badge className={getStatusColor(staffMember.status)}>
+              {staffMember.status.charAt(0).toUpperCase() + staffMember.status.slice(1)}
+            </Badge>
+            <span className="mx-2 text-gray-500">{staffMember.role}</span>
+          </div>
+        </DialogHeader>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Left Column */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Contact Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex items-center">
+                  <Mail className="h-4 w-4 mr-2 text-gray-500" />
+                  <span>{staffMember.email}</span>
+                </div>
+                <div className="flex items-center">
+                  <Phone className="h-4 w-4 mr-2 text-gray-500" />
+                  <span>{staffMember.phone}</span>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Skills & Qualifications</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Experience</h4>
+                    <div className="flex items-center mt-1">
+                      <Medal className="h-4 w-4 mr-2 text-gray-500" />
+                      <span>{staffMember.experience} years</span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Skills</h4>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {staffMember.skills.map((skill, index) => (
+                        <Badge key={index} variant="outline" className="bg-gray-100">
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Certifications</h4>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {staffMember.certifications.map((cert, index) => (
+                        <Badge key={index} variant="outline" className="bg-blue-50">
+                          {cert}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Middle Column */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Work Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex items-center">
+                  <DollarSign className="h-4 w-4 mr-2 text-gray-500" />
+                  <span>Daily Rate: ${staffMember.rate}</span>
+                </div>
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                  <span>Availability: {staffMember.availability}</span>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Camp Assignments</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {staffMember.camps.length > 0 ? (
+                  <ul className="space-y-2">
+                    {staffMember.camps.map((camp) => (
+                      <li key={camp.id} className="flex items-center">
+                        <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+                        <span>{camp.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-500 text-sm">No camps assigned yet</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Right Column */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Documents</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {staffMember.documents.length > 0 ? (
+                  <ul className="space-y-3">
+                    {staffMember.documents.map((doc) => (
+                      <li key={doc.id} className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          <FileText className="h-4 w-4 mr-2 text-gray-500" />
+                          <span>{doc.name}</span>
+                        </div>
+                        <Badge className={getStatusColor(doc.status)}>
+                          {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-500 text-sm">No documents uploaded</p>
+                )}
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Upcoming Shifts</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {staffMember.assignedShifts.length > 0 ? (
+                  <ul className="space-y-3">
+                    {staffMember.assignedShifts.map((shift) => (
+                      <li key={shift.id} className="space-y-1">
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+                          <span>{formatDate(shift.date)}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-500 ml-6">
+                          <Clock className="h-3 w-3 mr-1" />
+                          <span>{shift.startTime} - {shift.endTime}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-500 text-sm">No upcoming shifts</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        
+        <div className="flex justify-end gap-2 mt-6">
+          <Button variant="outline" onClick={onEdit}>
+            Edit Staff Member
+          </Button>
+          <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
+            Delete Staff Member
+          </Button>
+        </div>
+        
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete {staffMember.name} from the system.
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export default function StaffManagement() {
+  const { toast } = useToast();
+  
+  // State for staff data - initialize with sample data immediately
+  const [staffList, setStaffList] = useState<Clinician[]>(sampleStaffMembers as Clinician[]);
+  
+  // Filter state
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [campFilter, setCampFilter] = useState("all");
-  const [selectedStaffMember, setSelectedStaffMember] = useState<any | null>(null);
-  const [isAddClinicianOpen, setIsAddClinicianOpen] = useState(false);
-  const [isEditStaffOpen, setIsEditStaffOpen] = useState(false);
-  const [editStaffMember, setEditStaffMember] = useState<Clinician | null>(null);
-  const { toast } = useToast();
-  const [newClinician, setNewClinician] = useState<Partial<Clinician>>({
+  
+  // Dialog state
+  const [selectedStaff, setSelectedStaff] = useState<Clinician | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [staffToDelete, setStaffToDelete] = useState<Clinician | null>(null);
+  
+  // Form state for adding/editing staff
+  const [formData, setFormData] = useState<Partial<Clinician>>({
     name: "",
     role: "Clinician",
     email: "",
     phone: "",
-    avatar: "",
-    status: "pending",
+    status: "active",
     experience: "",
+    rate: 0,
+    availability: "full-time",
     skills: [],
     certifications: [],
-    rate: 0,
-    rateType: "daily",
-    availability: "part-time",
     camps: [],
-    assignedShifts: [],
     documents: [],
-    emergencyContact: {
-      name: "",
-      relationship: "",
-      phone: ""
-    }
+    assignedShifts: []
   });
   
-  // Create state for the raw staff data and the filtered staff data
-  const [staffData, setStaffData] = useState<Clinician[]>([]);
-  const [staffMembers, setStaffMembers] = useState<Clinician[]>([]);
-  
-  // Initialize staff data from the sample data
-  useEffect(() => {
-    const initialData = [...(sampleStaffMembers as Clinician[])];
-    console.log("Initializing staff data with", initialData.length, "members");
-    setStaffData(initialData);
-  }, []);
-  
-  // When staffData changes, update staffMembers
-  useEffect(() => {
-    console.log("Staff data changed, updating staff members list:", staffData.length, "members");
-    // Create a new array to force React to recognize the change
-    const newStaffMembers = [...staffData];
-    setStaffMembers(newStaffMembers);
-  }, [staffData]);
-  
-  // Filter staff based on search and filters
-  const filteredStaff = staffMembers.filter((staff: Clinician) => {
-    // Apply search term
+  // Get filtered staff based on search term and filters
+  const filteredStaff = staffList.filter(staff => {
     const matchesSearch = 
       staff.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       staff.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       staff.role.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Apply role filter
     const matchesRole = roleFilter === "all" || staff.role.toLowerCase().includes(roleFilter.toLowerCase());
-    
-    // Apply status filter
     const matchesStatus = statusFilter === "all" || staff.status.toLowerCase() === statusFilter.toLowerCase();
     
-    // Apply camp filter
-    const matchesCamp = campFilter === "all" || staff.camps.some((camp) => camp.id.toString() === campFilter);
+    const matchesCamp = campFilter === "all" || 
+      staff.camps.some(camp => camp.id.toString() === campFilter);
     
     return matchesSearch && matchesRole && matchesStatus && matchesCamp;
   });
   
-  // Get unique roles for filter
-  const roles = Array.from(new Set(staffMembers.map((staff: Clinician) => staff.role)));
+  // Extract unique roles for the filter dropdown
+  const roles = Array.from(new Set(staffList.map(staff => staff.role)));
   
-  // Get unique camps for filter
-  const camps = Array.from(
-    new Set(
-      staffMembers.flatMap((staff: Clinician) => staff.camps)
-        .map((camp) => JSON.stringify(camp))
-    )
-  ).map((campString: string) => JSON.parse(campString));
+  // Get all camps from all staff for the filter dropdown
+  const allCamps = staffList
+    .flatMap(staff => staff.camps)
+    .filter((camp, index, self) => 
+      index === self.findIndex((c) => c.id === camp.id)
+    );
   
-  // Remove duplicates by id
-  const uniqueCamps = Array.from(new Map(camps.map((camp: any) => [camp.id, camp])).values());
+  // Handle adding a new staff member
+  const handleAddStaff = () => {
+    if (!formData.name || !formData.email || !formData.phone) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Create a new unique ID
+    const newId = Math.max(0, ...staffList.map(s => s.id)) + 1;
+    
+    // Create new staff member object with required fields
+    const newStaff: Clinician = {
+      id: newId,
+      name: formData.name!,
+      role: formData.role || "Clinician",
+      email: formData.email!,
+      phone: formData.phone!,
+      status: formData.status || "active",
+      experience: formData.experience || "0",
+      rate: formData.rate || 0,
+      rateType: "daily",
+      availability: formData.availability || "full-time",
+      skills: formData.skills || [],
+      certifications: formData.certifications || [],
+      camps: formData.camps || [],
+      documents: formData.documents || [],
+      assignedShifts: formData.assignedShifts || [],
+      emergencyContact: {
+        name: "",
+        relationship: "",
+        phone: ""
+      }
+    };
+    
+    // Update state with a completely new array
+    const updatedStaffList = [...staffList, newStaff];
+    setStaffList(updatedStaffList);
+    
+    // Reset form and close dialog
+    setFormData({
+      name: "",
+      role: "Clinician",
+      email: "",
+      phone: "",
+      status: "active",
+      experience: "",
+      rate: 0,
+      availability: "full-time",
+      skills: [],
+      certifications: [],
+      camps: [],
+      documents: [],
+      assignedShifts: []
+    });
+    
+    setShowAddDialog(false);
+    
+    // Show success notification
+    toast({
+      title: "Staff member added",
+      description: `${newStaff.name} has been added to the system.`,
+      variant: "default",
+    });
+  };
+  
+  // Handle editing a staff member
+  const handleEditStaff = () => {
+    if (!selectedStaff) return;
+    
+    if (!formData.name || !formData.email || !formData.phone) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Create updated staff member
+    const updatedStaff = {
+      ...selectedStaff,
+      ...formData
+    };
+    
+    // Update state with a completely new array
+    const updatedStaffList = staffList.map(staff => 
+      staff.id === updatedStaff.id ? updatedStaff : staff
+    );
+    
+    setStaffList(updatedStaffList);
+    setShowEditDialog(false);
+    
+    // Show success notification
+    toast({
+      title: "Staff member updated",
+      description: `${updatedStaff.name}'s information has been updated.`,
+      variant: "default",
+    });
+  };
+  
+  // Handle deleting a staff member
+  const handleDeleteStaff = (staff: Clinician) => {
+    setStaffToDelete(staff);
+    setShowDeleteDialog(true);
+  };
+  
+  // Confirm staff deletion
+  const confirmDeleteStaff = () => {
+    if (!staffToDelete) return;
+    
+    // Update state with a completely new array
+    const updatedStaffList = staffList.filter(staff => staff.id !== staffToDelete.id);
+    setStaffList(updatedStaffList);
+    
+    // Show success notification
+    toast({
+      title: "Staff member deleted",
+      description: `${staffToDelete.name} has been removed from the system.`,
+      variant: "default",
+    });
+    
+    setShowDeleteDialog(false);
+    setStaffToDelete(null);
+    setSelectedStaff(null);
+  };
+  
+  // Handle editing a specific staff member
+  const handleEditClick = (staff: Clinician) => {
+    setSelectedStaff(staff);
+    setFormData({
+      name: staff.name,
+      role: staff.role,
+      email: staff.email,
+      phone: staff.phone,
+      status: staff.status,
+      experience: staff.experience,
+      rate: staff.rate,
+      availability: staff.availability,
+      skills: staff.skills,
+      certifications: staff.certifications,
+      camps: staff.camps,
+      documents: staff.documents,
+      assignedShifts: staff.assignedShifts
+    });
+    setShowEditDialog(true);
+  };
 
   return (
     <div className="p-6">
@@ -465,9 +554,29 @@ export default function StaffManagement() {
             <Plus className="mr-2 h-4 w-4" />
             Add Shift
           </Button>
-          <Button className="bg-brand-600 hover:bg-brand-700" onClick={() => setIsAddClinicianOpen(true)}>
+          <Button 
+            className="bg-brand-600 hover:bg-brand-700" 
+            onClick={() => {
+              setFormData({
+                name: "",
+                role: "Clinician",
+                email: "",
+                phone: "",
+                status: "active",
+                experience: "",
+                rate: 0,
+                availability: "full-time",
+                skills: [],
+                certifications: [],
+                camps: [],
+                documents: [],
+                assignedShifts: []
+              });
+              setShowAddDialog(true);
+            }}
+          >
             <Plus className="mr-2 h-4 w-4" />
-            Add Clinician
+            Add Staff
           </Button>
         </div>
       </div>
@@ -514,7 +623,7 @@ export default function StaffManagement() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Camps</SelectItem>
-            {uniqueCamps.map((camp: any) => (
+            {allCamps.map((camp) => (
               <SelectItem key={camp.id} value={camp.id.toString()}>{camp.name}</SelectItem>
             ))}
           </SelectContent>
@@ -552,14 +661,14 @@ export default function StaffManagement() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredStaff.map((staff: Clinician) => (
+                    {filteredStaff.map((staff) => (
                       <tr key={staff.id} className="border-b hover:bg-gray-50">
                         <td className="p-4">
                           <div className="flex items-center gap-3">
                             <Avatar className="h-9 w-9">
                               <AvatarImage src={staff.avatar} />
                               <AvatarFallback>
-                                {staff.name.split(' ').map((n: string) => n[0]).join('')}
+                                {staff.name.split(' ').map((n) => n[0]).join('')}
                               </AvatarFallback>
                             </Avatar>
                             <div>
@@ -574,7 +683,7 @@ export default function StaffManagement() {
                           <div className="text-sm">{staff.phone}</div>
                         </td>
                         <td className="p-4 hidden md:table-cell">
-                          {staff.camps.map((camp: any, index: number) => (
+                          {staff.camps.map((camp, index) => (
                             <div key={camp.id} className="text-sm">
                               {index > 0 && ", "}
                               {camp.name}
@@ -588,7 +697,11 @@ export default function StaffManagement() {
                         </td>
                         <td className="p-4 text-right">
                           <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => setSelectedStaffMember(staff)}>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => setSelectedStaff(staff)}
+                            >
                               View
                             </Button>
                             <DropdownMenu>
@@ -598,37 +711,17 @@ export default function StaffManagement() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => {
-                                  setEditStaffMember(staff);
-                                  setIsEditStaffOpen(true);
-                                }}>
+                                <DropdownMenuItem onClick={() => handleEditClick(staff)}>
                                   Edit
                                 </DropdownMenuItem>
                                 <DropdownMenuItem>Send Message</DropdownMenuItem>
                                 <DropdownMenuItem>Assign to Camp</DropdownMenuItem>
                                 <DropdownMenuItem>Schedule Shift</DropdownMenuItem>
                                 <DropdownMenuItem 
-                                  className="text-destructive" 
-                                  onClick={() => {
-                                    console.log("Deleting staff member:", staff.id, staff.name);
-                                    
-                                    // Force immediate execution of this in its own execution context
-                                    setTimeout(() => {
-                                      // Create a completely new array without the deleted staff member
-                                      const updatedStaff = [...staffData].filter(s => s.id !== staff.id);
-                                      console.log("Staff count before:", staffData.length, "after:", updatedStaff.length);
-                                      
-                                      // Update state with the new array
-                                      setStaffData(updatedStaff);
-                                      
-                                      toast({
-                                        title: "Staff member deleted",
-                                        description: `${staff.name} has been removed from the system.`,
-                                        variant: "default",
-                                      });
-                                    }, 0);
-                                  }}
+                                  className="text-destructive flex items-center" 
+                                  onClick={() => handleDeleteStaff(staff)}
                                 >
+                                  <Trash2 className="mr-2 h-4 w-4" />
                                   Delete
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -643,7 +736,7 @@ export default function StaffManagement() {
             </CardContent>
             <CardFooter className="flex justify-between bg-gray-50 p-3">
               <div className="text-sm text-gray-500">
-                Showing {filteredStaff.length} of {staffMembers.length} staff members
+                Showing {filteredStaff.length} of {staffList.length} staff members
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" className="hidden md:flex">
@@ -652,10 +745,27 @@ export default function StaffManagement() {
                 <Button 
                   size="sm" 
                   className="bg-brand-600 hover:bg-brand-700"
-                  onClick={() => setIsAddClinicianOpen(true)}
+                  onClick={() => {
+                    setFormData({
+                      name: "",
+                      role: "Clinician",
+                      email: "",
+                      phone: "",
+                      status: "active",
+                      experience: "",
+                      rate: 0,
+                      availability: "full-time",
+                      skills: [],
+                      certifications: [],
+                      camps: [],
+                      documents: [],
+                      assignedShifts: []
+                    });
+                    setShowAddDialog(true);
+                  }}
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Clinician
+                  Add Staff
                 </Button>
               </div>
             </CardFooter>
@@ -755,316 +865,54 @@ export default function StaffManagement() {
                     </Card>
                   </div>
                 </div>
-                
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Document Checklist</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left p-3 font-medium">Staff Member</th>
-                          <th className="text-left p-3 font-medium">Contract</th>
-                          <th className="text-left p-3 font-medium">Background Check</th>
-                          <th className="text-left p-3 font-medium">W-9 Form</th>
-                          <th className="text-right p-3 font-medium">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {staffMembers.map((staff: Clinician) => {
-                          // Find document statuses
-                          const contract = staff.documents.find((d: any) => d.name === "Contract");
-                          const bgCheck = staff.documents.find((d: any) => d.name === "Background Check");
-                          const taxForm = staff.documents.find((d: any) => d.name === "W-9 Form");
-                          
-                          return (
-                            <tr key={staff.id} className="border-b hover:bg-gray-50">
-                              <td className="p-3">
-                                <div className="flex items-center gap-3">
-                                  <Avatar className="h-8 w-8">
-                                    <AvatarImage src={staff.avatar} />
-                                    <AvatarFallback>
-                                      {staff.name.split(' ').map((n: string) => n[0]).join('')}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div className="font-medium">{staff.name}</div>
-                                </div>
-                              </td>
-                              <td className="p-3">
-                                <Badge className={getStatusColor(contract?.status || 'not started')}>
-                                  {contract?.status.charAt(0).toUpperCase() + contract?.status.slice(1) || "Not Started"}
-                                </Badge>
-                              </td>
-                              <td className="p-3">
-                                <Badge className={getStatusColor(bgCheck?.status || 'not started')}>
-                                  {bgCheck?.status.charAt(0).toUpperCase() + bgCheck?.status.slice(1) || "Not Started"}
-                                </Badge>
-                              </td>
-                              <td className="p-3">
-                                <Badge className={getStatusColor(taxForm?.status || 'not started')}>
-                                  {taxForm?.status.charAt(0).toUpperCase() + taxForm?.status.slice(1) || "Not Started"}
-                                </Badge>
-                              </td>
-                              <td className="p-3 text-right">
-                                <Button variant="ghost" size="sm">Manage</Button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
       
-      {/* Staff Member Details Dialog */}
-      {selectedStaffMember && (
+      {/* View Staff Dialog */}
+      {selectedStaff && (
         <StaffMemberDetails 
-          staffMember={selectedStaffMember} 
-          onClose={() => setSelectedStaffMember(null)}
+          staffMember={selectedStaff}
+          onClose={() => setSelectedStaff(null)}
           onEdit={() => {
-            // Open edit dialog with the selected staff member data
-            setEditStaffMember(selectedStaffMember);
-            setIsEditStaffOpen(true);
-            setSelectedStaffMember(null);
+            handleEditClick(selectedStaff);
+            setSelectedStaff(null);
           }}
           onDelete={() => {
-            // In a real app, you'd make an API call to delete the staff member
-            // Force immediate execution in its own execution context
-            setTimeout(() => {
-              console.log("Deleting staff member from dialog:", selectedStaffMember.id, selectedStaffMember.name);
-              
-              // Remove staff member from our state with a completely new array
-              const updatedStaff = [...staffData].filter(staff => staff.id !== selectedStaffMember.id);
-              console.log("Staff count before:", staffData.length, "after:", updatedStaff.length);
-              
-              // Show success notification
-              toast({
-                title: "Staff member deleted",
-                description: `${selectedStaffMember.name} has been removed from the system.`,
-                variant: "default",
-              });
-              
-              // Update state and close dialog
-              setStaffData(updatedStaff);
-              setSelectedStaffMember(null);
-            }, 0);
+            handleDeleteStaff(selectedStaff);
+            setSelectedStaff(null);
           }}
         />
       )}
       
-      {/* Edit Staff Dialog */}
-      {editStaffMember && (
-        <Dialog open={isEditStaffOpen} onOpenChange={(open) => {
-          if (!open) setIsEditStaffOpen(false);
-        }}>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>Edit Staff Member</DialogTitle>
-              <DialogDescription>
-                Update {editStaffMember.name}'s information
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Full Name</label>
-                  <Input 
-                    value={editStaffMember.name}
-                    className="mt-1"
-                    onChange={(e) => {
-                      setEditStaffMember({
-                        ...editStaffMember,
-                        name: e.target.value
-                      });
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Role</label>
-                  <Select 
-                    defaultValue={editStaffMember.role} 
-                    onValueChange={(value) => {
-                      setEditStaffMember({
-                        ...editStaffMember,
-                        role: value
-                      });
-                    }}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Clinician">Clinician</SelectItem>
-                      <SelectItem value="Head Coach">Head Coach</SelectItem>
-                      <SelectItem value="Assistant Coach">Assistant Coach</SelectItem>
-                      <SelectItem value="Athletic Trainer">Athletic Trainer</SelectItem>
-                      <SelectItem value="Strength & Conditioning">Strength & Conditioning</SelectItem>
-                      <SelectItem value="Nutritionist">Nutritionist</SelectItem>
-                      <SelectItem value="Team Manager">Team Manager</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Email</label>
-                  <Input 
-                    type="email"
-                    value={editStaffMember.email}
-                    className="mt-1"
-                    onChange={(e) => {
-                      setEditStaffMember({
-                        ...editStaffMember,
-                        email: e.target.value
-                      });
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Phone</label>
-                  <Input 
-                    type="tel"
-                    value={editStaffMember.phone}
-                    className="mt-1"
-                    onChange={(e) => {
-                      setEditStaffMember({
-                        ...editStaffMember,
-                        phone: e.target.value
-                      });
-                    }}
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Daily Rate ($)</label>
-                  <Input 
-                    type="number"
-                    value={editStaffMember.rate}
-                    className="mt-1"
-                    onChange={(e) => {
-                      setEditStaffMember({
-                        ...editStaffMember,
-                        rate: Number(e.target.value)
-                      });
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Status</label>
-                  <Select 
-                    defaultValue={editStaffMember.status} 
-                    onValueChange={(value) => {
-                      setEditStaffMember({
-                        ...editStaffMember,
-                        status: value
-                      });
-                    }}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium">Experience (years)</label>
-                <Input 
-                  value={editStaffMember.experience}
-                  className="mt-1"
-                  onChange={(e) => {
-                    setEditStaffMember({
-                      ...editStaffMember,
-                      experience: e.target.value
-                    });
-                  }}
-                />
-              </div>
-              
-              <div className="mt-4 flex justify-end gap-3">
-                <Button variant="outline" onClick={() => setIsEditStaffOpen(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  className="bg-brand-600 hover:bg-brand-700"
-                  onClick={() => {
-                    // In a real app, you would submit to the server
-                    console.log("Updating staff member:", editStaffMember.id, editStaffMember.name);
-                    
-                    // Create a new array with the updated staff member
-                    const updatedStaff = staffData.map(staff => 
-                      staff.id === editStaffMember.id ? {...editStaffMember} : staff
-                    );
-                    
-                    console.log("Staff update - before:", staffData.length, "after:", updatedStaff.length);
-                    
-                    // Update state with the new array
-                    setStaffData(updatedStaff);
-                    setIsEditStaffOpen(false);
-                    
-                    toast({
-                      title: "Staff updated",
-                      description: `${editStaffMember.name}'s information has been updated.`,
-                      variant: "default",
-                    });
-                  }}
-                >
-                  Save Changes
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-      
-      {/* Add Clinician Dialog */}
-      <Dialog open={isAddClinicianOpen} onOpenChange={(open) => {
-        if (!open) setIsAddClinicianOpen(false);
-      }}>
-        <DialogContent className="max-w-3xl">
+      {/* Add Staff Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add New Clinician</DialogTitle>
+            <DialogTitle>Add New Staff Member</DialogTitle>
             <DialogDescription>
-              Add a new clinician to the system for camp assignments
+              Add a new staff member to the system
             </DialogDescription>
           </DialogHeader>
+          
           <div className="grid gap-4 py-4">
+            <div>
+              <label className="text-sm font-medium">Full Name*</label>
+              <Input 
+                value={formData.name}
+                className="mt-1"
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+              />
+            </div>
+            
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium">Full Name</label>
-                <Input 
-                  value={newClinician.name}
-                  className="mt-1"
-                  onChange={(e) => {
-                    setNewClinician({
-                      ...newClinician,
-                      name: e.target.value
-                    });
-                  }}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Role</label>
+                <label className="text-sm font-medium">Role*</label>
                 <Select 
-                  defaultValue={newClinician.role} 
-                  onValueChange={(value) => {
-                    setNewClinician({
-                      ...newClinician,
-                      role: value
-                    });
-                  }}
+                  value={formData.role}
+                  onValueChange={(value) => setFormData({...formData, role: value})}
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select role" />
@@ -1080,139 +928,265 @@ export default function StaffManagement() {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
+              
               <div>
-                <label className="text-sm font-medium">Email</label>
-                <Input 
-                  type="email"
-                  value={newClinician.email}
-                  className="mt-1"
-                  onChange={(e) => {
-                    setNewClinician({
-                      ...newClinician,
-                      email: e.target.value
-                    });
-                  }}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Phone</label>
-                <Input 
-                  type="tel"
-                  value={newClinician.phone}
-                  className="mt-1"
-                  onChange={(e) => {
-                    setNewClinician({
-                      ...newClinician,
-                      phone: e.target.value
-                    });
-                  }}
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium">Daily Rate ($)</label>
-                <Input 
-                  type="number"
-                  value={newClinician.rate}
-                  className="mt-1"
-                  onChange={(e) => {
-                    setNewClinician({
-                      ...newClinician,
-                      rate: Number(e.target.value)
-                    });
-                  }}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Availability</label>
+                <label className="text-sm font-medium">Status*</label>
                 <Select 
-                  defaultValue={newClinician.availability} 
-                  onValueChange={(value) => {
-                    setNewClinician({
-                      ...newClinician,
-                      availability: value
-                    });
-                  }}
+                  value={formData.status}
+                  onValueChange={(value) => setFormData({...formData, status: value})}
                 >
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select availability" />
+                    <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="full-time">Full Time</SelectItem>
-                    <SelectItem value="part-time">Part Time</SelectItem>
-                    <SelectItem value="weekends">Weekends Only</SelectItem>
-                    <SelectItem value="evenings">Evenings Only</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             
-            <div>
-              <label className="text-sm font-medium">Experience (years)</label>
-              <Input 
-                value={newClinician.experience}
-                className="mt-1"
-                onChange={(e) => {
-                  setNewClinician({
-                    ...newClinician,
-                    experience: e.target.value
-                  });
-                }}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Email*</label>
+                <Input 
+                  type="email"
+                  value={formData.email}
+                  className="mt-1"
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">Phone*</label>
+                <Input 
+                  type="tel"
+                  value={formData.phone}
+                  className="mt-1"
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                />
+              </div>
             </div>
             
-            <div className="mt-4 flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setIsAddClinicianOpen(false)}>
-                Cancel
-              </Button>
-              <Button 
-                className="bg-brand-600 hover:bg-brand-700"
-                onClick={() => {
-                  // Create a new clinician with a unique ID
-                  const newId = Math.max(0, ...staffData.map(s => s.id)) + 1;
-                  const newStaffMember: Clinician = {
-                    ...newClinician as Clinician,
-                    id: newId,
-                    documents: [],
-                    assignedShifts: [],
-                    // Add any missing required fields
-                    avatar: newClinician.avatar || '',
-                    skills: newClinician.skills || [],
-                    certifications: newClinician.certifications || [],
-                    camps: []
-                  };
-                  
-                  // Update local data
-                  // Create a new array with all existing staff plus the new one
-                  console.log("Adding new staff member:", newStaffMember.name);
-                  const updatedStaff = [...staffData, newStaffMember];
-                  console.log("Staff count before:", staffData.length, "after:", updatedStaff.length);
-                  
-                  // Update state with the new array
-                  setStaffData(updatedStaff);
-                  
-                  // Reset form and close dialog
-                  setIsAddClinicianOpen(false);
-                  
-                  // Show success notification
-                  toast({
-                    title: "Clinician added",
-                    description: `${newStaffMember.name} has been added to the system.`,
-                    variant: "default",
-                  });
-                }}
-              >
-                Add Clinician
-              </Button>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Experience (years)</label>
+                <Input 
+                  value={formData.experience}
+                  className="mt-1"
+                  onChange={(e) => setFormData({...formData, experience: e.target.value})}
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">Daily Rate ($)</label>
+                <Input 
+                  type="number"
+                  value={formData.rate}
+                  className="mt-1"
+                  onChange={(e) => setFormData({...formData, rate: Number(e.target.value)})}
+                />
+              </div>
             </div>
+            
+            <div>
+              <label className="text-sm font-medium">Availability</label>
+              <Select 
+                value={formData.availability}
+                onValueChange={(value) => setFormData({...formData, availability: value})}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select availability" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full-time">Full Time</SelectItem>
+                  <SelectItem value="part-time">Part Time</SelectItem>
+                  <SelectItem value="weekends">Weekends Only</SelectItem>
+                  <SelectItem value="evenings">Evenings Only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-brand-600 hover:bg-brand-700"
+              onClick={handleAddStaff}
+              disabled={!formData.name || !formData.email || !formData.phone || !formData.role}
+            >
+              Add Staff Member
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Edit Staff Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Staff Member</DialogTitle>
+            <DialogDescription>
+              Update staff member information
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div>
+              <label className="text-sm font-medium">Full Name*</label>
+              <Input 
+                value={formData.name}
+                className="mt-1"
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Role*</label>
+                <Select 
+                  value={formData.role}
+                  onValueChange={(value) => setFormData({...formData, role: value})}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Clinician">Clinician</SelectItem>
+                    <SelectItem value="Head Coach">Head Coach</SelectItem>
+                    <SelectItem value="Assistant Coach">Assistant Coach</SelectItem>
+                    <SelectItem value="Athletic Trainer">Athletic Trainer</SelectItem>
+                    <SelectItem value="Strength & Conditioning">Strength & Conditioning</SelectItem>
+                    <SelectItem value="Nutritionist">Nutritionist</SelectItem>
+                    <SelectItem value="Team Manager">Team Manager</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">Status*</label>
+                <Select 
+                  value={formData.status}
+                  onValueChange={(value) => setFormData({...formData, status: value})}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Email*</label>
+                <Input 
+                  type="email"
+                  value={formData.email}
+                  className="mt-1"
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">Phone*</label>
+                <Input 
+                  type="tel"
+                  value={formData.phone}
+                  className="mt-1"
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Experience (years)</label>
+                <Input 
+                  value={formData.experience}
+                  className="mt-1"
+                  onChange={(e) => setFormData({...formData, experience: e.target.value})}
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">Daily Rate ($)</label>
+                <Input 
+                  type="number"
+                  value={formData.rate}
+                  className="mt-1"
+                  onChange={(e) => setFormData({...formData, rate: Number(e.target.value)})}
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium">Availability</label>
+              <Select 
+                value={formData.availability}
+                onValueChange={(value) => setFormData({...formData, availability: value})}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select availability" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full-time">Full Time</SelectItem>
+                  <SelectItem value="part-time">Part Time</SelectItem>
+                  <SelectItem value="weekends">Weekends Only</SelectItem>
+                  <SelectItem value="evenings">Evenings Only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-brand-600 hover:bg-brand-700"
+              onClick={handleEditStaff}
+              disabled={!formData.name || !formData.email || !formData.phone || !formData.role}
+            >
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {staffToDelete?.name} from the system.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowDeleteDialog(false);
+              setStaffToDelete(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteStaff}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

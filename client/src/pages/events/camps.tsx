@@ -32,7 +32,7 @@ import {
   Users
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useNavigate, Link } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -59,7 +59,7 @@ const formatCurrency = (amount: string | number | null | undefined) => {
 export default function CampsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   
   // Fetch all camps
   const {
@@ -101,7 +101,7 @@ export default function CampsPage() {
   });
   
   // Filter camps based on search term
-  const filteredCamps = camps?.filter((camp: any) => {
+  const filteredCamps = camps ? camps.filter((camp: any) => {
     const searchString = searchTerm.toLowerCase();
     return (
       camp.name?.toLowerCase().includes(searchString) ||
@@ -109,7 +109,7 @@ export default function CampsPage() {
       camp.status?.toLowerCase().includes(searchString) ||
       camp.sportType?.toLowerCase().includes(searchString)
     );
-  });
+  }) : [];
   
   // Split camps by status for tabs
   const upcomingCamps = filteredCamps?.filter((camp: any) => 
@@ -344,13 +344,15 @@ export default function CampsPage() {
       </div>
 
       <div className="mb-6">
-        <Input
-          placeholder="Search camps..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-md"
-          prefix={<Search className="h-4 w-4 mr-2 text-muted-foreground" />}
-        />
+        <div className="relative max-w-md">
+          <Search className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
+          <Input
+            placeholder="Search camps..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)} 
+            className="pl-9 w-full"
+          />
+        </div>
       </div>
 
       {/* Financial Overview */}

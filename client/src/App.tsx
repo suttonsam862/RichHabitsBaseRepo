@@ -61,6 +61,8 @@ import TravelAccommodations from "./pages/events/travel";
 import FinancialManagement from "./pages/events/financial";
 import StaffManagement from "./pages/events/staff-new";
 import VendorsServices from "./pages/events/vendors";
+import Camps from "./pages/events/camps";
+import CampDetail from "./pages/events/camp/[id]";
 
 // Admin pages
 import SalesTeam from "./pages/admin/sales-team";
@@ -181,6 +183,12 @@ function DashboardLayout() {
         </Route>
         <Route path="/events/vendors">
           <ProtectedPageLoader pageId="events/vendors"><VendorsServices /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/camps">
+          <ProtectedPageLoader pageId="events/camps"><Camps /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/camp/:id">
+          <ProtectedPageLoader pageId="events/camp"><CampDetail /></ProtectedPageLoader>
         </Route>
         
         {/* Admin Routes */}
@@ -530,6 +538,12 @@ function HybridDashboardLayout() {
         </Route>
         <Route path="/events/vendors">
           <ProtectedPageLoader pageId="events/vendors"><VendorsServices /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/camps">
+          <ProtectedPageLoader pageId="events/camps"><Camps /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/camp/:id">
+          <ProtectedPageLoader pageId="events/camp"><CampDetail /></ProtectedPageLoader>
         </Route>
         
         <Route>

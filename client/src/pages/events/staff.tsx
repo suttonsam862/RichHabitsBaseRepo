@@ -606,8 +606,12 @@ export default function StaffManagement() {
                                 <DropdownMenuItem 
                                   className="text-destructive" 
                                   onClick={() => {
-                                    // Directly handle deletion without involving the dialog
-                                    const updatedStaff = staffData.filter(s => s.id !== staff.id);
+                                    console.log("Deleting staff member:", staff.id, staff.name);
+                                    // Create a completely new array without the deleted staff member
+                                    const updatedStaff = [...staffData].filter(s => s.id !== staff.id);
+                                    console.log("Staff count before:", staffData.length, "after:", updatedStaff.length);
+                                    
+                                    // Update state with the new array
                                     setStaffData(updatedStaff);
                                     
                                     toast({
@@ -983,10 +987,16 @@ export default function StaffManagement() {
                   className="bg-brand-600 hover:bg-brand-700"
                   onClick={() => {
                     // In a real app, you would submit to the server
+                    console.log("Updating staff member:", editStaffMember.id, editStaffMember.name);
+                    
+                    // Create a new array with the updated staff member
                     const updatedStaff = staffData.map(staff => 
-                      staff.id === editStaffMember.id ? editStaffMember : staff
+                      staff.id === editStaffMember.id ? {...editStaffMember} : staff
                     );
                     
+                    console.log("Staff update - before:", staffData.length, "after:", updatedStaff.length);
+                    
+                    // Update state with the new array
                     setStaffData(updatedStaff);
                     setIsEditStaffOpen(false);
                     
@@ -1164,7 +1174,13 @@ export default function StaffManagement() {
                   };
                   
                   // Update local data
-                  setStaffData([...staffData, newStaffMember]);
+                  // Create a new array with all existing staff plus the new one
+                  console.log("Adding new staff member:", newStaffMember.name);
+                  const updatedStaff = [...staffData, newStaffMember];
+                  console.log("Staff count before:", staffData.length, "after:", updatedStaff.length);
+                  
+                  // Update state with the new array
+                  setStaffData(updatedStaff);
                   
                   // Reset form and close dialog
                   setIsAddClinicianOpen(false);

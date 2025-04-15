@@ -158,14 +158,18 @@ const StaffMemberCard = ({
 
   // Helper function for financial summary
   const getFinancialSummary = (member: StaffMember) => {
-    const totalPaid = member.totalPaid || 0;
+    // Convert totalPaid from string to number if needed
+    const totalPaid = typeof member.totalPaid === 'string' 
+      ? parseFloat(member.totalPaid) 
+      : (member.totalPaid || 0);
+    
     const payRate = member.payRate || 0;
     const payType = member.payType || 'N/A';
     
     return (
       <>
         <div>Rate: ${payRate} ({payType})</div>
-        <div>Total paid: ${totalPaid.toFixed(2)}</div>
+        <div>Total paid: ${typeof totalPaid === 'number' ? totalPaid.toFixed(2) : '0.00'}</div>
       </>
     );
   };
@@ -914,7 +918,11 @@ export default function StaffManagement() {
                         <div className="space-y-2">
                           <div className="flex justify-between">
                             <span className="text-gray-600">Total to be paid:</span>
-                            <span className="font-medium">${currentEditingStaff.totalPaid?.toFixed(2) || '0.00'}</span>
+                            <span className="font-medium">
+                            ${typeof currentEditingStaff.totalPaid === 'string' 
+                              ? parseFloat(currentEditingStaff.totalPaid || '0').toFixed(2)
+                              : (currentEditingStaff.totalPaid || 0).toFixed(2)}
+                            </span>
                           </div>
                           <div className="text-sm text-gray-500 mt-2">
                             <p>Payment amounts are based on assigned camps and rates in the Camp Overview page.</p>

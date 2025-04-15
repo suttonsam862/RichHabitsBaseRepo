@@ -124,12 +124,22 @@ export default function StaffManagement() {
     
     const newId = staff.length > 0 ? Math.max(...staff.map(s => s.id)) + 1 : 1;
     
-    console.log("Adding new staff member", { id: newId, ...newStaff });
+    // Create a deep copy of both the new staff member and existing staff list
+    const newStaffCopy = JSON.parse(JSON.stringify(newStaff));
+    const staffCopy = JSON.parse(JSON.stringify(staff));
     
-    setStaff(prevStaff => [
-      ...prevStaff,
-      { id: newId, ...newStaff }
-    ]);
+    console.log("Adding new staff member", { id: newId, ...newStaffCopy });
+    
+    // Add the new staff member to our copied array
+    staffCopy.push({ id: newId, ...newStaffCopy });
+    
+    console.log("Full staff list after adding:", staffCopy);
+    
+    // Set the completely new staff list
+    setStaff(staffCopy);
+    
+    // Save reference to name for toast
+    const addedName = newStaffCopy.name;
     
     // Reset form
     setNewStaff({
@@ -146,15 +156,24 @@ export default function StaffManagement() {
     
     setIsAddingStaff(false);
     
+    // Force another re-render after a small delay
+    setTimeout(() => {
+      setRefreshCounter(prev => prev + 1);
+      console.log("Forced additional refresh after adding");
+    }, 50);
+    
     toast({
       title: "Staff added",
-      description: `${newStaff.name} has been added to the staff list.`
+      description: `${addedName} has been added to the staff list.`
     });
   };
   
   // Handle editing a staff member
   const startEditing = (member: StaffMember) => {
-    setEditingStaff(member);
+    // Create a deep copy of the staff member to avoid reference issues
+    const staffCopy = JSON.parse(JSON.stringify(member));
+    console.log("Starting edit with copy:", staffCopy);
+    setEditingStaff(staffCopy);
     setIsEditingStaff(true);
   };
   
@@ -180,17 +199,30 @@ export default function StaffManagement() {
   const saveStaffEdit = () => {
     if (!editingStaff) return;
     
-    console.log("Saving staff member:", editingStaff);
+    console.log("Original staff member to save:", editingStaff);
     
-    // Create a new array with the updated staff to force re-render
-    const updatedStaffList = staff.map(member => 
-      member.id === editingStaff.id ? {...editingStaff} : member
-    );
+    // Deep clone the editing staff to ensure we don't have reference issues
+    const editingStaffCopy = JSON.parse(JSON.stringify(editingStaff));
     
-    console.log("Staff list after update:", updatedStaffList);
+    // Deep clone the staff array
+    const staffCopy = JSON.parse(JSON.stringify(staff));
     
-    // Set the new staff list
-    setStaff(updatedStaffList);
+    // Find the index of the staff member we're updating
+    const staffIndex = staffCopy.findIndex((member: StaffMember) => member.id === editingStaffCopy.id);
+    
+    if (staffIndex === -1) {
+      console.error("Could not find staff member to update");
+      return;
+    }
+    
+    // Replace the staff member in our copied array
+    staffCopy[staffIndex] = editingStaffCopy;
+    
+    console.log("Updated staff array before setting state:", staffCopy);
+    console.log("Specifically replacing staff at index:", staffIndex);
+    
+    // Set the completely new staff list
+    setStaff(staffCopy);
     
     // Increment refresh counter to force a re-render
     setRefreshCounter(prev => prev + 1);
@@ -199,15 +231,24 @@ export default function StaffManagement() {
     setIsEditingStaff(false);
     setEditingStaff(null);
     
+    // Force another re-render after a small delay
+    setTimeout(() => {
+      setRefreshCounter(prev => prev + 1);
+      console.log("Forced additional refresh");
+    }, 50);
+    
     toast({
       title: "Staff updated",
-      description: `${editingStaff.name}'s information has been updated.`
+      description: `${editingStaffCopy.name}'s information has been updated.`
     });
   };
   
   // Handle confirm delete
   const handleDeleteClick = (member: StaffMember) => {
-    setStaffToDelete(member);
+    // Create a deep copy of the staff member to avoid reference issues
+    const staffCopy = JSON.parse(JSON.stringify(member));
+    console.log("Setting staff to delete:", staffCopy);
+    setStaffToDelete(staffCopy);
     setIsDeleteModalOpen(true);
   };
   
@@ -215,31 +256,41 @@ export default function StaffManagement() {
   const confirmDelete = () => {
     if (!staffToDelete) return;
     
+    // Save a reference to the name before clearing state
+    const nameToDelete = staffToDelete.name;
     const staffIdToDelete = staffToDelete.id;
-    console.log(`Deleting staff with ID: ${staffIdToDelete}`);
     
-    // Create a new array without the deleted staff
-    const newStaffList = staff.filter(person => person.id !== staffIdToDelete);
+    console.log(`Deleting staff with ID: ${staffIdToDelete}, name: ${nameToDelete}`);
+    
+    // Create a deep copy of the staff list
+    const staffCopy = JSON.parse(JSON.stringify(staff));
+    
+    // Filter out the staff member to delete
+    const newStaffList = staffCopy.filter((person: StaffMember) => person.id !== staffIdToDelete);
+    
     console.log(`Staff before deletion: ${staff.length}, Staff after deletion: ${newStaffList.length}`);
+    console.log("Staff list after deletion:", newStaffList);
     
-    // Update the state with the new list (force a new array reference to trigger re-render)
-    const updatedList = [...newStaffList];
-    setStaff(updatedList);
+    // Update the state with the completely new list
+    setStaff(newStaffList);
     
     // Increment refresh counter to force a re-render
     setRefreshCounter(prev => prev + 1);
-    
-    // Extra console log to verify state update
-    console.log("Updated staff list:", updatedList);
     
     // Close modal and reset
     setIsDeleteModalOpen(false);
     setStaffToDelete(null);
     
+    // Force another re-render after a small delay
+    setTimeout(() => {
+      setRefreshCounter(prev => prev + 1);
+      console.log("Forced additional refresh after deletion");
+    }, 50);
+    
     // Notification
     toast({
       title: "Staff removed",
-      description: `${staffToDelete.name} has been removed from the staff list.`
+      description: `${nameToDelete} has been removed from the staff list.`
     });
   };
   

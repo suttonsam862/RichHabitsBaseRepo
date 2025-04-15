@@ -321,6 +321,34 @@ export type CustomizationOption = typeof customizationOptions.$inferSelect;
 export type SalesTeamMember = typeof salesTeamMembers.$inferSelect;
 export type Organization = typeof organizations.$inferSelect;
 
+// Define camps table
+export const camps = pgTable('camps', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  type: text('type').notNull(),
+  clinician: text('clinician').notNull(),
+  startDate: text('start_date').notNull(),
+  endDate: text('end_date').notNull(),
+  totalDays: integer('total_days').notNull(),
+  venue: text('venue').notNull(),
+  address: text('address').notNull(),
+  participants: integer('participants').notNull(),
+  campCost: numeric('camp_cost').notNull(),
+  selloutCost: numeric('sellout_cost'),
+  staffCount: integer('staff_count').default(0),
+  vendorCount: integer('vendor_count').default(0),
+  status: text('status').notNull().default('upcoming'), // 'upcoming', 'current', 'completed', 'cancelled'
+  completionPercentage: integer('completion_percentage').default(0),
+  schedule: json('schedule').$type<{day: number, activities: {id: number, startTime: string, endTime: string, activity: string, location: string, notes: string}[]}[]>(),
+  tasks: json('tasks').$type<{name: string, status: string}[]>(),
+  notes: text('notes'),
+  staffAssignments: json('staff_assignments').$type<{staffId: number, role: string, payAmount: number}[]>(),
+  vendorAssignments: json('vendor_assignments').$type<{vendorId: number, service: string, cost: number}[]>(),
+  createdBy: integer('created_by').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at'),
+});
+
 // Define feedback table
 export const feedback = pgTable('feedback', {
   id: serial('id').primaryKey(),
@@ -576,3 +604,8 @@ export const events = pgTable('events', {
 export const insertEventSchema = createInsertSchema(events).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type Event = typeof events.$inferSelect;
+
+// Create insert schema for camps table
+export const insertCampSchema = createInsertSchema(camps).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCamp = z.infer<typeof insertCampSchema>;
+export type Camp = typeof camps.$inferSelect;

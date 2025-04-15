@@ -372,41 +372,66 @@ export default function StaffManagement() {
     if (!currentEditingStaff) return;
     
     const { name, value } = e.target;
-    setCurrentEditingStaff(prev => ({
-      ...prev!,
+    console.log(`Editing field ${name} with value: ${value}`);
+    
+    // Create a new object based on the current staff to force a re-render
+    const updatedStaff = {
+      ...currentEditingStaff,
       [name]: value
-    }));
+    };
+    
+    console.log("Updated staff object:", JSON.stringify(updatedStaff));
+    setCurrentEditingStaff(updatedStaff);
   };
   
   const handleEditRoleChange = (value: string) => {
     if (!currentEditingStaff) return;
-    setCurrentEditingStaff(prev => ({
-      ...prev!,
+    console.log(`Changing role to: ${value}`);
+    
+    // Create a new object based on the current staff
+    const updatedStaff = {
+      ...currentEditingStaff,
       role: value
-    }));
+    };
+    
+    setCurrentEditingStaff(updatedStaff);
   };
   
   const handleEditStatusChange = (value: string) => {
     if (!currentEditingStaff) return;
-    setCurrentEditingStaff(prev => ({
-      ...prev!,
+    console.log(`Changing status to: ${value}`);
+    
+    // Create a new object based on the current staff
+    const updatedStaff = {
+      ...currentEditingStaff,
       status: value as 'active' | 'inactive' | 'pending'
-    }));
+    };
+    
+    setCurrentEditingStaff(updatedStaff);
   };
   
   // Function to save staff edits
   const saveStaffEdit = () => {
-    if (!currentEditingStaff) return;
+    if (!currentEditingStaff) {
+      console.error("Cannot save staff edit: currentEditingStaff is null");
+      return;
+    }
+    
+    console.log("Before saving edits - current staff list:", JSON.stringify(staffList));
+    console.log("Saving edits for staff member:", JSON.stringify(currentEditingStaff));
     
     // Create a deep copy of the editing staff
     const updatedStaff = JSON.parse(JSON.stringify(currentEditingStaff)) as StaffMember;
     
-    // Update the staff list
-    setStaffList(prevList => 
-      prevList.map(staff => 
-        staff.id === updatedStaff.id ? updatedStaff : staff
-      )
+    // Update the staff list with an immediate state update approach
+    const newStaffList = staffList.map(staff => 
+      staff.id === updatedStaff.id ? {...updatedStaff} : staff
     );
+    
+    console.log("Updated staff list will be:", JSON.stringify(newStaffList));
+    
+    // Set state with the new list
+    setStaffList(newStaffList);
     
     // Close dialog and reset state
     setIsEditingStaff(false);
@@ -415,11 +440,16 @@ export default function StaffManagement() {
     // Force a re-render
     forceRefresh();
     
-    // Show success toast
-    toast({
-      title: "Staff updated",
-      description: `${updatedStaff.name}'s information has been updated.`
-    });
+    // Small delay to ensure state has updated before showing toast
+    setTimeout(() => {
+      console.log("After saving - current staff list:", JSON.stringify(staffList));
+      
+      // Show success toast
+      toast({
+        title: "Staff updated",
+        description: `${updatedStaff.name}'s information has been updated.`
+      });
+    }, 100);
   };
   
   // Functions for deleting staff
@@ -742,10 +772,17 @@ export default function StaffManagement() {
                         name="notes"
                         placeholder="Additional notes about this staff member"
                         value={currentEditingStaff.notes || ''}
-                        onChange={(e) => setCurrentEditingStaff({
-                          ...currentEditingStaff,
-                          notes: e.target.value
-                        })}
+                        onChange={(e) => {
+                          console.log(`Editing notes field with value: ${e.target.value.substring(0, 20)}${e.target.value.length > 20 ? '...' : ''}`);
+                          
+                          // Create a new object based on the current staff
+                          const updatedStaff = {
+                            ...currentEditingStaff,
+                            notes: e.target.value
+                          };
+                          
+                          setCurrentEditingStaff(updatedStaff);
+                        }}
                         className="min-h-[100px]"
                       />
                     </div>
@@ -780,20 +817,34 @@ export default function StaffManagement() {
                           type="number"
                           step="0.01"
                           value={currentEditingStaff.payRate || ''}
-                          onChange={(e) => setCurrentEditingStaff({
-                            ...currentEditingStaff,
-                            payRate: parseFloat(e.target.value) || 0
-                          })}
+                          onChange={(e) => {
+                            console.log(`Editing pay rate field with value: ${e.target.value}`);
+                            
+                            // Create a new object based on the current staff
+                            const updatedStaff = {
+                              ...currentEditingStaff,
+                              payRate: parseFloat(e.target.value) || 0
+                            };
+                            
+                            setCurrentEditingStaff(updatedStaff);
+                          }}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="edit-payType">Pay Type</Label>
                         <Select 
                           defaultValue={currentEditingStaff.payType || 'hourly'} 
-                          onValueChange={(value) => setCurrentEditingStaff({
-                            ...currentEditingStaff,
-                            payType: value as 'hourly' | 'daily' | 'fixed'
-                          })}
+                          onValueChange={(value) => {
+                            console.log(`Changing pay type to: ${value}`);
+                            
+                            // Create a new object based on the current staff
+                            const updatedStaff = {
+                              ...currentEditingStaff,
+                              payType: value as 'hourly' | 'daily' | 'fixed'
+                            };
+                            
+                            setCurrentEditingStaff(updatedStaff);
+                          }}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select pay type" />

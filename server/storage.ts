@@ -1643,6 +1643,83 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+  
+  // Staff Member methods
+  async getStaffMembers(): Promise<StaffMember[]> {
+    try {
+      console.log('Fetching all staff members');
+      const result = await db.select().from(staffMembers).orderBy(asc(staffMembers.name));
+      console.log(`Retrieved ${result.length} staff members`);
+      return result;
+    } catch (error) {
+      console.error('Error fetching staff members:', error);
+      throw error;
+    }
+  }
+  
+  async getStaffMemberById(id: number): Promise<StaffMember | undefined> {
+    try {
+      console.log(`Fetching staff member with ID: ${id}`);
+      const [staff] = await db.select().from(staffMembers).where(eq(staffMembers.id, id));
+      if (staff) {
+        console.log(`Retrieved staff member: ${staff.name}`);
+      } else {
+        console.log(`No staff member found with ID: ${id}`);
+      }
+      return staff || undefined;
+    } catch (error) {
+      console.error(`Error fetching staff member with ID ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async createStaffMember(staffMember: InsertStaffMember): Promise<StaffMember> {
+    console.log('Creating staff member:', staffMember);
+    
+    try {
+      const [newStaff] = await db.insert(staffMembers)
+        .values(staffMember as any)
+        .returning();
+        
+      console.log('Created staff member successfully:', newStaff);
+      return newStaff;
+    } catch (error) {
+      console.error('Error creating staff member:', error);
+      throw error;
+    }
+  }
+  
+  async updateStaffMember(id: number, staffData: Partial<InsertStaffMember>): Promise<StaffMember> {
+    console.log(`Updating staff member #${id} with data:`, staffData);
+    
+    try {
+      const [updatedStaff] = await db.update(staffMembers)
+        .set({
+          ...staffData,
+          updatedAt: new Date()
+        })
+        .where(eq(staffMembers.id, id))
+        .returning();
+        
+      console.log('Updated staff member successfully:', updatedStaff);
+      return updatedStaff;
+    } catch (error) {
+      console.error(`Error updating staff member #${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async deleteStaffMember(id: number): Promise<void> {
+    console.log(`Deleting staff member #${id}`);
+    
+    try {
+      await db.delete(staffMembers).where(eq(staffMembers.id, id));
+      console.log(`Staff member #${id} deleted successfully`);
+    } catch (error) {
+      console.error(`Error deleting staff member #${id}:`, error);
+      throw error;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

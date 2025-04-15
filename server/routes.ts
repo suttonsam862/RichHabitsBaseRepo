@@ -35,13 +35,17 @@ import {
   insertFeedbackCommentSchema,
   insertFeedbackVoteSchema,
   insertEventSchema,
+  insertStaffMemberSchema,
+  staffMembers,
   ROLES,
   PERMISSIONS,
   type User,
   type Organization,
   type Permission,
   type Event,
-  type InsertEvent
+  type InsertEvent,
+  type StaffMember,
+  type InsertStaffMember
 } from "@shared/schema";
 import { isAdmin, hasRequiredPermission } from "./auth";
 

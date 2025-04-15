@@ -66,6 +66,9 @@ interface StaffMember {
 export default function StaffManagement() {
   const { toast } = useToast();
   
+  // Add a refresh counter to force re-renders when staff data changes
+  const [refreshCounter, setRefreshCounter] = useState(0);
+  
   // State for staff list
   const [staff, setStaff] = useState<StaffMember[]>([
     { id: 1, name: "John Smith", role: "Coach", email: "john@example.com", phone: "555-1234", specialization: "Basketball", status: 'active' },
@@ -138,6 +141,9 @@ export default function StaffManagement() {
       status: 'active'
     });
     
+    // Increment refresh counter to force a re-render
+    setRefreshCounter(prev => prev + 1);
+    
     setIsAddingStaff(false);
     
     toast({
@@ -186,6 +192,9 @@ export default function StaffManagement() {
     // Set the new staff list
     setStaff(updatedStaffList);
     
+    // Increment refresh counter to force a re-render
+    setRefreshCounter(prev => prev + 1);
+    
     // Close the edit modal
     setIsEditingStaff(false);
     setEditingStaff(null);
@@ -216,6 +225,9 @@ export default function StaffManagement() {
     // Update the state with the new list (force a new array reference to trigger re-render)
     const updatedList = [...newStaffList];
     setStaff(updatedList);
+    
+    // Increment refresh counter to force a re-render
+    setRefreshCounter(prev => prev + 1);
     
     // Extra console log to verify state update
     console.log("Updated staff list:", updatedList);
@@ -331,7 +343,7 @@ export default function StaffManagement() {
       {staff.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {staff.map((member) => (
-            <Card key={member.id} className="overflow-hidden">
+            <Card key={`${member.id}-${refreshCounter}`} className="overflow-hidden">
               <CardHeader className="p-4 pb-0">
                 <div className="flex justify-between items-start">
                   <div className="flex gap-4 items-center">

@@ -174,12 +174,19 @@ export default function StaffManagement() {
   const saveStaffEdit = () => {
     if (!editingStaff) return;
     
-    setStaff(prevStaff => 
-      prevStaff.map(member => 
-        member.id === editingStaff.id ? editingStaff : member
-      )
+    console.log("Saving staff member:", editingStaff);
+    
+    // Create a new array with the updated staff to force re-render
+    const updatedStaffList = staff.map(member => 
+      member.id === editingStaff.id ? {...editingStaff} : member
     );
     
+    console.log("Staff list after update:", updatedStaffList);
+    
+    // Set the new staff list
+    setStaff(updatedStaffList);
+    
+    // Close the edit modal
     setIsEditingStaff(false);
     setEditingStaff(null);
     
@@ -583,7 +590,7 @@ export default function StaffManagement() {
               
               {/* Basic Info Tab */}
               <TabsContent value="basic" className="flex-grow overflow-hidden">
-                <ScrollArea className="h-[65vh]">
+                <ScrollArea className="h-[50vh]">
                   <div className="space-y-6 py-4 px-2">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -676,7 +683,7 @@ export default function StaffManagement() {
               
               {/* Financial Tab */}
               <TabsContent value="financial" className="flex-grow overflow-hidden">
-                <ScrollArea className="h-[65vh]">
+                <ScrollArea className="h-[50vh]">
                   <div className="space-y-6 py-4 px-2">
                     <div className="space-y-4">
                       <div className="bg-gray-50 p-4 rounded-lg">
@@ -877,7 +884,7 @@ export default function StaffManagement() {
               
               {/* Schedule Tab */}
               <TabsContent value="schedule" className="flex-grow overflow-hidden">
-                <ScrollArea className="h-[65vh]">
+                <ScrollArea className="h-[50vh]">
                   <div className="space-y-6 py-4 px-2">
                     <div className="grid grid-cols-1 gap-4">
                       <div className="space-y-2">
@@ -1045,7 +1052,7 @@ export default function StaffManagement() {
               
               {/* Contact Tab */}
               <TabsContent value="contact" className="flex-grow overflow-hidden">
-                <ScrollArea className="h-[65vh]">
+                <ScrollArea className="h-[50vh]">
                   <div className="space-y-6 py-4 px-2">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -1157,7 +1164,7 @@ export default function StaffManagement() {
               
               {/* Travel Tab */}
               <TabsContent value="travel" className="flex-grow overflow-hidden">
-                <ScrollArea className="h-[65vh]">
+                <ScrollArea className="h-[50vh]">
                   <div className="space-y-6 py-4 px-2">
                     <div className="space-y-2">
                       <div className="flex justify-between items-center mb-2">
@@ -1431,7 +1438,7 @@ export default function StaffManagement() {
               </TabsContent>
             </Tabs>
           )}
-          <DialogFooter className="flex-shrink-0 border-t pt-4 sticky bottom-0 bg-white">
+          <DialogFooter className="flex-shrink-0 border-t pt-4 sticky bottom-0 bg-white shadow-md mt-4 p-4">
             <Button variant="outline" onClick={() => setIsEditingStaff(false)}>Cancel</Button>
             <Button onClick={saveStaffEdit}>Save Changes</Button>
           </DialogFooter>

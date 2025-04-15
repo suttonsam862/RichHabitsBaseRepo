@@ -564,16 +564,16 @@ export default function StaffManagement() {
       
       {/* Edit Staff Dialog */}
       <Dialog open={isEditingStaff} onOpenChange={setIsEditingStaff}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Edit Staff Member</DialogTitle>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="text-2xl">Edit Staff Member</DialogTitle>
             <DialogDescription>
-              Update the details for this staff member.
+              Update the details for this staff member. Use the tabs below to navigate through different sections.
             </DialogDescription>
           </DialogHeader>
           {editingStaff && (
-            <Tabs defaultValue="basic" className="w-full">
-              <TabsList className="grid grid-cols-5 w-full mb-4">
+            <Tabs defaultValue="basic" className="w-full flex-grow flex flex-col overflow-hidden">
+              <TabsList className="grid grid-cols-5 w-full mb-4 sticky top-0 z-10 bg-white flex-shrink-0">
                 <TabsTrigger value="basic"><PersonIcon className="mr-2 h-4 w-4" />Basic Info</TabsTrigger>
                 <TabsTrigger value="financial"><DotFilledIcon className="mr-2 h-4 w-4" />Financial</TabsTrigger>
                 <TabsTrigger value="schedule"><CalendarIcon className="mr-2 h-4 w-4" />Schedule</TabsTrigger>
@@ -582,9 +582,9 @@ export default function StaffManagement() {
               </TabsList>
               
               {/* Basic Info Tab */}
-              <TabsContent value="basic">
-                <ScrollArea className="max-h-[60vh]">
-                  <div className="space-y-4 py-2 px-1">
+              <TabsContent value="basic" className="flex-grow overflow-hidden">
+                <ScrollArea className="h-[65vh]">
+                  <div className="space-y-6 py-4 px-2">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="edit-name">Name *</Label>
@@ -675,9 +675,9 @@ export default function StaffManagement() {
               </TabsContent>
               
               {/* Financial Tab */}
-              <TabsContent value="financial">
-                <ScrollArea className="max-h-[60vh]">
-                  <div className="space-y-4 py-2 px-1">
+              <TabsContent value="financial" className="flex-grow overflow-hidden">
+                <ScrollArea className="h-[65vh]">
+                  <div className="space-y-6 py-4 px-2">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="edit-payRate">Pay Rate</Label>
@@ -916,9 +916,9 @@ export default function StaffManagement() {
               </TabsContent>
               
               {/* Schedule Tab */}
-              <TabsContent value="schedule">
-                <ScrollArea className="max-h-[60vh]">
-                  <div className="space-y-4 py-2 px-1">
+              <TabsContent value="schedule" className="flex-grow overflow-hidden">
+                <ScrollArea className="h-[65vh]">
+                  <div className="space-y-6 py-4 px-2">
                     <div className="grid grid-cols-1 gap-4">
                       <div className="space-y-2">
                         <div className="flex justify-between items-center mb-2">
@@ -1084,9 +1084,9 @@ export default function StaffManagement() {
               </TabsContent>
               
               {/* Contact Tab */}
-              <TabsContent value="contact">
-                <ScrollArea className="max-h-[60vh]">
-                  <div className="space-y-4 py-2 px-1">
+              <TabsContent value="contact" className="flex-grow overflow-hidden">
+                <ScrollArea className="h-[65vh]">
+                  <div className="space-y-6 py-4 px-2">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="edit-address">Address</Label>
@@ -1196,9 +1196,9 @@ export default function StaffManagement() {
               </TabsContent>
               
               {/* Travel Tab */}
-              <TabsContent value="travel">
-                <ScrollArea className="max-h-[60vh]">
-                  <div className="space-y-4 py-2 px-1">
+              <TabsContent value="travel" className="flex-grow overflow-hidden">
+                <ScrollArea className="h-[65vh]">
+                  <div className="space-y-6 py-4 px-2">
                     <div className="space-y-2">
                       <div className="flex justify-between items-center mb-2">
                         <Label>Travel Plans</Label>
@@ -1471,7 +1471,7 @@ export default function StaffManagement() {
               </TabsContent>
             </Tabs>
           )}
-          <DialogFooter>
+          <DialogFooter className="flex-shrink-0 border-t pt-4 sticky bottom-0 bg-white">
             <Button variant="outline" onClick={() => setIsEditingStaff(false)}>Cancel</Button>
             <Button onClick={saveStaffEdit}>Save Changes</Button>
           </DialogFooter>

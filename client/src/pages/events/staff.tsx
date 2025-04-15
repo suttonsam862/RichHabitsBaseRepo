@@ -406,13 +406,17 @@ export default function StaffManagement() {
   
   // Initialize staff data from the sample data
   useEffect(() => {
-    setStaffData(sampleStaffMembers as Clinician[]);
+    const initialData = [...(sampleStaffMembers as Clinician[])];
+    console.log("Initializing staff data with", initialData.length, "members");
+    setStaffData(initialData);
   }, []);
   
   // When staffData changes, update staffMembers
   useEffect(() => {
-    setStaffMembers([...staffData]);
-    console.log("Staff data updated:", staffData.length, "members");
+    console.log("Staff data changed, updating staff members list:", staffData.length, "members");
+    // Create a new array to force React to recognize the change
+    const newStaffMembers = [...staffData];
+    setStaffMembers(newStaffMembers);
   }, [staffData]);
   
   // Filter staff based on search and filters
@@ -607,18 +611,22 @@ export default function StaffManagement() {
                                   className="text-destructive" 
                                   onClick={() => {
                                     console.log("Deleting staff member:", staff.id, staff.name);
-                                    // Create a completely new array without the deleted staff member
-                                    const updatedStaff = [...staffData].filter(s => s.id !== staff.id);
-                                    console.log("Staff count before:", staffData.length, "after:", updatedStaff.length);
                                     
-                                    // Update state with the new array
-                                    setStaffData(updatedStaff);
-                                    
-                                    toast({
-                                      title: "Staff member deleted",
-                                      description: `${staff.name} has been removed from the system.`,
-                                      variant: "default",
-                                    });
+                                    // Force immediate execution of this in its own execution context
+                                    setTimeout(() => {
+                                      // Create a completely new array without the deleted staff member
+                                      const updatedStaff = [...staffData].filter(s => s.id !== staff.id);
+                                      console.log("Staff count before:", staffData.length, "after:", updatedStaff.length);
+                                      
+                                      // Update state with the new array
+                                      setStaffData(updatedStaff);
+                                      
+                                      toast({
+                                        title: "Staff member deleted",
+                                        description: `${staff.name} has been removed from the system.`,
+                                        variant: "default",
+                                      });
+                                    }, 0);
                                   }}
                                 >
                                   Delete
@@ -825,19 +833,25 @@ export default function StaffManagement() {
           }}
           onDelete={() => {
             // In a real app, you'd make an API call to delete the staff member
-            // Remove staff member from our state
-            const updatedStaff = [...staffData].filter(staff => staff.id !== selectedStaffMember.id);
-            
-            // Show success notification
-            toast({
-              title: "Staff member deleted",
-              description: `${selectedStaffMember.name} has been removed from the system.`,
-              variant: "default",
-            });
-            
-            // Update state and close dialog
-            setStaffData(updatedStaff);
-            setSelectedStaffMember(null);
+            // Force immediate execution in its own execution context
+            setTimeout(() => {
+              console.log("Deleting staff member from dialog:", selectedStaffMember.id, selectedStaffMember.name);
+              
+              // Remove staff member from our state with a completely new array
+              const updatedStaff = [...staffData].filter(staff => staff.id !== selectedStaffMember.id);
+              console.log("Staff count before:", staffData.length, "after:", updatedStaff.length);
+              
+              // Show success notification
+              toast({
+                title: "Staff member deleted",
+                description: `${selectedStaffMember.name} has been removed from the system.`,
+                variant: "default",
+              });
+              
+              // Update state and close dialog
+              setStaffData(updatedStaff);
+              setSelectedStaffMember(null);
+            }, 0);
           }}
         />
       )}

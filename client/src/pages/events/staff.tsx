@@ -206,100 +206,243 @@ export default function StaffManagement() {
     const newStaffList = staff.filter(person => person.id !== staffIdToDelete);
     console.log(`Staff before deletion: ${staff.length}, Staff after deletion: ${newStaffList.length}`);
     
-    // Update the state
-    setStaff(newStaffList);
+    // Update the state with the new list (force a new array reference to trigger re-render)
+    const updatedList = [...newStaffList];
+    setStaff(updatedList);
+    
+    // Extra console log to verify state update
+    console.log("Updated staff list:", updatedList);
     
     // Close modal and reset
     setIsDeleteModalOpen(false);
     setStaffToDelete(null);
     
+    // Notification
     toast({
       title: "Staff removed",
       description: `${staffToDelete.name} has been removed from the staff list.`
     });
   };
   
+  // Function to get placeholder image for a staff member
+  const getPlaceholderImage = (name: string) => {
+    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
+    const colors = [
+      'bg-blue-500', 'bg-green-500', 'bg-purple-500', 
+      'bg-pink-500', 'bg-yellow-500', 'bg-indigo-500'
+    ];
+    const colorIndex = name.length % colors.length;
+    
+    return (
+      <div className={`flex items-center justify-center ${colors[colorIndex]} text-white font-bold rounded-full w-16 h-16 text-xl`}>
+        {initials}
+      </div>
+    );
+  };
+  
+  // Function to get staff assignmment status for quick view
+  const getAssignmentSummary = (member: StaffMember) => {
+    const totalAssignments = member.campAssignments?.length || 0;
+    const totalDays = member.assignedDates?.length || 0;
+    
+    if (totalAssignments === 0 && totalDays === 0) {
+      return 'Not assigned to any camps';
+    }
+    
+    return `${totalAssignments} camp${totalAssignments !== 1 ? 's' : ''}, ${totalDays} day${totalDays !== 1 ? 's' : ''}`;
+  };
+  
+  // Function to get financial summary
+  const getFinancialSummary = (member: StaffMember) => {
+    const totalPaid = member.totalPaid || 0;
+    const payRate = member.payRate || 0;
+    const payType = member.payType || 'N/A';
+    
+    return (
+      <>
+        <div>Rate: ${payRate} ({payType})</div>
+        <div>Total paid: ${totalPaid.toFixed(2)}</div>
+      </>
+    );
+  };
+  
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Staff Management</h1>
-        <Button onClick={() => setIsAddingStaff(true)}>
+        <div>
+          <h1 className="text-3xl font-bold">Staff Management</h1>
+          <p className="text-gray-500 mt-1">Manage staff members for your camp events</p>
+        </div>
+        <Button onClick={() => setIsAddingStaff(true)} className="h-10">
           <PlusIcon className="mr-2 h-4 w-4" />
           Add Staff
         </Button>
       </div>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Camp Staff</CardTitle>
-          <CardDescription>Manage staff members for your camp event.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {staff.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Specialization</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {staff.map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell className="font-medium">{member.name}</TableCell>
-                    <TableCell>{member.role}</TableCell>
-                    <TableCell>
-                      {member.email && <div>{member.email}</div>}
-                      {member.phone && <div className="text-gray-500 text-sm">{member.phone}</div>}
-                    </TableCell>
-                    <TableCell>{member.specialization || '-'}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        member.status === 'active' ? 'bg-green-100 text-green-800' :
-                        member.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {member.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <DotsVerticalIcon className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => startEditing(member)}>
-                            <Pencil1Icon className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="text-red-600"
-                            onClick={() => handleDeleteClick(member)}
-                          >
-                            <TrashIcon className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-10">
-              <p className="text-gray-500 mb-4">No staff members added yet.</p>
-              <Button onClick={() => setIsAddingStaff(true)}>Add Your First Staff Member</Button>
+      {/* Staff Overview Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center space-x-4">
+              <PersonIcon className="h-8 w-8 text-blue-500" />
+              <div>
+                <div className="text-sm text-gray-500">Total Staff</div>
+                <div className="text-2xl font-bold">{staff.length}</div>
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center space-x-4">
+              <DotFilledIcon className="h-8 w-8 text-green-500" />
+              <div>
+                <div className="text-sm text-gray-500">Active Staff</div>
+                <div className="text-2xl font-bold">{staff.filter(m => m.status === 'active').length}</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center space-x-4">
+              <CalendarIcon className="h-8 w-8 text-purple-500" />
+              <div>
+                <div className="text-sm text-gray-500">Assigned Camps</div>
+                <div className="text-2xl font-bold">
+                  {staff.reduce((total, member) => total + (member.campAssignments?.length || 0), 0)}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Staff Gallery View */}
+      {staff.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {staff.map((member) => (
+            <Card key={member.id} className="overflow-hidden">
+              <CardHeader className="p-4 pb-0">
+                <div className="flex justify-between items-start">
+                  <div className="flex gap-4 items-center">
+                    {getPlaceholderImage(member.name)}
+                    <div>
+                      <CardTitle className="text-xl">{member.name}</CardTitle>
+                      <CardDescription className="text-sm font-medium">
+                        {member.role} | {member.specialization || 'No specialization'}
+                      </CardDescription>
+                      <div className="mt-1">
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          member.status === 'active' ? 'bg-green-100 text-green-800' :
+                          member.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {member.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <DotsVerticalIcon className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => startEditing(member)}>
+                        <Pencil1Icon className="mr-2 h-4 w-4" />
+                        Edit Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={() => handleDeleteClick(member)}
+                      >
+                        <TrashIcon className="mr-2 h-4 w-4" />
+                        Delete Staff
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="p-4">
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="border-t pt-4">
+                    <h4 className="text-sm font-semibold mb-2">Contact Information:</h4>
+                    <div className="text-sm">
+                      <div className="flex gap-2 items-center">
+                        <PersonIcon className="h-4 w-4 text-gray-400" />
+                        <span>{member.email || 'No email provided'}</span>
+                      </div>
+                      <div className="flex gap-2 items-center mt-1">
+                        <HomeIcon className="h-4 w-4 text-gray-400" />
+                        <span>{member.phone || 'No phone provided'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="border-t pt-4">
+                    <h4 className="text-sm font-semibold mb-2">Work Schedule:</h4>
+                    <div className="text-sm text-gray-700">
+                      {getAssignmentSummary(member)}
+                    </div>
+                  </div>
+                  
+                  <div className="border-t pt-4">
+                    <h4 className="text-sm font-semibold mb-2">Financial:</h4>
+                    <div className="text-sm text-gray-700">
+                      {getFinancialSummary(member)}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+              
+              <div className="bg-gray-50 px-4 py-3 border-t">
+                <div className="flex justify-between">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-xs"
+                    onClick={() => startEditing(member)}
+                  >
+                    <Pencil1Icon className="mr-1 h-3 w-3" />
+                    Edit
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-xs text-blue-600"
+                    onClick={() => {
+                      // This would navigate to the staff detail page in a real app
+                      // Instead we'll open the edit dialog for now
+                      startEditing(member);
+                    }}
+                  >
+                    View Full Profile
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="text-center py-10">
+            <PersonIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <h3 className="text-xl font-medium mb-2">No Staff Members Yet</h3>
+            <p className="text-gray-500 mb-6">Add your first staff member to get started managing your camp personnel.</p>
+            <Button onClick={() => setIsAddingStaff(true)}>
+              <PlusIcon className="mr-2 h-4 w-4" />
+              Add First Staff Member
+            </Button>
+          </CardContent>
+        </Card>
+      )}
       
       {/* Add Staff Dialog */}
       <Dialog open={isAddingStaff} onOpenChange={setIsAddingStaff}>
@@ -395,6 +538,26 @@ export default function StaffManagement() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddingStaff(false)}>Cancel</Button>
             <Button onClick={handleAddStaff}>Add Staff Member</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {staffToDelete?.name}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-500 text-sm">
+              All information related to this staff member will be permanently removed from the system.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmDelete}>Delete Staff Member</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -22,6 +22,7 @@ import {
   sidebarItems,
   userSettings,
   staffMembers,
+  camps,
   ROLES,
   type User, 
   type InsertUser, 
@@ -63,7 +64,9 @@ import {
   type Event,
   type InsertEvent,
   type StaffMember,
-  type InsertStaffMember
+  type InsertStaffMember,
+  type Camp,
+  type InsertCamp
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, or, isNull, asc, inArray } from "drizzle-orm";
@@ -247,6 +250,16 @@ export interface IStorage {
   createStaffMember(staffMember: InsertStaffMember): Promise<StaffMember>;
   updateStaffMember(id: number, staffMember: Partial<InsertStaffMember>): Promise<StaffMember>;
   deleteStaffMember(id: number): Promise<void>;
+  
+  // Camp methods
+  getCamps(): Promise<Camp[]>;
+  getCampById(id: number): Promise<Camp | undefined>;
+  createCamp(camp: InsertCamp): Promise<Camp>;
+  updateCamp(id: number, camp: Partial<InsertCamp>): Promise<Camp>;
+  deleteCamp(id: number): Promise<void>;
+  updateCampSchedule(id: number, schedule: any): Promise<Camp>;
+  updateCampTasks(id: number, tasks: any): Promise<Camp>;
+  assignStaffToCamp(campId: number, staffAssignments: any): Promise<Camp>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1717,6 +1730,203 @@ export class DatabaseStorage implements IStorage {
       console.log(`Staff member #${id} deleted successfully`);
     } catch (error) {
       console.error(`Error deleting staff member #${id}:`, error);
+      throw error;
+    }
+  }
+
+  // Camp methods
+  async getCamps(): Promise<Camp[]> {
+    try {
+      console.log('Fetching all camps');
+      return db.select().from(camps).orderBy(desc(camps.startDate));
+    } catch (error) {
+      console.error('Error fetching camps:', error);
+      return [];
+    }
+  }
+
+  async getCampById(id: number): Promise<Camp | undefined> {
+    try {
+      const [camp] = await db.select().from(camps).where(eq(camps.id, id));
+      return camp || undefined;
+    } catch (error) {
+      console.error(`Error fetching camp with ID ${id}:`, error);
+      return undefined;
+    }
+  }
+
+  async createCamp(camp: InsertCamp): Promise<Camp> {
+    try {
+      // Calculate selloutCost based on participants and campCost
+      if (camp.participants && camp.campCost && !camp.selloutCost) {
+        const participantsNum = typeof camp.participants === 'string' 
+          ? parseFloat(camp.participants as string) 
+          : camp.participants;
+        
+        const campCostNum = typeof camp.campCost === 'string'
+          ? parseFloat(camp.campCost as string)
+          : camp.campCost;
+          
+        if (!isNaN(participantsNum) && !isNaN(campCostNum)) {
+          camp.selloutCost = (participantsNum * campCostNum).toString();
+        }
+      }
+      
+      // Calculate totalDays if not provided
+      if (camp.startDate && camp.endDate && !camp.totalDays) {
+        const startDate = new Date(camp.startDate);
+        const endDate = new Date(camp.endDate);
+        const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
+        camp.totalDays = diffDays;
+      }
+
+      const [newCamp] = await db
+        .insert(camps)
+        .values(camp as any)
+        .returning();
+      console.log('Created new camp:', newCamp);
+      return newCamp;
+    } catch (error) {
+      console.error('Error creating camp:', error);
+      throw error;
+    }
+  }
+
+  async updateCamp(id: number, camp: Partial<InsertCamp>): Promise<Camp> {
+    try {
+      // Add updatedAt field
+      const updateData = {
+        ...camp,
+        updatedAt: new Date()
+      };
+      
+      // Update the camp
+      const [updatedCamp] = await db
+        .update(camps)
+        .set(updateData as any)
+        .where(eq(camps.id, id))
+        .returning();
+      
+      console.log(`Updated camp ${id}:`, updatedCamp);
+      return updatedCamp;
+    } catch (error) {
+      console.error(`Error updating camp ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteCamp(id: number): Promise<void> {
+    try {
+      await db.delete(camps).where(eq(camps.id, id));
+      console.log(`Deleted camp ${id}`);
+    } catch (error) {
+      console.error(`Error deleting camp ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async updateCampSchedule(id: number, schedule: any): Promise<Camp> {
+    try {
+      const [updatedCamp] = await db
+        .update(camps)
+        .set({ 
+          schedule,
+          updatedAt: new Date() 
+        })
+        .where(eq(camps.id, id))
+        .returning();
+      
+      console.log(`Updated camp ${id} schedule:`, updatedCamp.schedule);
+      return updatedCamp;
+    } catch (error) {
+      console.error(`Error updating camp ${id} schedule:`, error);
+      throw error;
+    }
+  }
+  
+  async updateCampTasks(id: number, tasks: any): Promise<Camp> {
+    try {
+      const [updatedCamp] = await db
+        .update(camps)
+        .set({ 
+          tasks,
+          updatedAt: new Date() 
+        })
+        .where(eq(camps.id, id))
+        .returning();
+      
+      console.log(`Updated camp ${id} tasks:`, updatedCamp.tasks);
+      return updatedCamp;
+    } catch (error) {
+      console.error(`Error updating camp ${id} tasks:`, error);
+      throw error;
+    }
+  }
+  
+  async assignStaffToCamp(campId: number, staffAssignments: any): Promise<Camp> {
+    try {
+      const [updatedCamp] = await db
+        .update(camps)
+        .set({ 
+          staffAssignments,
+          staffCount: staffAssignments.length,
+          updatedAt: new Date() 
+        })
+        .where(eq(camps.id, campId))
+        .returning();
+      
+      // Also update the assigned staff members' campAssignments
+      for (const assignment of staffAssignments) {
+        const staffId = assignment.staffId;
+        if (staffId) {
+          // Get the staff member
+          const [staffMember] = await db
+            .select()
+            .from(staffMembers)
+            .where(eq(staffMembers.id, staffId));
+          
+          if (staffMember) {
+            // Get existing camp assignments or initialize empty array
+            const existingAssignments = staffMember.campAssignments || [];
+            
+            // Check if this camp is already assigned
+            const existingIndex = existingAssignments.findIndex(
+              (a: any) => a.campId === campId
+            );
+            
+            if (existingIndex >= 0) {
+              // Update existing assignment
+              existingAssignments[existingIndex] = {
+                campId,
+                campName: updatedCamp.name,
+                role: assignment.role
+              };
+            } else {
+              // Add new assignment
+              existingAssignments.push({
+                campId,
+                campName: updatedCamp.name,
+                role: assignment.role
+              });
+            }
+            
+            // Update the staff member's camp assignments
+            await db
+              .update(staffMembers)
+              .set({ 
+                campAssignments: existingAssignments as any,
+                updatedAt: new Date()
+              })
+              .where(eq(staffMembers.id, staffId));
+          }
+        }
+      }
+      
+      console.log(`Assigned staff to camp ${campId}:`, staffAssignments);
+      return updatedCamp;
+    } catch (error) {
+      console.error(`Error assigning staff to camp ${campId}:`, error);
       throw error;
     }
   }

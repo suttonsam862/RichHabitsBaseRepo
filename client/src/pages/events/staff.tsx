@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { PlusIcon, TrashIcon, Pencil1Icon, DotsVerticalIcon, PlusCircledIcon, Cross2Icon, CalendarIcon, PersonIcon, DotFilledIcon, HomeIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
+import { PlusIcon, TrashIcon, Pencil1Icon, DotsVerticalIcon, PlusCircledIcon, Cross2Icon, CalendarIcon, PersonIcon, DotFilledIcon, HomeIcon, MixerHorizontalIcon, InfoCircledIcon } from "@radix-ui/react-icons";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -678,54 +678,26 @@ export default function StaffManagement() {
               <TabsContent value="financial" className="flex-grow overflow-hidden">
                 <ScrollArea className="h-[65vh]">
                   <div className="space-y-6 py-4 px-2">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="edit-payRate">Pay Rate</Label>
-                        <Input
-                          id="edit-payRate"
-                          name="payRate"
-                          type="number"
-                          step="0.01"
-                          value={editingStaff.payRate || ''}
-                          onChange={(e) => setEditingStaff({...editingStaff, payRate: parseFloat(e.target.value) || undefined})}
-                        />
+                    <div className="space-y-4">
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <h3 className="text-lg font-medium mb-2">Payment Summary</h3>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Total to be paid:</span>
+                            <span className="font-medium">${editingStaff.totalPaid?.toFixed(2) || '0.00'}</span>
+                          </div>
+                          <div className="text-sm text-gray-500 mt-2">
+                            <p>Payment amounts are based on assigned camps and rates in the Camp Overview page.</p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="edit-payType">Pay Type</Label>
-                        <Select value={editingStaff.payType || ''} onValueChange={(value) => setEditingStaff({...editingStaff, payType: value as any})}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select pay type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="hourly">Hourly</SelectItem>
-                            <SelectItem value="daily">Daily</SelectItem>
-                            <SelectItem value="fixed">Fixed</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Total Paid</Label>
-                      <div className="text-2xl font-bold">${editingStaff.totalPaid?.toFixed(2) || '0.00'}</div>
                     </div>
                     
                     <div className="space-y-2">
                       <div className="flex justify-between items-center mb-2">
                         <Label>Invoices</Label>
-                        <Button variant="outline" size="sm" onClick={() => {
-                          const newInvoice = {
-                            id: Date.now(),
-                            date: new Date().toISOString().split('T')[0],
-                            amount: 0,
-                            status: 'pending'
-                          };
-                          setEditingStaff({
-                            ...editingStaff, 
-                            invoices: [...(editingStaff.invoices || []), newInvoice]
-                          });
-                        }}>
-                          <PlusCircledIcon className="h-4 w-4 mr-1" /> Add Invoice
+                        <Button variant="ghost" size="sm" disabled>
+                          <InfoCircledIcon className="h-4 w-4 mr-1" /> Invoices are managed in Camp Overview
                         </Button>
                       </div>
                       {editingStaff.invoices && editingStaff.invoices.length > 0 ? (
@@ -804,20 +776,8 @@ export default function StaffManagement() {
                     <div className="space-y-2">
                       <div className="flex justify-between items-center mb-2">
                         <Label>Expenses</Label>
-                        <Button variant="outline" size="sm" onClick={() => {
-                          const newExpense = {
-                            id: Date.now(),
-                            date: new Date().toISOString().split('T')[0],
-                            category: 'travel',
-                            amount: 0,
-                            status: 'pending'
-                          };
-                          setEditingStaff({
-                            ...editingStaff, 
-                            expenses: [...(editingStaff.expenses || []), newExpense]
-                          });
-                        }}>
-                          <PlusCircledIcon className="h-4 w-4 mr-1" /> Add Expense
+                        <Button variant="ghost" size="sm" disabled>
+                          <InfoCircledIcon className="h-4 w-4 mr-1" /> Expenses are managed in Camp Overview
                         </Button>
                       </div>
                       {editingStaff.expenses && editingStaff.expenses.length > 0 ? (

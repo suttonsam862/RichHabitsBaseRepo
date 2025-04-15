@@ -3592,5 +3592,383 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // CAMP MANAGEMENT ENDPOINTS
+  
+  // Get all camps
+  app.get("/api/camps", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const camps = await storage.getCamps();
+      
+      res.status(200).json(camps);
+    } catch (error) {
+      console.error(`Error fetching camps:`, error);
+      res.status(500).json({ error: "Failed to fetch camps" });
+    }
+  });
+  
+  // Get a specific camp by ID
+  app.get("/api/camps/:id", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: "Invalid camp ID" });
+      }
+      
+      const camp = await storage.getCampById(campId);
+      
+      if (!camp) {
+        return res.status(404).json({ error: "Camp not found" });
+      }
+      
+      res.status(200).json(camp);
+    } catch (error) {
+      console.error(`Error fetching camp:`, error);
+      res.status(500).json({ error: "Failed to fetch camp" });
+    }
+  });
+  
+  // Create a new camp
+  app.post("/api/camps", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Only admin or event manager can create camps
+      const user = req.user as User;
+      if (user.role !== 'admin' && user.role !== 'event_manager') {
+        return res.status(403).json({ error: "Unauthorized access" });
+      }
+      
+      const campData = req.body;
+      
+      // Handle totalPaid field conversion
+      if (campData.totalPaid && typeof campData.totalPaid === 'string') {
+        // Convert to number or leave as is if it can't be converted
+        const totalPaidNum = parseFloat(campData.totalPaid);
+        if (!isNaN(totalPaidNum)) {
+          campData.totalPaid = totalPaidNum;
+        }
+      }
+      
+      // Calculate selloutCost based on participants and campCost if not provided
+      if (!campData.selloutCost && campData.participants && campData.campCost) {
+        const participantsNum = typeof campData.participants === 'string' 
+          ? parseFloat(campData.participants) 
+          : campData.participants;
+        
+        const campCostNum = typeof campData.campCost === 'string'
+          ? parseFloat(campData.campCost)
+          : campData.campCost;
+          
+        if (!isNaN(participantsNum) && !isNaN(campCostNum)) {
+          campData.selloutCost = (participantsNum * campCostNum).toString();
+        }
+      }
+      
+      // Add createdBy information
+      campData.createdById = user.id;
+      campData.createdByName = user.fullName || user.username;
+      
+      const newCamp = await storage.createCamp(campData);
+      
+      // Log the activity
+      await storage.createActivity({
+        userId: user.id,
+        username: user.fullName || user.username,
+        action: 'CREATE',
+        resourceType: 'CAMP',
+        resourceId: newCamp.id,
+        details: `Created new camp: ${newCamp.name}`
+      });
+      
+      res.status(201).json(newCamp);
+    } catch (error) {
+      console.error(`Error creating camp:`, error);
+      res.status(500).json({ error: "Failed to create camp" });
+    }
+  });
+  
+  // Update a camp
+  app.put("/api/camps/:id", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Only admin or event manager can update camps
+      const user = req.user as User;
+      if (user.role !== 'admin' && user.role !== 'event_manager') {
+        return res.status(403).json({ error: "Unauthorized access" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: "Invalid camp ID" });
+      }
+      
+      // Check if camp exists
+      const existingCamp = await storage.getCampById(campId);
+      if (!existingCamp) {
+        return res.status(404).json({ error: "Camp not found" });
+      }
+      
+      const campData = req.body;
+      
+      // Handle totalPaid field conversion
+      if (campData.totalPaid && typeof campData.totalPaid === 'string') {
+        // Convert to number or leave as is if it can't be converted
+        const totalPaidNum = parseFloat(campData.totalPaid);
+        if (!isNaN(totalPaidNum)) {
+          campData.totalPaid = totalPaidNum;
+        }
+      }
+      
+      // Auto-recalculate selloutCost if participants or campCost changed
+      if ((campData.participants || campData.campCost) && 
+          (campData.participants !== existingCamp.participants || 
+           campData.campCost !== existingCamp.campCost)) {
+        
+        // Use new values or fallback to existing values
+        const participants = campData.participants || existingCamp.participants;
+        const campCost = campData.campCost || existingCamp.campCost;
+        
+        if (participants && campCost) {
+          const participantsNum = typeof participants === 'string' 
+            ? parseFloat(participants) 
+            : participants;
+          
+          const campCostNum = typeof campCost === 'string'
+            ? parseFloat(campCost)
+            : campCost;
+            
+          if (!isNaN(participantsNum) && !isNaN(campCostNum)) {
+            campData.selloutCost = (participantsNum * campCostNum).toString();
+          }
+        }
+      }
+      
+      // Add lastUpdatedBy information
+      campData.lastUpdatedById = user.id;
+      campData.lastUpdatedByName = user.fullName || user.username;
+      
+      const updatedCamp = await storage.updateCamp(campId, campData);
+      
+      // Log the activity
+      await storage.createActivity({
+        userId: user.id,
+        username: user.fullName || user.username,
+        action: 'UPDATE',
+        resourceType: 'CAMP',
+        resourceId: updatedCamp.id,
+        details: `Updated camp: ${updatedCamp.name}`
+      });
+      
+      res.status(200).json(updatedCamp);
+    } catch (error) {
+      console.error(`Error updating camp:`, error);
+      res.status(500).json({ error: "Failed to update camp" });
+    }
+  });
+  
+  // Delete a camp
+  app.delete("/api/camps/:id", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Only admin can delete camps
+      const user = req.user as User;
+      if (user.role !== 'admin') {
+        return res.status(403).json({ error: "Unauthorized access" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: "Invalid camp ID" });
+      }
+      
+      // Check if camp exists
+      const existingCamp = await storage.getCampById(campId);
+      if (!existingCamp) {
+        return res.status(404).json({ error: "Camp not found" });
+      }
+      
+      await storage.deleteCamp(campId);
+      
+      // Log the activity
+      await storage.createActivity({
+        userId: user.id,
+        username: user.fullName || user.username,
+        action: 'DELETE',
+        resourceType: 'CAMP',
+        resourceId: campId,
+        details: `Deleted camp: ${existingCamp.name}`
+      });
+      
+      res.status(200).json({ message: "Camp deleted successfully" });
+    } catch (error) {
+      console.error(`Error deleting camp:`, error);
+      res.status(500).json({ error: "Failed to delete camp" });
+    }
+  });
+  
+  // Update camp schedule
+  app.put("/api/camps/:id/schedule", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Only admin or event manager can update camp schedules
+      const user = req.user as User;
+      if (user.role !== 'admin' && user.role !== 'event_manager') {
+        return res.status(403).json({ error: "Unauthorized access" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: "Invalid camp ID" });
+      }
+      
+      // Check if camp exists
+      const existingCamp = await storage.getCampById(campId);
+      if (!existingCamp) {
+        return res.status(404).json({ error: "Camp not found" });
+      }
+      
+      const scheduleData = req.body;
+      
+      const updatedCamp = await storage.updateCampSchedule(campId, scheduleData);
+      
+      // Log the activity
+      await storage.createActivity({
+        userId: user.id,
+        username: user.fullName || user.username,
+        action: 'UPDATE',
+        resourceType: 'CAMP_SCHEDULE',
+        resourceId: campId,
+        details: `Updated schedule for camp: ${existingCamp.name}`
+      });
+      
+      res.status(200).json(updatedCamp);
+    } catch (error) {
+      console.error(`Error updating camp schedule:`, error);
+      res.status(500).json({ error: "Failed to update camp schedule" });
+    }
+  });
+  
+  // Update camp tasks
+  app.put("/api/camps/:id/tasks", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Only admin or event manager can update camp tasks
+      const user = req.user as User;
+      if (user.role !== 'admin' && user.role !== 'event_manager') {
+        return res.status(403).json({ error: "Unauthorized access" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: "Invalid camp ID" });
+      }
+      
+      // Check if camp exists
+      const existingCamp = await storage.getCampById(campId);
+      if (!existingCamp) {
+        return res.status(404).json({ error: "Camp not found" });
+      }
+      
+      const tasksData = req.body;
+      
+      const updatedCamp = await storage.updateCampTasks(campId, tasksData);
+      
+      // Log the activity
+      await storage.createActivity({
+        userId: user.id,
+        username: user.fullName || user.username,
+        action: 'UPDATE',
+        resourceType: 'CAMP_TASKS',
+        resourceId: campId,
+        details: `Updated tasks for camp: ${existingCamp.name}`
+      });
+      
+      res.status(200).json(updatedCamp);
+    } catch (error) {
+      console.error(`Error updating camp tasks:`, error);
+      res.status(500).json({ error: "Failed to update camp tasks" });
+    }
+  });
+  
+  // Assign staff to camp
+  app.put("/api/camps/:id/staff", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Only admin or event manager can assign staff to camps
+      const user = req.user as User;
+      if (user.role !== 'admin' && user.role !== 'event_manager') {
+        return res.status(403).json({ error: "Unauthorized access" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: "Invalid camp ID" });
+      }
+      
+      // Check if camp exists
+      const existingCamp = await storage.getCampById(campId);
+      if (!existingCamp) {
+        return res.status(404).json({ error: "Camp not found" });
+      }
+      
+      const staffAssignments = req.body;
+      
+      // Validate staff assignments
+      if (!Array.isArray(staffAssignments)) {
+        return res.status(400).json({ error: "Staff assignments must be an array" });
+      }
+      
+      const updatedCamp = await storage.assignStaffToCamp(campId, staffAssignments);
+      
+      // Log the activity
+      await storage.createActivity({
+        userId: user.id,
+        username: user.fullName || user.username,
+        action: 'UPDATE',
+        resourceType: 'CAMP_STAFF',
+        resourceId: campId,
+        details: `Assigned staff to camp: ${existingCamp.name}`
+      });
+      
+      res.status(200).json(updatedCamp);
+    } catch (error) {
+      console.error(`Error assigning staff to camp:`, error);
+      res.status(500).json({ error: "Failed to assign staff to camp" });
+    }
+  });
+
   return httpServer;
 }

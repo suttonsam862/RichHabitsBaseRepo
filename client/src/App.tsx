@@ -61,6 +61,7 @@ import TravelAccommodations from "./pages/events/travel";
 import FinancialManagement from "./pages/events/financial";
 import StaffManagement from "./pages/events/staff";
 import VendorsServices from "./pages/events/vendors";
+import StaffTest from "./pages/staff-test";
 
 // Admin pages
 import SalesTeam from "./pages/admin/sales-team";
@@ -181,6 +182,11 @@ function DashboardLayout() {
         </Route>
         <Route path="/events/vendors">
           <ProtectedPageLoader pageId="events/vendors"><VendorsServices /></ProtectedPageLoader>
+        </Route>
+        
+        {/* Test Route (Standalone without PageGuard) */}
+        <Route path="/staff-test">
+          <StaffTest />
         </Route>
         
         {/* Admin Routes */}

@@ -3994,28 +3994,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Log the activity
         await storage.createActivity({
+          type: 'user',
+          content: `Added ${staffMember.firstName} ${staffMember.lastName} to camp: ${existingCamp.name}`,
           userId: user.id,
-          username: user.fullName || user.username,
-          action: 'ADD',
-          resourceType: 'CAMP_STAFF',
-          resourceId: campId,
-          details: `Added ${staffMember.firstName} ${staffMember.lastName} to camp: ${existingCamp.name}`
+          relatedId: campId,
+          relatedType: 'camp'
         });
       } else {
-        result = await storage.removeStaffFromCamp(campId, staffId);
+        await storage.removeStaffFromCamp(campId, staffId);
         
         // Log the activity
         await storage.createActivity({
+          type: 'user',
+          content: `Removed ${staffMember.firstName} ${staffMember.lastName} from camp: ${existingCamp.name}`,
           userId: user.id,
-          username: user.fullName || user.username,
-          action: 'REMOVE',
-          resourceType: 'CAMP_STAFF',
-          resourceId: campId,
-          details: `Removed ${staffMember.firstName} ${staffMember.lastName} from camp: ${existingCamp.name}`
+          relatedId: campId,
+          relatedType: 'camp'
         });
       }
       
-      res.status(200).json(updatedCamp);
+      // Get the updated camp with its staff members
+      const updatedCamp = await storage.getCampById(campId);
+      const updatedStaff = await storage.getCampStaff(campId);
+      
+      res.status(200).json({ 
+        camp: updatedCamp,
+        staff: updatedStaff
+      });
     } catch (error) {
       console.error(`Error assigning staff to camp:`, error);
       res.status(500).json({ error: "Failed to assign staff to camp" });

@@ -4590,11 +4590,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Fabric type is required" });
       }
       
-      // Import the research function from our service
-      const { researchFabric } = await import('./services/anthropic-service');
-      
-      // Call the research function
-      const researchResult = await researchFabric({ 
+      // Call the research function from the imported service
+      const researchResult = await anthropicService.researchFabric({ 
         fabricType, 
         properties, 
         region, 
@@ -4685,11 +4682,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Import the analyze function from our service
-      const { analyzeFabricCompatibility } = await import('./services/anthropic-service');
-      
-      // Call the analyze function
-      const analysisResult = await analyzeFabricCompatibility(fabricType, productionMethod);
+      // Call the analyze function from the imported service
+      const analysisResult = await anthropicService.analyzeFabricCompatibility({
+        fabricType,
+        productionMethod
+      });
       
       // Log the activity
       await storage.createActivity({
@@ -4741,16 +4738,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Import the suggest function from our service
-      const { suggestFabrics } = await import('./services/anthropic-service');
-      
-      // Call the suggest function
-      const suggestionsResult = await suggestFabrics({
+      // Call the suggest function from the imported service
+      const suggestionsResult = await anthropicService.suggestFabrics({
         productType,
         properties,
-        sustainabilityRequired: !!sustainabilityRequired,
-        budget: budget || "medium",
-        region: region || "global"
+        pricePoint: budget || "mid-range",
+        seasonality: region === "summer" ? "summer" : (region === "winter" ? "winter" : "all-season"),
+        sustainability: !!sustainabilityRequired
       });
       
       // Log the activity

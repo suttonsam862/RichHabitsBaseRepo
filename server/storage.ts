@@ -1841,7 +1841,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Camp-Staff methods
-  async getCampStaff(campId: number): Promise<StaffMember[]> {
+  async getCampStaff(campId: number): Promise<any[]> {
     try {
       console.log(`Getting staff for camp #${campId}`);
       
@@ -1862,7 +1862,21 @@ export class DatabaseStorage implements IStorage {
         .from(staffMembers)
         .where(inArray(staffMembers.id, staffIds));
       
-      return staffList;
+      // Combine staff info with their assignment details
+      const staffWithAssignments = staffList.map(staff => {
+        const assignment = staffAssignments.find(a => a.staffId === staff.id);
+        return {
+          ...staff,
+          assignment: assignment ? {
+            id: assignment.id,
+            role: assignment.role,
+            payAmount: assignment.payAmount,
+            assignedAt: assignment.assignedAt
+          } : null
+        };
+      });
+      
+      return staffWithAssignments;
     } catch (error) {
       console.error(`Error getting staff for camp #${campId}:`, error);
       return [];
@@ -1984,6 +1998,7 @@ export class DatabaseStorage implements IStorage {
   
   async updateCampSchedule(id: number, schedule: any): Promise<Camp> {
     try {
+      // For backward compatibility, we'll keep the old schedule in the camp object
       const [updatedCamp] = await db
         .update(camps)
         .set({ 
@@ -1993,10 +2008,112 @@ export class DatabaseStorage implements IStorage {
         .where(eq(camps.id, id))
         .returning();
       
-      console.log(`Updated camp ${id} schedule:`, updatedCamp.schedule);
+      console.log(`Updated camp ${id} schedule in legacy format`);
       return updatedCamp;
     } catch (error) {
       console.error(`Error updating camp ${id} schedule:`, error);
+      throw error;
+    }
+  }
+  
+  async getCampScheduleItems(campId: number): Promise<CampScheduleItem[]> {
+    try {
+      console.log(`Getting schedule items for camp #${campId}`);
+      
+      const scheduleItems = await db
+        .select()
+        .from(campScheduleItems)
+        .where(eq(campScheduleItems.campId, campId))
+        .orderBy(campScheduleItems.startTime);
+      
+      return scheduleItems;
+    } catch (error) {
+      console.error(`Error getting schedule items for camp #${campId}:`, error);
+      return [];
+    }
+  }
+  
+  async addCampScheduleItem(item: InsertCampScheduleItem): Promise<CampScheduleItem> {
+    try {
+      console.log(`Adding schedule item to camp #${item.campId}`);
+      
+      const [scheduleItem] = await db
+        .insert(campScheduleItems)
+        .values(item)
+        .returning();
+      
+      // Update the camp
+      await db
+        .update(camps)
+        .set({ 
+          updatedAt: new Date(),
+          hasSchedule: true
+        })
+        .where(eq(camps.id, item.campId));
+      
+      return scheduleItem;
+    } catch (error) {
+      console.error(`Error adding schedule item to camp:`, error);
+      throw error;
+    }
+  }
+  
+  async updateCampScheduleItem(id: number, item: Partial<InsertCampScheduleItem>): Promise<CampScheduleItem> {
+    try {
+      console.log(`Updating schedule item #${id}`);
+      
+      const [updatedItem] = await db
+        .update(campScheduleItems)
+        .set({ 
+          ...item,
+          updatedAt: new Date() 
+        })
+        .where(eq(campScheduleItems.id, id))
+        .returning();
+      
+      return updatedItem;
+    } catch (error) {
+      console.error(`Error updating schedule item #${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async deleteCampScheduleItem(id: number): Promise<void> {
+    try {
+      console.log(`Deleting schedule item #${id}`);
+      
+      // Get the schedule item first to know which camp it belongs to
+      const [scheduleItem] = await db
+        .select()
+        .from(campScheduleItems)
+        .where(eq(campScheduleItems.id, id));
+      
+      if (!scheduleItem) {
+        throw new Error(`Schedule item #${id} not found`);
+      }
+      
+      await db
+        .delete(campScheduleItems)
+        .where(eq(campScheduleItems.id, id));
+      
+      // Check if the camp has any remaining schedule items
+      const remainingItems = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(campScheduleItems)
+        .where(eq(campScheduleItems.campId, scheduleItem.campId));
+      
+      // Update the camp's hasSchedule flag if needed
+      if (Number(remainingItems[0]?.count || 0) === 0) {
+        await db
+          .update(camps)
+          .set({ 
+            hasSchedule: false,
+            updatedAt: new Date() 
+          })
+          .where(eq(camps.id, scheduleItem.campId));
+      }
+    } catch (error) {
+      console.error(`Error deleting schedule item #${id}:`, error);
       throw error;
     }
   }

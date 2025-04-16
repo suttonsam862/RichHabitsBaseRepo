@@ -156,6 +156,9 @@ function DashboardLayout() {
         <Route path="/production-communication">
           <ProtectedPageLoader pageId="production-communication"><ProductionCommunication /></ProtectedPageLoader>
         </Route>
+        <Route path="/communication-center">
+          <ProtectedPageLoader pageId="communication-center"><CommunicationCenter /></ProtectedPageLoader>
+        </Route>
         <Route path="/feedback">
           <ProtectedPageLoader pageId="feedback"><Feedback /></ProtectedPageLoader>
         </Route>
@@ -342,6 +345,12 @@ function DesignerDashboardLayout() {
         <Route path="/design-process-guide">
           <ProtectedPageLoader pageId="design-process-guide"><DesignProcessGuide /></ProtectedPageLoader>
         </Route>
+        <Route path="/design-communication">
+          <ProtectedPageLoader pageId="design-communication"><DesignCommunication /></ProtectedPageLoader>
+        </Route>
+        <Route path="/communication-center">
+          <ProtectedPageLoader pageId="communication-center"><CommunicationCenter /></ProtectedPageLoader>
+        </Route>
         <Route path="/events/calendar">
           <ProtectedPageLoader pageId="events/calendar"><EventCalendar /></ProtectedPageLoader>
         </Route>
@@ -416,6 +425,12 @@ function ManufacturerDashboardLayout() {
         </Route>
         <Route path="/manufacturing-guide">
           <ProtectedPageLoader pageId="manufacturing-guide"><ManufacturingGuide /></ProtectedPageLoader>
+        </Route>
+        <Route path="/production-communication">
+          <ProtectedPageLoader pageId="production-communication"><ProductionCommunication /></ProtectedPageLoader>
+        </Route>
+        <Route path="/communication-center">
+          <ProtectedPageLoader pageId="communication-center"><CommunicationCenter /></ProtectedPageLoader>
         </Route>
         <Route path="/events/calendar">
           <ProtectedPageLoader pageId="events/calendar"><EventCalendar /></ProtectedPageLoader>
@@ -519,6 +534,9 @@ function HybridDashboardLayout() {
         </Route>
         <Route path="/production-communication">
           <ProtectedPageLoader pageId="production-communication"><ProductionCommunication /></ProtectedPageLoader>
+        </Route>
+        <Route path="/communication-center">
+          <ProtectedPageLoader pageId="communication-center"><CommunicationCenter /></ProtectedPageLoader>
         </Route>
         
         {/* Events Routes */}

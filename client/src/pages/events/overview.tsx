@@ -1140,237 +1140,428 @@ const DeleteCampDialog = ({ camp, isOpen, onClose, onDelete }: { camp: any, isOp
 
 // New Camp Form Component
 const AddCampForm = ({ onClose }: { onClose: () => void }) => {
+  const [selectedTab, setSelectedTab] = useState("details");
+  const [clinicianSearchTerm, setClinicianSearchTerm] = useState("");
+  const [selectedStaff, setSelectedStaff] = useState<any[]>([]);
+  
+  // Sample staff data for testing before real API integration
+  const sampleStaffData = [
+    { id: 1, name: "John Smith", role: "Head Coach", rate: 200, rateType: "day", avatar: "" },
+    { id: 2, name: "Sarah Johnson", role: "Assistant Coach", rate: 150, rateType: "day", avatar: "" },
+    { id: 3, name: "Mike Williams", role: "Specialist", rate: 250, rateType: "day", avatar: "" },
+    { id: 4, name: "Emily Brown", role: "Athletic Trainer", rate: 180, rateType: "day", avatar: "" },
+    { id: 5, name: "David Lee", role: "Strength Coach", rate: 200, rateType: "day", avatar: "" }
+  ];
+  
+  // Fetch staff/clinicians from server (commented out until API is ready)
+  /*
+  const { data: staffData = [], isLoading: staffLoading } = useQuery({
+    queryKey: ['/api/staff'],
+    queryFn: async () => {
+      const response = await fetch('/api/staff');
+      if (!response.ok) throw new Error('Failed to fetch staff data');
+      return response.json();
+    },
+  });
+  */
+  
+  // Use sample data for now
+  const staffData = sampleStaffData;
+  const staffLoading = false;
+  
   const form = useForm({
     defaultValues: {
       name: "",
       type: "",
-      clinician: "",
       startDate: undefined,
       endDate: undefined,
       venue: "",
       address: "",
-      budget: "",
+      participants: "",
+      campCost: "",
       notes: "",
     },
   });
 
   const handleSubmit = (values: any) => {
-    console.log("New Camp Data:", values);
-    // In a real app, you would save the data to the server
-    onClose();
+    // Add the selected staff IDs to the submitted data
+    const campData = {
+      ...values,
+      initialStaffIds: selectedStaff.map(staff => staff.id)
+    };
+    
+    console.log("New Camp Data:", campData);
+    
+    // Submit the camp data to the server
+    fetch('/api/camps', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(campData),
+    })
+    .then(response => {
+      if (!response.ok) throw new Error('Failed to create camp');
+      return response.json();
+    })
+    .then(newCamp => {
+      console.log('Camp created successfully:', newCamp);
+      onClose();
+    })
+    .catch(error => {
+      console.error('Error creating camp:', error);
+    });
   };
-
+  
+  // Function to add a clinician to selected staff
+  const addClinician = (staff: any) => {
+    if (!selectedStaff.some(s => s.id === staff.id)) {
+      setSelectedStaff([...selectedStaff, staff]);
+    }
+    setClinicianSearchTerm("");
+  };
+  
+  // Function to remove a clinician from selected staff
+  const removeClinician = (staffId: number) => {
+    setSelectedStaff(selectedStaff.filter(s => s.id !== staffId));
+  };
+  
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Camp Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Summer Training Camp 2025" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="type"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Camp Type</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  defaultValue={field.value}
-                >
+        {/* Form Tabs for navigating different sections */}
+        <Tabs defaultValue="details" value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+          <TabsList className="grid grid-cols-3 mb-4">
+            <TabsTrigger value="details">Camp Details</TabsTrigger>
+            <TabsTrigger value="staff">Staff</TabsTrigger>
+            <TabsTrigger value="finances">Finances</TabsTrigger>
+          </TabsList>
+          
+          {/* Camp Details Tab */}
+          <TabsContent value="details" className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Camp Name</FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a type" />
-                    </SelectTrigger>
+                    <Input placeholder="Summer Training Camp 2025" {...field} />
                   </FormControl>
-                  <SelectContent>
-                    <SelectItem value="training">Training Camp</SelectItem>
-                    <SelectItem value="skills">Skills Clinic</SelectItem>
-                    <SelectItem value="elite">Elite Training</SelectItem>
-                    <SelectItem value="competition">Competition Prep</SelectItem>
-                    <SelectItem value="youth">Youth Camp</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="clinician"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Lead Clinician</FormLabel>
-                <FormControl>
-                  <Input placeholder="Coach Name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="startDate"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Start Date</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Camp Type</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="training">Training Camp</SelectItem>
+                        <SelectItem value="skills">Skills Clinic</SelectItem>
+                        <SelectItem value="elite">Elite Training</SelectItem>
+                        <SelectItem value="competition">Competition Prep</SelectItem>
+                        <SelectItem value="youth">Youth Camp</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="venue"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Venue Name</FormLabel>
                     <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(new Date(field.value), "PPP")
-                        ) : (
-                          <span>Select date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
+                      <Input placeholder="Training Center Name" {...field} />
                     </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={field.value ? new Date(field.value) : undefined}
-                      onSelect={field.onChange}
-                      disabled={(date) =>
-                        date < new Date(new Date().setHours(0, 0, 0, 0))
-                      }
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+        
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Start Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(new Date(field.value), "PPP")
+                            ) : (
+                              <span>Select date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={field.value ? new Date(field.value) : undefined}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            date < new Date(new Date().setHours(0, 0, 0, 0))
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>End Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(new Date(field.value), "PPP")
+                            ) : (
+                              <span>Select date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={field.value ? new Date(field.value) : undefined}
+                          onSelect={field.onChange}
+                          disabled={(date) => {
+                            const startDate = form.getValues("startDate");
+                            return startDate 
+                              ? date < new Date(startDate) 
+                              : date < new Date(new Date().setHours(0, 0, 0, 0));
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Venue Address</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Full address" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </TabsContent>
           
-          <FormField
-            control={form.control}
-            name="endDate"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>End Date</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
+          {/* Staff Tab */}
+          <TabsContent value="staff" className="space-y-4">
+            <div className="bg-gray-50 p-4 rounded-md mb-4">
+              <h3 className="text-lg font-medium mb-2">Selected Clinicians</h3>
+              {selectedStaff.length === 0 ? (
+                <p className="text-gray-500 italic">No clinicians selected yet. Use the search below to add clinicians.</p>
+              ) : (
+                <div className="space-y-2">
+                  {selectedStaff.map(staff => (
+                    <div key={staff.id} className="flex items-center justify-between bg-white p-2 rounded border">
+                      <div className="flex items-center">
+                        <Avatar className="h-8 w-8 mr-2">
+                          <AvatarImage src={staff.avatar} />
+                          <AvatarFallback>
+                            {staff.name.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium text-sm">{staff.name}</div>
+                          <div className="text-xs text-gray-500">{staff.role}</div>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => removeClinician(staff.id)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Search for Clinicians</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-grow">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    placeholder="Search by name or role"
+                    className="pl-8"
+                    value={clinicianSearchTerm}
+                    onChange={(e) => setClinicianSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              {/* Search Results */}
+              <div className="mt-2 border rounded-md divide-y max-h-[200px] overflow-y-auto bg-white">
+                {staffLoading ? (
+                  <div className="flex items-center justify-center p-4">
+                    <span className="loading loading-spinner loading-sm mr-2"></span>
+                    Loading staff...
+                  </div>
+                ) : clinicianSearchTerm.length > 0 ? (
+                  staffData
+                    .filter(staff => 
+                      staff.name.toLowerCase().includes(clinicianSearchTerm.toLowerCase()) ||
+                      staff.role.toLowerCase().includes(clinicianSearchTerm.toLowerCase())
+                    )
+                    .filter(staff => !selectedStaff.some(s => s.id === staff.id))
+                    .map(staff => (
+                      <div 
+                        key={staff.id}
+                        className="flex items-center justify-between p-2 hover:bg-gray-50 cursor-pointer"
+                        onClick={() => addClinician(staff)}
+                      >
+                        <div className="flex items-center">
+                          <Avatar className="h-8 w-8 mr-2">
+                            <AvatarImage src={staff.avatar} />
+                            <AvatarFallback>
+                              {staff.name.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium text-sm">{staff.name}</div>
+                            <div className="text-xs text-gray-500">{staff.role} • ${staff.rate}/{staff.rateType}</div>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm">
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))
+                ) : (
+                  <div className="p-4 text-gray-500 text-center">
+                    Type to search for clinicians
+                  </div>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+          
+          {/* Finances Tab */}
+          <TabsContent value="finances" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="participants"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Number of Participants</FormLabel>
                     <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(new Date(field.value), "PPP")
-                        ) : (
-                          <span>Select date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
+                      <Input type="number" placeholder="50" {...field} />
                     </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={field.value ? new Date(field.value) : undefined}
-                      onSelect={field.onChange}
-                      disabled={(date) => {
-                        const startDate = form.getValues("startDate");
-                        return startDate 
-                          ? date < new Date(startDate) 
-                          : date < new Date(new Date().setHours(0, 0, 0, 0));
-                      }}
-                      initialFocus
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="campCost"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cost per Participant ($)</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="200" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div>
+              <Label>Sellout Revenue</Label>
+              <div className="bg-gray-50 p-3 rounded-md text-lg font-medium mt-1">
+                ${(() => {
+                  const participants = form.watch("participants") || 0;
+                  const campCost = form.watch("campCost") || 0;
+                  return (parseFloat(participants.toString()) * parseFloat(campCost.toString())).toFixed(2);
+                })()}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Calculated based on number of participants multiplied by cost per participant
+              </p>
+            </div>
+            
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Financial Notes</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Additional financial information about the camp"
+                      className="min-h-[80px]"
+                      {...field}
                     />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="venue"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Venue Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Training Center Name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="budget"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Budget</FormLabel>
-                <FormControl>
-                  <Input type="number" placeholder="10000" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
-        <FormField
-          control={form.control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Venue Address</FormLabel>
-              <FormControl>
-                <Input placeholder="Full address" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Notes</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Additional information about the camp"
-                  className="min-h-[80px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </TabsContent>
+        </Tabs>
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>

@@ -2411,6 +2411,124 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // Fabric Research Center methods
+  async getFabricTypes(): Promise<FabricType[]> {
+    return db.select().from(fabricTypes).orderBy(asc(fabricTypes.name));
+  }
+  
+  async getFabricTypeById(id: number): Promise<FabricType | undefined> {
+    const [fabricType] = await db.select().from(fabricTypes).where(eq(fabricTypes.id, id));
+    return fabricType || undefined;
+  }
+  
+  async getFabricTypeByName(name: string): Promise<FabricType | undefined> {
+    const [fabricType] = await db.select().from(fabricTypes).where(eq(fabricTypes.name, name));
+    return fabricType || undefined;
+  }
+  
+  async createFabricType(fabricType: InsertFabricType): Promise<FabricType> {
+    try {
+      const [newFabricType] = await db
+        .insert(fabricTypes)
+        .values({
+          ...fabricType,
+          updatedAt: new Date()
+        })
+        .returning();
+      return newFabricType;
+    } catch (error) {
+      console.error("Error creating fabric type:", error);
+      throw error;
+    }
+  }
+  
+  async updateFabricType(id: number, updates: Partial<InsertFabricType>): Promise<FabricType> {
+    try {
+      const [updatedFabricType] = await db
+        .update(fabricTypes)
+        .set({
+          ...updates,
+          updatedAt: new Date()
+        })
+        .where(eq(fabricTypes.id, id))
+        .returning();
+      return updatedFabricType;
+    } catch (error) {
+      console.error(`Error updating fabric type ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async deleteFabricType(id: number): Promise<void> {
+    try {
+      await db.delete(fabricTypes).where(eq(fabricTypes.id, id));
+    } catch (error) {
+      console.error(`Error deleting fabric type ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async getFabricCompatibilities(): Promise<FabricCompatibility[]> {
+    return db.select().from(fabricCompatibilities);
+  }
+  
+  async getFabricCompatibilitiesByFabricType(fabricTypeId: number): Promise<FabricCompatibility[]> {
+    return db
+      .select()
+      .from(fabricCompatibilities)
+      .where(eq(fabricCompatibilities.fabricTypeId, fabricTypeId));
+  }
+  
+  async getFabricCompatibility(id: number): Promise<FabricCompatibility | undefined> {
+    const [compatibility] = await db
+      .select()
+      .from(fabricCompatibilities)
+      .where(eq(fabricCompatibilities.id, id));
+    return compatibility || undefined;
+  }
+  
+  async createFabricCompatibility(compatibility: InsertFabricCompatibility): Promise<FabricCompatibility> {
+    try {
+      const [newCompatibility] = await db
+        .insert(fabricCompatibilities)
+        .values({
+          ...compatibility,
+          updatedAt: new Date()
+        })
+        .returning();
+      return newCompatibility;
+    } catch (error) {
+      console.error("Error creating fabric compatibility:", error);
+      throw error;
+    }
+  }
+  
+  async updateFabricCompatibility(id: number, updates: Partial<InsertFabricCompatibility>): Promise<FabricCompatibility> {
+    try {
+      const [updatedCompatibility] = await db
+        .update(fabricCompatibilities)
+        .set({
+          ...updates,
+          updatedAt: new Date()
+        })
+        .where(eq(fabricCompatibilities.id, id))
+        .returning();
+      return updatedCompatibility;
+    } catch (error) {
+      console.error(`Error updating fabric compatibility ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async deleteFabricCompatibility(id: number): Promise<void> {
+    try {
+      await db.delete(fabricCompatibilities).where(eq(fabricCompatibilities.id, id));
+    } catch (error) {
+      console.error(`Error deleting fabric compatibility ${id}:`, error);
+      throw error;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

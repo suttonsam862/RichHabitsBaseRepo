@@ -28,6 +28,8 @@ import {
   campFinancials,
   travelArrangements,
   accommodations,
+  fabricTypes,
+  fabricCompatibilities,
   insertLeadSchema, 
   insertOrderSchema, 
   insertMessageSchema,
@@ -43,6 +45,8 @@ import {
   insertFeedbackVoteSchema,
   insertEventSchema,
   insertStaffMemberSchema,
+  insertFabricTypeSchema,
+  insertFabricCompatibilitySchema,
   staffMembers,
   ROLES,
   PERMISSIONS,
@@ -52,7 +56,11 @@ import {
   type Event,
   type InsertEvent,
   type StaffMember,
-  type InsertStaffMember
+  type InsertStaffMember,
+  type FabricType,
+  type InsertFabricType,
+  type FabricCompatibility,
+  type InsertFabricCompatibility
 } from "@shared/schema";
 import { isAdmin, hasRequiredPermission } from "./auth";
 

@@ -4287,5 +4287,485 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ======= FABRIC RESEARCH CENTER API ENDPOINTS =======
+  
+  // Get all fabric types
+  app.get("/api/fabric-types", isAuthenticated, async (req, res) => {
+    try {
+      const fabricTypes = await storage.getFabricTypes();
+      res.json({ data: fabricTypes });
+    } catch (error: any) {
+      console.error("Error fetching fabric types:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Get a specific fabric type by ID
+  app.get("/api/fabric-types/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid fabric type ID" });
+      }
+      
+      const fabricType = await storage.getFabricTypeById(id);
+      if (!fabricType) {
+        return res.status(404).json({ error: "Fabric type not found" });
+      }
+      
+      res.json({ data: fabricType });
+    } catch (error: any) {
+      console.error(`Error fetching fabric type:`, error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Create a new fabric type
+  app.post("/api/fabric-types", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      const validatedData = insertFabricTypeSchema.parse(req.body);
+      
+      // Add createdBy if not provided
+      if (!validatedData.createdBy) {
+        validatedData.createdBy = user.id;
+      }
+      
+      const newFabricType = await storage.createFabricType(validatedData);
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "CREATE",
+        content: `Created new fabric type: ${newFabricType.name}`,
+        userId: user.id,
+        relatedId: newFabricType.id,
+        relatedType: "FABRIC_TYPE"
+      });
+      
+      res.status(201).json({ data: newFabricType });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        console.error("Error creating fabric type:", error);
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  // Update a fabric type
+  app.put("/api/fabric-types/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid fabric type ID" });
+      }
+      
+      const user = req.user as User;
+      const existingFabricType = await storage.getFabricTypeById(id);
+      if (!existingFabricType) {
+        return res.status(404).json({ error: "Fabric type not found" });
+      }
+      
+      // Validate the update data
+      const updates = req.body;
+      
+      // Perform the update
+      const updatedFabricType = await storage.updateFabricType(id, updates);
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "UPDATE",
+        content: `Updated fabric type: ${updatedFabricType.name}`,
+        userId: user.id,
+        relatedId: updatedFabricType.id,
+        relatedType: "FABRIC_TYPE"
+      });
+      
+      res.json({ data: updatedFabricType });
+    } catch (error: any) {
+      console.error(`Error updating fabric type:`, error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Delete a fabric type
+  app.delete("/api/fabric-types/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid fabric type ID" });
+      }
+      
+      const user = req.user as User;
+      const fabricType = await storage.getFabricTypeById(id);
+      if (!fabricType) {
+        return res.status(404).json({ error: "Fabric type not found" });
+      }
+      
+      // Delete the fabric type
+      await storage.deleteFabricType(id);
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "DELETE",
+        content: `Deleted fabric type: ${fabricType.name}`,
+        userId: user.id,
+        relatedId: id,
+        relatedType: "FABRIC_TYPE"
+      });
+      
+      res.status(200).json({ success: true, message: "Fabric type deleted successfully" });
+    } catch (error: any) {
+      console.error(`Error deleting fabric type:`, error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Get all fabric compatibility records
+  app.get("/api/fabric-compatibilities", isAuthenticated, async (req, res) => {
+    try {
+      const fabricTypeId = req.query.fabricTypeId ? parseInt(req.query.fabricTypeId as string) : undefined;
+      
+      let compatibilities;
+      if (fabricTypeId !== undefined && !isNaN(fabricTypeId)) {
+        compatibilities = await storage.getFabricCompatibilitiesByFabricType(fabricTypeId);
+      } else {
+        compatibilities = await storage.getFabricCompatibilities();
+      }
+      
+      res.json({ data: compatibilities });
+    } catch (error: any) {
+      console.error("Error fetching fabric compatibilities:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Get a specific fabric compatibility by ID
+  app.get("/api/fabric-compatibilities/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid compatibility ID" });
+      }
+      
+      const compatibility = await storage.getFabricCompatibility(id);
+      if (!compatibility) {
+        return res.status(404).json({ error: "Fabric compatibility not found" });
+      }
+      
+      res.json({ data: compatibility });
+    } catch (error: any) {
+      console.error(`Error fetching fabric compatibility:`, error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Create a new fabric compatibility
+  app.post("/api/fabric-compatibilities", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      const validatedData = insertFabricCompatibilitySchema.parse(req.body);
+      
+      // Add createdBy if not provided
+      if (!validatedData.createdBy) {
+        validatedData.createdBy = user.id;
+      }
+      
+      const newCompatibility = await storage.createFabricCompatibility(validatedData);
+      
+      // Get associated fabric type name for activity logging
+      const fabricType = await storage.getFabricTypeById(newCompatibility.fabricTypeId);
+      const fabricTypeName = fabricType ? fabricType.name : 'Unknown';
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "CREATE",
+        content: `Added compatibility for ${fabricTypeName} with ${newCompatibility.productionMethod}`,
+        userId: user.id,
+        relatedId: newCompatibility.id,
+        relatedType: "FABRIC_COMPATIBILITY"
+      });
+      
+      res.status(201).json({ data: newCompatibility });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        console.error("Error creating fabric compatibility:", error);
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  // Update a fabric compatibility
+  app.put("/api/fabric-compatibilities/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid compatibility ID" });
+      }
+      
+      const user = req.user as User;
+      const existingCompatibility = await storage.getFabricCompatibility(id);
+      if (!existingCompatibility) {
+        return res.status(404).json({ error: "Fabric compatibility not found" });
+      }
+      
+      // Validate the update data
+      const updates = req.body;
+      
+      // Perform the update
+      const updatedCompatibility = await storage.updateFabricCompatibility(id, updates);
+      
+      // Get associated fabric type name for activity logging
+      const fabricType = await storage.getFabricTypeById(updatedCompatibility.fabricTypeId);
+      const fabricTypeName = fabricType ? fabricType.name : 'Unknown';
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "UPDATE",
+        content: `Updated compatibility for ${fabricTypeName} with ${updatedCompatibility.productionMethod}`,
+        userId: user.id,
+        relatedId: updatedCompatibility.id,
+        relatedType: "FABRIC_COMPATIBILITY"
+      });
+      
+      res.json({ data: updatedCompatibility });
+    } catch (error: any) {
+      console.error(`Error updating fabric compatibility:`, error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Delete a fabric compatibility
+  app.delete("/api/fabric-compatibilities/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid compatibility ID" });
+      }
+      
+      const user = req.user as User;
+      const compatibility = await storage.getFabricCompatibility(id);
+      if (!compatibility) {
+        return res.status(404).json({ error: "Fabric compatibility not found" });
+      }
+      
+      // Delete the compatibility record
+      await storage.deleteFabricCompatibility(id);
+      
+      // Get associated fabric type name for activity logging
+      const fabricType = await storage.getFabricTypeById(compatibility.fabricTypeId);
+      const fabricTypeName = fabricType ? fabricType.name : 'Unknown';
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "DELETE",
+        content: `Deleted compatibility for ${fabricTypeName} with ${compatibility.productionMethod}`,
+        userId: user.id,
+        relatedId: id,
+        relatedType: "FABRIC_COMPATIBILITY"
+      });
+      
+      res.status(200).json({ success: true, message: "Fabric compatibility deleted successfully" });
+    } catch (error: any) {
+      console.error(`Error deleting fabric compatibility:`, error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Endpoint to research fabric using Anthropic API
+  app.post("/api/fabric-research", isAuthenticated, async (req, res) => {
+    try {
+      // Get the user for activity logging
+      const user = req.user as User;
+      
+      // Validate request body
+      // We expect something like { fabricType: string, properties: string[], region?: string, sustainabilityFocus?: boolean }
+      const { fabricType, properties, region, sustainabilityFocus, detailLevel } = req.body;
+      
+      if (!fabricType) {
+        return res.status(400).json({ error: "Fabric type is required" });
+      }
+      
+      // Import the research function from our service
+      const { researchFabric } = await import('./services/anthropic-service');
+      
+      // Call the research function
+      const researchResult = await researchFabric({ 
+        fabricType, 
+        properties, 
+        region, 
+        sustainabilityFocus,
+        detailLevel
+      });
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "RESEARCH",
+        content: `Researched fabric: ${fabricType}`,
+        userId: user.id,
+        relatedType: "FABRIC_RESEARCH"
+      });
+      
+      // Check if this fabric type already exists
+      const existingFabricType = await storage.getFabricTypeByName(fabricType);
+      
+      // If it doesn't exist, create a new one with the research data
+      if (!existingFabricType) {
+        try {
+          const newFabricType = await storage.createFabricType({
+            name: researchResult.fabricType,
+            description: researchResult.description,
+            composition: researchResult.composition,
+            createdBy: user.id,
+            properties: researchResult.properties.map(p => ({
+              name: p.name,
+              value: p.value,
+              unit: p.unit || null,
+              description: p.description || null
+            })),
+            applications: researchResult.applications,
+            careInstructions: researchResult.careInstructions,
+            sustainabilityInfo: {
+              environmentalImpact: researchResult.sustainabilityInfo.environmentalImpact,
+              recyclability: researchResult.sustainabilityInfo.recyclability,
+              certifications: researchResult.sustainabilityInfo.certifications
+            },
+            manufacturingCosts: researchResult.manufacturingCosts.map(mc => ({
+              region: mc.region,
+              baseUnitCost: mc.baseUnitCost,
+              minOrderQuantity: mc.minOrderQuantity,
+              currency: mc.currency,
+              leadTime: mc.leadTime,
+              notes: mc.notes || null
+            })),
+            alternatives: researchResult.alternatives,
+            sources: researchResult.sources
+          });
+          
+          // Log the creation
+          await storage.createActivity({
+            type: "CREATE",
+            content: `Created new fabric type from research: ${newFabricType.name}`,
+            userId: user.id,
+            relatedId: newFabricType.id,
+            relatedType: "FABRIC_TYPE"
+          });
+          
+          // Add the new fabric type ID to the result
+          researchResult.savedTypeId = newFabricType.id;
+        } catch (err) {
+          console.error("Error saving researched fabric type:", err);
+          // We don't fail the whole request if saving fails
+        }
+      } else {
+        // Add the existing fabric type ID to the result
+        researchResult.savedTypeId = existingFabricType.id;
+      }
+      
+      res.json({ data: researchResult });
+    } catch (error: any) {
+      console.error("Error researching fabric:", error);
+      res.status(500).json({ error: error.message || "Failed to research fabric" });
+    }
+  });
+
+  // Analyze fabric compatibility with production methods
+  app.post("/api/fabric-compatibility-analysis", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      const { fabricType, productionMethod } = req.body;
+      
+      if (!fabricType || !productionMethod) {
+        return res.status(400).json({ 
+          error: "Both fabric type and production method are required" 
+        });
+      }
+      
+      // Import the analyze function from our service
+      const { analyzeFabricCompatibility } = await import('./services/anthropic-service');
+      
+      // Call the analyze function
+      const analysisResult = await analyzeFabricCompatibility(fabricType, productionMethod);
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "ANALYSIS",
+        content: `Analyzed compatibility of ${fabricType} with ${productionMethod}`,
+        userId: user.id,
+        relatedType: "FABRIC_COMPATIBILITY"
+      });
+      
+      // If compatible and we have a fabric type in the DB, create a compatibility record
+      if (analysisResult.isCompatible) {
+        const existingFabricType = await storage.getFabricTypeByName(fabricType);
+        if (existingFabricType) {
+          try {
+            const newCompatibility = await storage.createFabricCompatibility({
+              fabricTypeId: existingFabricType.id,
+              productionMethod,
+              isCompatible: true,
+              alternatives: analysisResult.alternatives || [],
+              considerations: analysisResult.considerations || [],
+              createdBy: user.id
+            });
+            
+            // Add the saved compatibility record ID to the result
+            analysisResult.savedCompatibilityId = newCompatibility.id;
+          } catch (err) {
+            console.error("Error saving compatibility record:", err);
+            // We don't fail the whole request if saving fails
+          }
+        }
+      }
+      
+      res.json({ data: analysisResult });
+    } catch (error: any) {
+      console.error("Error analyzing fabric compatibility:", error);
+      res.status(500).json({ error: error.message || "Failed to analyze compatibility" });
+    }
+  });
+
+  // Suggest fabrics based on product requirements
+  app.post("/api/fabric-suggestions", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      const { productType, properties, sustainabilityRequired, budget, region } = req.body;
+      
+      if (!productType || !properties || properties.length === 0) {
+        return res.status(400).json({ 
+          error: "Product type and at least one property are required" 
+        });
+      }
+      
+      // Import the suggest function from our service
+      const { suggestFabrics } = await import('./services/anthropic-service');
+      
+      // Call the suggest function
+      const suggestionsResult = await suggestFabrics({
+        productType,
+        properties,
+        sustainabilityRequired: !!sustainabilityRequired,
+        budget: budget || "medium",
+        region: region || "global"
+      });
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "SUGGESTION",
+        content: `Requested fabric suggestions for ${productType}`,
+        userId: user.id,
+        relatedType: "FABRIC_SUGGESTION"
+      });
+      
+      res.json({ data: suggestionsResult });
+    } catch (error: any) {
+      console.error("Error getting fabric suggestions:", error);
+      res.status(500).json({ error: error.message || "Failed to generate fabric suggestions" });
+    }
+  });
+
   return httpServer;
 }

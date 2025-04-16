@@ -1833,7 +1833,16 @@ const ProductManagementPage: FC = () => {
             {/* Fabrics Tab */}
             <TabsContent value="fabrics" className="mt-4">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Fabric Options</h2>
+                <div className="flex items-center gap-4">
+                  <h2 className="text-xl font-semibold">Fabric Options</h2>
+                  <Button 
+                    variant="outline" 
+                    className="gap-1"
+                    onClick={() => window.location.href = "/fabric-research-center"}
+                  >
+                    <Search className="h-4 w-4" /> Fabric Research Center
+                  </Button>
+                </div>
                 <Dialog open={addFabricOpen} onOpenChange={setAddFabricOpen}>
                   <DialogTrigger asChild>
                     <Button className="gap-1">

@@ -322,30 +322,27 @@ const AddCampForm = ({ onClose }: { onClose: () => void }) => {
     );
   };
   
-  // Sample staff data for testing before real API integration
-  const sampleStaffData = [
-    { id: 1, name: "John Smith", role: "Head Coach", rate: 200, rateType: "day", avatar: "" },
-    { id: 2, name: "Sarah Johnson", role: "Assistant Coach", rate: 150, rateType: "day", avatar: "" },
-    { id: 3, name: "Mike Williams", role: "Specialist", rate: 250, rateType: "day", avatar: "" },
-    { id: 4, name: "Emily Brown", role: "Athletic Trainer", rate: 180, rateType: "day", avatar: "" },
-    { id: 5, name: "David Lee", role: "Strength Coach", rate: 200, rateType: "day", avatar: "" }
-  ];
-  
-  // Fetch staff/clinicians from server (commented out until API is ready)
-  /*
-  const { data: staffData = [], isLoading: staffLoading } = useQuery({
+  // Fetch staff/clinicians from server
+  const { 
+    data: staffData = [], 
+    isLoading: staffLoading,
+    error: staffError
+  } = useQuery({
     queryKey: ['/api/staff'],
     queryFn: async () => {
       const response = await fetch('/api/staff');
       if (!response.ok) throw new Error('Failed to fetch staff data');
-      return response.json();
+      const data = await response.json();
+      
+      // Map staff from API to include rate and rateType properties
+      return (data.data || []).map((staff: any) => ({
+        ...staff,
+        rate: staff.payRate || 0,
+        rateType: staff.payType || 'day',
+        avatar: '' // Add empty avatar since UI expects it
+      }));
     },
   });
-  */
-  
-  // Use sample data for now
-  const staffData = sampleStaffData;
-  const staffLoading = false;
   
   const form = useForm({
     defaultValues: {

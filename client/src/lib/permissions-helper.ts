@@ -20,6 +20,7 @@ export function getDefaultVisiblePages(role: string): string[] {
         "user-management",
         "design-communication",
         "production-communication",
+        "communication-center",
         "feedback",
         "outlook"
       ];

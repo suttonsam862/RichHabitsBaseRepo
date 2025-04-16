@@ -326,14 +326,14 @@ export const camps = pgTable('camps', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
   type: text('type').notNull(),
-  clinician: text('clinician').notNull(),
+  clinician: text('clinician'),  // Changed to not required since we use line items now
   startDate: text('start_date').notNull(),
   endDate: text('end_date').notNull(),
-  totalDays: integer('total_days').notNull(),
+  totalDays: integer('total_days'),  // Made optional since we can calculate it
   venue: text('venue').notNull(),
   address: text('address').notNull(),
-  participants: integer('participants').notNull(),
-  campCost: numeric('camp_cost').notNull(),
+  participants: integer('participants'),  // Made optional since it may be filled later
+  campCost: numeric('camp_cost'),        // Made optional since it may be filled later
   selloutCost: numeric('sellout_cost'),
   staffCount: integer('staff_count').default(0),
   vendorCount: integer('vendor_count').default(0),

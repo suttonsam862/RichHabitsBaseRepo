@@ -21,6 +21,13 @@ import {
   feedbackVotes,
   outlookIntegrations,
   events,
+  camps,
+  campTasks,
+  campStaffAssignments,
+  campScheduleItems,
+  campFinancials,
+  travelArrangements,
+  accommodations,
   insertLeadSchema, 
   insertOrderSchema, 
   insertMessageSchema,
@@ -4020,7 +4027,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Update camp tasks
+  // Update camp tasks - using the new camp_tasks table
   app.put("/api/camps/:id/tasks", async (req, res) => {
     try {
       // Check if the user is authenticated
@@ -4045,21 +4052,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Camp not found" });
       }
       
-      const tasksData = req.body;
+      const { tasks } = req.body;
       
-      const updatedCamp = await storage.updateCampTasks(campId, tasksData);
+      if (!Array.isArray(tasks)) {
+        return res.status(400).json({ error: "Tasks must be an array" });
+      }
       
-      // Log the activity
-      await storage.createActivity({
-        userId: user.id,
-        username: user.fullName || user.username,
-        action: 'UPDATE',
-        resourceType: 'CAMP_TASKS',
-        resourceId: campId,
-        details: `Updated tasks for camp: ${existingCamp.name}`
+      // First, delete any existing tasks for this camp
+      await db.delete(campTasks).where(eq(campTasks.campId, campId));
+      
+      // Then add the new tasks
+      for (const task of tasks) {
+        // Basic validation
+        if (!task.name) {
+          continue; // Skip invalid tasks
+        }
+        
+        // Create the task
+        await db.insert(campTasks).values({
+          campId,
+          name: task.name,
+          description: task.description || '',
+          status: task.status || 'not-started',
+          dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
+          assignedTo: task.assignedTo || null,
+          priority: task.priority || 'medium'
+        });
+      }
+      
+      // Get all tasks for the camp
+      const campTasksList = await db.select()
+        .from(campTasks)
+        .where(eq(campTasks.campId, campId));
+      
+      // Get the updated camp data
+      const updatedCamp = await storage.getCampById(campId);
+      
+      res.status(200).json({
+        camp: updatedCamp,
+        tasks: campTasksList
       });
-      
-      res.status(200).json(updatedCamp);
     } catch (error) {
       console.error(`Error updating camp tasks:`, error);
       res.status(500).json({ error: "Failed to update camp tasks" });

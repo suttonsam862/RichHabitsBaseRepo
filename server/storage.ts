@@ -2020,66 +2020,69 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async assignStaffToCamp(campId: number, staffAssignments: any): Promise<Camp> {
+  async assignStaffToCamp(campId: number, staffAssignments: any[]): Promise<Camp> {
     try {
+      // 1. First, get the camp to make sure it exists
+      const [camp] = await db
+        .select()
+        .from(camps)
+        .where(eq(camps.id, campId));
+      
+      if (!camp) {
+        throw new Error(`Camp with ID ${campId} not found`);
+      }
+      
+      // 2. Clear all existing staff assignments for this camp
+      await db
+        .delete(campStaffAssignments)
+        .where(eq(campStaffAssignments.campId, campId));
+      
+      // 3. Create new staff assignments
+      for (const assignment of staffAssignments) {
+        const { staffId, role = 'clinician', payAmount } = assignment;
+        
+        if (!staffId) continue; // Skip invalid assignments
+        
+        // Check if staff exists
+        const [staffMember] = await db
+          .select()
+          .from(staffMembers)
+          .where(eq(staffMembers.id, staffId));
+        
+        if (!staffMember) continue; // Skip if staff doesn't exist
+        
+        // Determine the pay amount - use the provided amount or fall back to staff's default rate
+        const staffPayAmount = payAmount !== undefined ? 
+          parseFloat(payAmount) : 
+          (staffMember.rate ? parseFloat(staffMember.rate.toString()) : 0);
+        
+        // Create the staff assignment
+        await db.insert(campStaffAssignments).values({
+          campId,
+          staffId,
+          role,
+          payAmount: staffPayAmount,
+          assignedAt: new Date()
+        });
+      }
+      
+      // 4. Update the camp's staff count
+      const staffCount = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(campStaffAssignments)
+        .where(eq(campStaffAssignments.campId, campId));
+      
+      // 5. Update the camp record with the new staff count
       const [updatedCamp] = await db
         .update(camps)
         .set({ 
-          staffAssignments,
-          staffCount: staffAssignments.length,
+          staffCount: Number(staffCount[0]?.count || 0),
           updatedAt: new Date() 
         })
         .where(eq(camps.id, campId))
         .returning();
       
-      // Also update the assigned staff members' campAssignments
-      for (const assignment of staffAssignments) {
-        const staffId = assignment.staffId;
-        if (staffId) {
-          // Get the staff member
-          const [staffMember] = await db
-            .select()
-            .from(staffMembers)
-            .where(eq(staffMembers.id, staffId));
-          
-          if (staffMember) {
-            // Get existing camp assignments or initialize empty array
-            const existingAssignments = staffMember.campAssignments || [];
-            
-            // Check if this camp is already assigned
-            const existingIndex = existingAssignments.findIndex(
-              (a: any) => a.campId === campId
-            );
-            
-            if (existingIndex >= 0) {
-              // Update existing assignment
-              existingAssignments[existingIndex] = {
-                campId,
-                campName: updatedCamp.name,
-                role: assignment.role
-              };
-            } else {
-              // Add new assignment
-              existingAssignments.push({
-                campId,
-                campName: updatedCamp.name,
-                role: assignment.role
-              });
-            }
-            
-            // Update the staff member's camp assignments
-            await db
-              .update(staffMembers)
-              .set({ 
-                campAssignments: existingAssignments as any,
-                updatedAt: new Date()
-              })
-              .where(eq(staffMembers.id, staffId));
-          }
-        }
-      }
-      
-      console.log(`Assigned staff to camp ${campId}:`, staffAssignments);
+      console.log(`Assigned ${staffAssignments.length} staff to camp ${campId}`);
       return updatedCamp;
     } catch (error) {
       console.error(`Error assigning staff to camp ${campId}:`, error);

@@ -806,6 +806,7 @@ export const fabricTypes = pgTable('fabric_types', {
   alternatives: json('alternatives').$type<string[]>(),
   sources: json('sources').$type<string[]>(),
   imageUrl: text('image_url'),
+  isPublished: boolean('is_published').default(true),
   createdBy: integer('created_by').references(() => users.id),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at'),
@@ -823,6 +824,53 @@ export const fabricCompatibilities = pgTable('fabric_compatibilities', {
   updatedAt: timestamp('updated_at'),
 });
 
+// Sewing Patterns
+export const sewingPatterns = pgTable('sewing_patterns', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  type: text('type').notNull(), // shirt, pants, jersey, etc.
+  description: text('description').notNull(),
+  referenceImageUrl: text('reference_image_url'),
+  measurements: json('measurements').$type<{
+    name: string;
+    value: string;
+    unit: string;
+    isRequired: boolean;
+    description?: string;
+  }[]>(),
+  complexity: text('complexity').default('medium'), // easy, medium, complex
+  estimatedTime: text('estimated_time'),
+  materialRequirements: json('material_requirements').$type<{
+    fabricType: string;
+    amount: string;
+    unit: string;
+  }[]>(),
+  compatibleFabrics: json('compatible_fabrics').$type<string[]>(),
+  source: text('source'),
+  isPublished: boolean('is_published').default(true),
+  createdBy: integer('created_by').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at'),
+});
+
+// Product Suggestions
+export const productSuggestions = pgTable('product_suggestions', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  patternId: integer('pattern_id').references(() => sewingPatterns.id),
+  fabricTypeId: integer('fabric_type_id').references(() => fabricTypes.id),
+  imageUrl: text('image_url'),
+  estimatedCost: numeric('estimated_cost'),
+  popularity: text('popularity').default('medium'), // low, medium, high
+  difficulty: text('difficulty').default('medium'), // easy, medium, complex
+  tags: json('tags').$type<string[]>(),
+  isAdded: boolean('is_added').default(false),
+  createdBy: integer('created_by').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at'),
+});
+
 export const insertFabricTypeSchema = createInsertSchema(fabricTypes).omit({ 
   id: true, 
   createdAt: true, 
@@ -835,7 +883,23 @@ export const insertFabricCompatibilitySchema = createInsertSchema(fabricCompatib
   updatedAt: true 
 });
 
+export const insertSewingPatternSchema = createInsertSchema(sewingPatterns).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertProductSuggestionSchema = createInsertSchema(productSuggestions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
 export type InsertFabricType = z.infer<typeof insertFabricTypeSchema>;
 export type InsertFabricCompatibility = z.infer<typeof insertFabricCompatibilitySchema>;
+export type InsertSewingPattern = z.infer<typeof insertSewingPatternSchema>;
+export type InsertProductSuggestion = z.infer<typeof insertProductSuggestionSchema>;
 export type FabricType = typeof fabricTypes.$inferSelect;
 export type FabricCompatibility = typeof fabricCompatibilities.$inferSelect;
+export type SewingPattern = typeof sewingPatterns.$inferSelect;
+export type ProductSuggestion = typeof productSuggestions.$inferSelect;

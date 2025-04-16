@@ -135,11 +135,13 @@ export default function FabricResearchCenter() {
         </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-4 w-full max-w-3xl mb-4">
+          <TabsList className="grid grid-cols-6 w-full max-w-5xl mb-4">
             <TabsTrigger value="library">Fabric Library</TabsTrigger>
-            <TabsTrigger value="research">AI Research</TabsTrigger>
-            <TabsTrigger value="compatibility">Compatibility Analysis</TabsTrigger>
-            <TabsTrigger value="suggestions">Product Suggestions</TabsTrigger>
+            <TabsTrigger value="unpublished">Unpublished</TabsTrigger>
+            <TabsTrigger value="research">Fabric Research</TabsTrigger>
+            <TabsTrigger value="patterns">Pattern Research</TabsTrigger>
+            <TabsTrigger value="compatibility">Compatibility</TabsTrigger>
+            <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
           </TabsList>
           
           {/* Fabric Library Tab */}

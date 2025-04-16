@@ -223,6 +223,26 @@ const ProductForm: FC<ProductFormProps> = ({
     queryKey: ['/api/fabric-cuts'],
     select: (data: any) => data?.data || [],
   });
+  
+  // Get unique item types from existing products
+  const { data: existingProducts = [] } = useQuery<Product[]>({
+    queryKey: ['/api/products'],
+    select: (data: any) => data?.data || [],
+  });
+  
+  // Extract unique product groups
+  const [productGroups, setProductGroups] = useState<string[]>([]);
+  const [newGroup, setNewGroup] = useState("");
+  const [showNewGroupInput, setShowNewGroupInput] = useState(false);
+  
+  useEffect(() => {
+    if (existingProducts?.length) {
+      const uniqueGroups = Array.from(
+        new Set(existingProducts.map(product => product.item).filter(Boolean))
+      );
+      setProductGroups(uniqueGroups as string[]);
+    }
+  }, [existingProducts]);
 
   // For selecting a fabric option
   const [selectedFabricOption, setSelectedFabricOption] = useState<string | null>(null);

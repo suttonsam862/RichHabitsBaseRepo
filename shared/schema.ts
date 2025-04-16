@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, numeric, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, numeric, json, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -412,6 +412,8 @@ export const designProjects = pgTable('design_projects', {
 export const staffMembers = pgTable('staff_members', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
   role: text('role').notNull(),
   email: text('email'),
   phone: text('phone'),
@@ -609,3 +611,23 @@ export type Event = typeof events.$inferSelect;
 export const insertCampSchema = createInsertSchema(camps).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertCamp = z.infer<typeof insertCampSchema>;
 export type Camp = typeof camps.$inferSelect;
+
+// Junction table for camps and staff members
+export const campStaffAssignments = pgTable('camp_staff_assignments', {
+  id: serial('id').primaryKey(),
+  campId: integer('camp_id').notNull().references(() => camps.id, { onDelete: 'cascade' }),
+  staffId: integer('staff_id').notNull().references(() => staffMembers.id, { onDelete: 'cascade' }),
+  role: text('role').default('clinician'),
+  payAmount: numeric('pay_amount').default('0'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => {
+  return {
+    campStaffUnique: uniqueIndex('camp_staff_unique_idx').on(table.campId, table.staffId),
+  };
+});
+
+export const insertCampStaffAssignmentSchema = createInsertSchema(campStaffAssignments).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCampStaffAssignment = z.infer<typeof insertCampStaffAssignmentSchema>;
+export type CampStaffAssignment = typeof campStaffAssignments.$inferSelect;

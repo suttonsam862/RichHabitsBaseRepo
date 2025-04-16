@@ -257,6 +257,12 @@ export interface IStorage {
   createCamp(camp: InsertCamp): Promise<Camp>;
   updateCamp(id: number, camp: Partial<InsertCamp>): Promise<Camp>;
   deleteCamp(id: number): Promise<void>;
+  
+  // Camp-Staff methods
+  getCampStaff(campId: number): Promise<StaffMember[]>;
+  getStaffById(staffId: number): Promise<StaffMember | undefined>;
+  addStaffToCamp(campId: number, staffId: number): Promise<CampStaffAssignment>;
+  removeStaffFromCamp(campId: number, staffId: number): Promise<void>;
   updateCampSchedule(id: number, schedule: any): Promise<Camp>;
   updateCampTasks(id: number, tasks: any): Promise<Camp>;
   assignStaffToCamp(campId: number, staffAssignments: any): Promise<Camp>;

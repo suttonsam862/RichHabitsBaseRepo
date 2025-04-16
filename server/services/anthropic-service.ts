@@ -65,6 +65,49 @@ export interface FabricSuggestionRequest {
   sustainability?: boolean;
 }
 
+export interface PatternResearchRequest {
+  name: string;
+  type: string;
+  description?: string;
+}
+
+export interface PatternMeasurement {
+  name: string;
+  value: string;
+  unit: string;
+  required: boolean;
+  description?: string;
+}
+
+export interface PatternResearchResult {
+  name: string;
+  type: string;
+  description: string;
+  complexity: 'beginner' | 'intermediate' | 'advanced';
+  measurements: PatternMeasurement[];
+  materialRequirements: {
+    primaryFabric: {
+      type: string;
+      amount: string;
+      unit: string;
+    };
+    secondaryFabrics?: {
+      type: string;
+      amount: string;
+      unit: string;
+    }[];
+    notions: {
+      name: string;
+      quantity: string;
+      description?: string;
+    }[];
+  };
+  suitableFabrics: string[];
+  instructions?: string[];
+  tips?: string[];
+  referenceImageUrl?: string;
+}
+
 export class AnthropicService {
   /**
    * Research fabric properties and details
@@ -284,6 +327,93 @@ Provide practical, industry-standard fabrics that are actually used for this typ
     }
   }
 
+  /**
+   * Research pattern information and detailed measurements
+   */
+  async researchPattern(
+    name: string,
+    type: string,
+    description?: string
+  ): Promise<PatternResearchResult> {
+    const systemPrompt = `You are a Pattern Research Assistant with expertise in sewing patterns, garment construction, and fashion design. 
+Your task is to research and provide detailed, factual information about clothing patterns.
+Always format your response as a valid JSON object without markdown formatting.`;
+
+    let userPrompt = `Research the sewing pattern: "${name}" (Pattern type: ${type})`;
+    
+    if (description) {
+      userPrompt += `\nAdditional description: ${description}`;
+    }
+    
+    userPrompt += `\n
+Return your findings in the following JSON format:
+{
+  "name": "Name of the pattern",
+  "type": "Type of pattern (e.g., dress, shirt, pants)",
+  "description": "Detailed description of the pattern",
+  "complexity": "beginner/intermediate/advanced",
+  "measurements": [
+    {
+      "name": "Measurement name",
+      "value": "Typical value or range",
+      "unit": "Unit of measurement",
+      "required": true/false,
+      "description": "What this measurement is used for"
+    }
+  ],
+  "materialRequirements": {
+    "primaryFabric": {
+      "type": "Recommended fabric type",
+      "amount": "Amount needed",
+      "unit": "Unit of measurement"
+    },
+    "secondaryFabrics": [
+      {
+        "type": "Additional fabric type",
+        "amount": "Amount needed",
+        "unit": "Unit of measurement"
+      }
+    ],
+    "notions": [
+      {
+        "name": "Notion name (e.g., buttons, zipper)",
+        "quantity": "Amount needed",
+        "description": "Specific details"
+      }
+    ]
+  },
+  "suitableFabrics": ["Fabric 1", "Fabric 2", ...],
+  "instructions": ["Step 1", "Step 2", ...],
+  "tips": ["Tip 1", "Tip 2", ...],
+  "referenceImageUrl": "URL to a reference image (leave empty)"
+}
+
+Ensure all measurements are accurate and typical for this pattern type. Include detailed material requirements, notions, and a comprehensive set of suitable fabrics.`;
+
+    // Make the request to Anthropic
+    try {
+      const response = await anthropic.messages.create({
+        model: CURRENT_MODEL,
+        system: systemPrompt,
+        max_tokens: 4000,
+        temperature: 0.2,
+        messages: [{ role: 'user', content: userPrompt }],
+      });
+
+      // Extract the text content from the response
+      const contentBlock = response.content[0];
+      const content = 'text' in contentBlock ? contentBlock.text : '';
+      
+      // Parse the JSON response
+      const result = JSON.parse(content) as PatternResearchResult;
+      
+      return result;
+    } catch (error) {
+      console.error('Anthropic API error:', error);
+      throw new Error(`Failed to research pattern: ${(error as Error).message}`);
+    }
+  }
+  
   /**
    * Convert AI research result to database schema format
    */

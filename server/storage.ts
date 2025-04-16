@@ -1778,35 +1778,65 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createCamp(camp: InsertCamp): Promise<Camp> {
+  async createCamp(camp: any): Promise<any> {
     try {
-      // Calculate selloutCost based on participants and campCost
-      if (camp.participants && camp.campCost && !camp.selloutCost) {
-        const participantsNum = typeof camp.participants === 'string' 
-          ? parseFloat(camp.participants as string) 
-          : camp.participants;
+      // Ensure all required fields are present
+      if (!camp.name) throw new Error("Camp name is required");
+      if (!camp.type) throw new Error("Camp type is required");
+      if (!camp.startDate) throw new Error("Start date is required");
+      if (!camp.endDate) throw new Error("End date is required");
+      if (!camp.venue) throw new Error("Venue is required");
+      if (!camp.address) throw new Error("Address is required");
+      
+      // Set default values for optional fields if not provided
+      const campData = {
+        name: camp.name,
+        type: camp.type,
+        startDate: camp.startDate,
+        endDate: camp.endDate,
+        venue: camp.venue,
+        address: camp.address,
+        status: camp.status || 'upcoming',
         
-        const campCostNum = typeof camp.campCost === 'string'
-          ? parseFloat(camp.campCost as string)
-          : camp.campCost;
+        // Optional fields
+        clinician: camp.clinician || null,
+        participants: camp.participants || 0,
+        campCost: camp.campCost || 0,
+        createdBy: camp.createdBy || null,
+        notes: camp.notes || null
+      };
+      
+      // Calculate selloutCost based on participants and campCost
+      if (campData.participants && campData.campCost) {
+        const participantsNum = typeof campData.participants === 'string' 
+          ? parseFloat(campData.participants as string) 
+          : campData.participants;
+        
+        const campCostNum = typeof campData.campCost === 'string'
+          ? parseFloat(campData.campCost as string)
+          : campData.campCost;
           
         if (!isNaN(participantsNum) && !isNaN(campCostNum)) {
-          camp.selloutCost = (participantsNum * campCostNum).toString();
+          campData.selloutCost = (participantsNum * campCostNum).toString();
         }
+      } else {
+        campData.selloutCost = '0';
       }
       
       // Calculate totalDays if not provided
-      if (camp.startDate && camp.endDate && !camp.totalDays) {
-        const startDate = new Date(camp.startDate);
-        const endDate = new Date(camp.endDate);
+      if (campData.startDate && campData.endDate) {
+        const startDate = new Date(campData.startDate);
+        const endDate = new Date(campData.endDate);
         const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
-        camp.totalDays = diffDays;
+        campData.totalDays = diffDays;
       }
 
+      console.log('Attempting to create camp with data:', campData);
+      
       const [newCamp] = await db
         .insert(camps)
-        .values(camp as any)
+        .values(campData)
         .returning();
       console.log('Created new camp:', newCamp);
       return newCamp;

@@ -771,10 +771,10 @@ export default function CampDetailPage() {
                                   >
                                     <div className="flex items-center gap-3">
                                       <Avatar>
-                                        <AvatarFallback>{staff.firstName?.[0]}{staff.lastName?.[0]}</AvatarFallback>
+                                        <AvatarFallback>{staff.name ? staff.name.charAt(0) : '?'}</AvatarFallback>
                                       </Avatar>
                                       <div>
-                                        <p className="font-medium">{staff.firstName} {staff.lastName}</p>
+                                        <p className="font-medium">{staff.name}</p>
                                         <p className="text-sm text-muted-foreground">{staff.role || 'Clinician'}</p>
                                       </div>
                                     </div>
@@ -814,10 +814,10 @@ export default function CampDetailPage() {
                           >
                             <div className="flex items-center gap-3">
                               <Avatar>
-                                <AvatarFallback>{staff.firstName?.[0]}{staff.lastName?.[0]}</AvatarFallback>
+                                <AvatarFallback>{staff.name ? staff.name.charAt(0) : '?'}</AvatarFallback>
                               </Avatar>
                               <div>
-                                <p className="font-medium">{staff.firstName} {staff.lastName}</p>
+                                <p className="font-medium">{staff.name}</p>
                                 <p className="text-sm text-muted-foreground">{staff.role || 'Clinician'}</p>
                               </div>
                             </div>
@@ -875,10 +875,10 @@ export default function CampDetailPage() {
                         >
                           <div className="flex items-center gap-3">
                             <Avatar>
-                              <AvatarFallback>{staff.firstName?.[0]}{staff.lastName?.[0]}</AvatarFallback>
+                              <AvatarFallback>{staff.name ? staff.name.charAt(0) : '?'}</AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-medium">{staff.firstName} {staff.lastName}</p>
+                              <p className="font-medium">{staff.name}</p>
                               <p className="text-sm text-muted-foreground">{staff.role || 'Clinician'}</p>
                             </div>
                           </div>
@@ -886,7 +886,7 @@ export default function CampDetailPage() {
                             variant="outline" 
                             size="sm"
                             onClick={() => {
-                              if (confirm(`Remove ${staff.firstName} ${staff.lastName} from this camp?`)) {
+                              if (confirm(`Remove ${staff.name} from this camp?`)) {
                                 removeStaffFromCampMutation.mutate(staff.id);
                               }
                             }}

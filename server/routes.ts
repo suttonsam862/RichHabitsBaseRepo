@@ -3594,6 +3594,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // CAMP MANAGEMENT ENDPOINTS
   
+  // Camp Staff Bulk Assignment Endpoint
+  app.post("/api/camps/:id/staff-assignments", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Only admin can assign staff to camps
+      const user = req.user as User;
+      if (user.role !== 'admin') {
+        return res.status(403).json({ error: "Unauthorized access" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: "Invalid camp ID" });
+      }
+      
+      // Check if camp exists
+      const existingCamp = await storage.getCampById(campId);
+      if (!existingCamp) {
+        return res.status(404).json({ error: "Camp not found" });
+      }
+      
+      const { staffAssignments } = req.body;
+      
+      if (!Array.isArray(staffAssignments) || staffAssignments.length === 0) {
+        return res.status(400).json({ error: "Staff assignments must be a non-empty array" });
+      }
+      
+      // Validate each assignment has the required fields
+      for (const assignment of staffAssignments) {
+        if (!assignment.staffId) {
+          return res.status(400).json({ error: "Each staff assignment must have a staffId" });
+        }
+      }
+      
+      try {
+        // Process the staff assignments
+        const updatedCamp = await storage.assignStaffToCamp(campId, staffAssignments);
+        
+        // Log the activity
+        await storage.createActivity({
+          type: 'user',
+          content: `Updated staff assignments for camp: ${existingCamp.name}`,
+          userId: user.id,
+          relatedId: campId,
+          relatedType: 'camp'
+        });
+        
+        // Get the updated staff list
+        const campStaff = await storage.getCampStaff(campId);
+        
+        res.status(200).json({
+          success: true,
+          camp: updatedCamp,
+          staff: campStaff
+        });
+      } catch (error) {
+        console.error("Error assigning staff to camp:", error);
+        res.status(500).json({ error: "Failed to assign staff to camp" });
+      }
+    } catch (error) {
+      console.error("Error in staff assignments endpoint:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Get all camps
   app.get("/api/camps", async (req, res) => {
     try {
@@ -3860,6 +3929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Update camp schedule
+  // New endpoint to handle camp schedules with the new schema
   app.put("/api/camps/:id/schedule", async (req, res) => {
     try {
       // Check if the user is authenticated
@@ -3884,9 +3954,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Camp not found" });
       }
       
-      const scheduleData = req.body;
+      const { scheduleItems } = req.body;
       
-      const updatedCamp = await storage.updateCampSchedule(campId, scheduleData);
+      if (!Array.isArray(scheduleItems)) {
+        return res.status(400).json({ error: "Schedule items must be an array" });
+      }
+      
+      // First, delete any existing schedule items for this camp
+      await db.delete(campScheduleItems).where(eq(campScheduleItems.campId, campId));
+      
+      // Then add the new schedule items
+      for (const item of scheduleItems) {
+        // Basic validation
+        if (!item.dayNumber || !item.activity || !item.startTime || !item.endTime) {
+          continue; // Skip invalid items
+        }
+        
+        // Create the schedule item
+        await db.insert(campScheduleItems).values({
+          campId,
+          dayNumber: item.dayNumber,
+          startTime: item.startTime,
+          endTime: item.endTime,
+          activity: item.activity,
+          location: item.location || '',
+          staffId: item.staffId || null,
+          notes: item.notes || ''
+        });
+      }
+      
+      // Get all schedule items for the camp
+      const schedule = await db.select()
+        .from(campScheduleItems)
+        .where(eq(campScheduleItems.campId, campId))
+        .orderBy(campScheduleItems.dayNumber, campScheduleItems.startTime);
+      
+      // Mark the camp as having a schedule
+      await db.update(camps)
+        .set({ 
+          hasSchedule: true, 
+          updatedAt: new Date() 
+        })
+        .where(eq(camps.id, campId));
       
       // Log the activity
       await storage.createActivity({
@@ -3898,7 +4007,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         details: `Updated schedule for camp: ${existingCamp.name}`
       });
       
-      res.status(200).json(updatedCamp);
+      // Get the updated camp data
+      const updatedCamp = await storage.getCampById(campId);
+      
+      res.status(200).json({
+        camp: updatedCamp,
+        schedule
+      });
     } catch (error) {
       console.error(`Error updating camp schedule:`, error);
       res.status(500).json({ error: "Failed to update camp schedule" });

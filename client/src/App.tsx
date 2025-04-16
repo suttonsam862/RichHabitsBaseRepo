@@ -22,6 +22,7 @@ import Catalog from "./pages/catalog";
 import Corporate from "./pages/corporate";
 import DesignCommunication from "./pages/design-communication";
 import ProductionCommunication from "./pages/production-communication";
+import CommunicationCenter from "./pages/communication-center";
 import Feedback from "./pages/feedback";
 import Outlook from "./pages/outlook";
 import SalesProcessGuide from "./pages/sales-process-guide";

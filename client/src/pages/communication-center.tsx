@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import DesignCommunication from "./design-communication";
+import DesignCommunicationPage from "./design-communication";
 import ProductionCommunication from "./production-communication";
 
 export default function CommunicationCenter() {
@@ -38,7 +38,7 @@ export default function CommunicationCenter() {
             </CardHeader>
             <CardContent className="pt-6 px-0">
               <div className="design-communication-wrapper">
-                <DesignCommunication isEmbedded={true} />
+                <DesignCommunicationPage isEmbedded={true} />
               </div>
             </CardContent>
           </Card>

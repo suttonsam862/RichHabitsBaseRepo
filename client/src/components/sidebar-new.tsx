@@ -32,7 +32,8 @@ import {
   PackageOpen,
   MessageCircle,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Mail
 } from "lucide-react";
 
 interface SidebarProps {

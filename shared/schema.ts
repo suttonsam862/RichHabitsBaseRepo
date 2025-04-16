@@ -775,3 +775,67 @@ export type CampFinancials = typeof campFinancials.$inferSelect;
 export type CampScheduleItem = typeof campScheduleItems.$inferSelect;
 export type CampVendorAssignment = typeof campVendorAssignments.$inferSelect;
 export type CampTask = typeof campTasks.$inferSelect;
+
+// Fabric Research Schema
+export const fabricTypes = pgTable('fabric_types', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  composition: json('composition').$type<string[]>(),
+  properties: json('properties').$type<{
+    name: string;
+    value: string;
+    description?: string;
+    unit?: string;
+  }[]>(),
+  applications: json('applications').$type<string[]>(),
+  manufacturingCosts: json('manufacturing_costs').$type<{
+    region: string;
+    baseUnitCost: number;
+    minOrderQuantity: number;
+    currency: string;
+    leadTime: string;
+    notes?: string;
+  }[]>(),
+  sustainabilityInfo: json('sustainability_info').$type<{
+    environmentalImpact: string;
+    recyclability: string;
+    certifications: string[];
+  }>(),
+  careInstructions: json('care_instructions').$type<string[]>(),
+  alternatives: json('alternatives').$type<string[]>(),
+  sources: json('sources').$type<string[]>(),
+  imageUrl: text('image_url'),
+  createdBy: integer('created_by').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at'),
+});
+
+export const fabricCompatibilities = pgTable('fabric_compatibilities', {
+  id: serial('id').primaryKey(),
+  fabricTypeId: integer('fabric_type_id').references(() => fabricTypes.id),
+  productionMethod: text('production_method').notNull(),
+  isCompatible: boolean('is_compatible').notNull(),
+  reasons: json('reasons').$type<string[]>(),
+  alternatives: json('alternatives').$type<string[]>(),
+  createdBy: integer('created_by').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at'),
+});
+
+export const insertFabricTypeSchema = createInsertSchema(fabricTypes).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
+});
+
+export const insertFabricCompatibilitySchema = createInsertSchema(fabricCompatibilities).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
+});
+
+export type InsertFabricType = z.infer<typeof insertFabricTypeSchema>;
+export type InsertFabricCompatibility = z.infer<typeof insertFabricCompatibilitySchema>;
+export type FabricType = typeof fabricTypes.$inferSelect;
+export type FabricCompatibility = typeof fabricCompatibilities.$inferSelect;

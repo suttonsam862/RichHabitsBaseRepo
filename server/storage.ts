@@ -28,6 +28,8 @@ import {
   campTasks,
   travelArrangements,
   accommodations,
+  fabricTypes,
+  fabricCompatibilities,
   financialTransactions,
   campFinancials,
   campVendorAssignments,
@@ -83,7 +85,11 @@ import {
   type Camp,
   type InsertCamp,
   type CampStaffAssignment,
-  type InsertCampStaffAssignment
+  type InsertCampStaffAssignment,
+  type FabricType,
+  type InsertFabricType,
+  type FabricCompatibility,
+  type InsertFabricCompatibility
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, or, isNull, asc, inArray } from "drizzle-orm";
@@ -169,6 +175,21 @@ export interface IStorage {
   createFabricOption(option: InsertFabricOption): Promise<FabricOption>;
   updateFabricOption(id: number, option: Partial<InsertFabricOption>): Promise<FabricOption>;
   deleteFabricOption(id: number): Promise<void>;
+  
+  // Fabric Research Center methods
+  getFabricTypes(): Promise<FabricType[]>;
+  getFabricTypeById(id: number): Promise<FabricType | undefined>;
+  getFabricTypeByName(name: string): Promise<FabricType | undefined>;
+  createFabricType(fabricType: InsertFabricType): Promise<FabricType>;
+  updateFabricType(id: number, fabricType: Partial<InsertFabricType>): Promise<FabricType>;
+  deleteFabricType(id: number): Promise<void>;
+  
+  getFabricCompatibilities(): Promise<FabricCompatibility[]>;
+  getFabricCompatibilitiesByFabricType(fabricTypeId: number): Promise<FabricCompatibility[]>;
+  getFabricCompatibility(id: number): Promise<FabricCompatibility | undefined>;
+  createFabricCompatibility(compatibility: InsertFabricCompatibility): Promise<FabricCompatibility>;
+  updateFabricCompatibility(id: number, compatibility: Partial<InsertFabricCompatibility>): Promise<FabricCompatibility>;
+  deleteFabricCompatibility(id: number): Promise<void>;
   
   // Fabric Cuts methods
   getFabricCuts(): Promise<FabricCut[]>;

@@ -3945,7 +3945,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only admin can update camp schedules
-      const user = req.user as User;
+      const user = req.user as any;
       if (user.role !== 'admin') {
         return res.status(403).json({ error: "Unauthorized access" });
       }
@@ -3968,6 +3968,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // First, delete any existing schedule items for this camp
+      // Use direct DB access for bulk deletion as we don't have a storage method for this yet
       await db.delete(campScheduleItems).where(eq(campScheduleItems.campId, campId));
       
       // Then add the new schedule items
@@ -3977,8 +3978,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue; // Skip invalid items
         }
         
-        // Create the schedule item
-        await db.insert(campScheduleItems).values({
+        // Create the schedule item using our storage method
+        await storage.addCampScheduleItem({
           campId,
           dayNumber: item.dayNumber,
           startTime: item.startTime,
@@ -3990,28 +3991,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Get all schedule items for the camp
-      const schedule = await db.select()
-        .from(campScheduleItems)
-        .where(eq(campScheduleItems.campId, campId))
-        .orderBy(campScheduleItems.dayNumber, campScheduleItems.startTime);
-      
-      // Mark the camp as having a schedule
-      await db.update(camps)
-        .set({ 
-          hasSchedule: true, 
-          updatedAt: new Date() 
-        })
-        .where(eq(camps.id, campId));
+      // Get all schedule items for the camp using our storage method
+      const schedule = await storage.getCampScheduleItems(campId);
       
       // Log the activity
       await storage.createActivity({
+        type: 'UPDATE',
+        content: `Updated schedule for camp: ${existingCamp.name}`,
         userId: user.id,
-        username: user.fullName || user.username,
-        action: 'UPDATE',
-        resourceType: 'CAMP_SCHEDULE',
-        resourceId: campId,
-        details: `Updated schedule for camp: ${existingCamp.name}`
+        relatedId: campId,
+        relatedType: 'CAMP_SCHEDULE'
       });
       
       // Get the updated camp data
@@ -4036,7 +4025,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only admin can update camp tasks
-      const user = req.user as User;
+      const user = req.user as any;
       if (user.role !== 'admin') {
         return res.status(403).json({ error: "Unauthorized access" });
       }
@@ -4059,17 +4048,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // First, delete any existing tasks for this camp
+      // Using direct DB access for bulk deletion as we don't have a storage method for this
       await db.delete(campTasks).where(eq(campTasks.campId, campId));
       
-      // Then add the new tasks
+      // Then add the new tasks using our storage methods
       for (const task of tasks) {
         // Basic validation
         if (!task.name) {
           continue; // Skip invalid tasks
         }
         
-        // Create the task
-        await db.insert(campTasks).values({
+        // Create the task using our storage method
+        await storage.addCampTask({
           campId,
           name: task.name,
           description: task.description || '',
@@ -4080,10 +4070,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Get all tasks for the camp
-      const campTasksList = await db.select()
-        .from(campTasks)
-        .where(eq(campTasks.campId, campId));
+      // Get all tasks for the camp using our storage method
+      const campTasksList = await storage.getCampTasks(campId);
+      
+      // Log the activity
+      await storage.createActivity({
+        type: 'UPDATE',
+        content: `Updated tasks for camp: ${existingCamp.name}`,
+        userId: user.id,
+        relatedId: campId,
+        relatedType: 'CAMP'
+      });
       
       // Get the updated camp data
       const updatedCamp = await storage.getCampById(campId);
@@ -4126,7 +4123,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/camps/:id/staff", async (req, res) => {
+  // Bulk update of staff assigned to a camp
+  app.put("/api/camps/:id/staff-bulk", async (req, res) => {
     try {
       // Check if the user is authenticated
       if (!req.isAuthenticated()) {
@@ -4134,7 +4132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only admin can assign staff to camps
-      const user = req.user as User;
+      const user = req.user as any;
       if (user.role !== 'admin') {
         return res.status(403).json({ error: "Unauthorized access" });
       }
@@ -4150,7 +4148,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Camp not found" });
       }
       
-      const { staffId, action } = req.body;
+      const { staffAssignments } = req.body;
+      
+      if (!Array.isArray(staffAssignments)) {
+        return res.status(400).json({ error: "Staff assignments must be an array" });
+      }
+      
+      // Use our bulk assignment method
+      const updatedCamp = await storage.assignStaffToCamp(campId, staffAssignments);
+      
+      // Log the activity
+      await storage.createActivity({
+        type: 'UPDATE',
+        content: `Updated staff assignments for camp: ${existingCamp.name}`,
+        userId: user.id,
+        relatedId: campId, 
+        relatedType: 'CAMP'
+      });
+      
+      // Get the updated staff list
+      const updatedStaff = await storage.getCampStaff(campId);
+      
+      res.status(200).json({ 
+        camp: updatedCamp,
+        staff: updatedStaff
+      });
+    } catch (error) {
+      console.error(`Error assigning staff to camp:`, error);
+      res.status(500).json({ error: "Failed to assign staff to camp" });
+    }
+  });
+  
+  // Individual staff assignment (legacy endpoint)
+  app.put("/api/camps/:id/staff", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Only admin can assign staff to camps
+      const user = req.user as any;
+      if (user.role !== 'admin') {
+        return res.status(403).json({ error: "Unauthorized access" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: "Invalid camp ID" });
+      }
+      
+      // Check if camp exists
+      const existingCamp = await storage.getCampById(campId);
+      if (!existingCamp) {
+        return res.status(404).json({ error: "Camp not found" });
+      }
+      
+      const { staffId, action, role = 'clinician', payAmount } = req.body;
       
       if (!staffId || !action) {
         return res.status(400).json({ error: "Staff ID and action are required" });
@@ -4166,29 +4220,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Staff member not found" });
       }
       
-      let result;
+      // Get current staff assignments
+      const currentStaff = await storage.getCampStaff(campId);
       
       if (action === 'add') {
-        result = await storage.addStaffToCamp(campId, staffId);
+        // Create a new assignment 
+        const staffAssignments = [...currentStaff, {
+          staffId,
+          role,
+          payAmount
+        }];
+        
+        // Use our bulk assignment method
+        await storage.assignStaffToCamp(campId, staffAssignments);
         
         // Log the activity
         await storage.createActivity({
-          type: 'user',
-          content: `Added ${staffMember.firstName} ${staffMember.lastName} to camp: ${existingCamp.name}`,
+          type: 'UPDATE',
+          content: `Added ${staffMember.name} to camp: ${existingCamp.name}`,
           userId: user.id,
           relatedId: campId,
-          relatedType: 'camp'
+          relatedType: 'CAMP'
         });
       } else {
-        await storage.removeStaffFromCamp(campId, staffId);
+        // Filter out the staff member being removed
+        const staffAssignments = currentStaff
+          .filter(staff => staff.staffId !== staffId)
+          .map(staff => ({
+            staffId: staff.staffId,
+            role: staff.role,
+            payAmount: staff.payAmount
+          }));
+        
+        // Use our bulk assignment method
+        await storage.assignStaffToCamp(campId, staffAssignments);
         
         // Log the activity
         await storage.createActivity({
-          type: 'user',
-          content: `Removed ${staffMember.firstName} ${staffMember.lastName} from camp: ${existingCamp.name}`,
+          type: 'UPDATE',
+          content: `Removed ${staffMember.name} from camp: ${existingCamp.name}`,
           userId: user.id,
           relatedId: campId,
-          relatedType: 'camp'
+          relatedType: 'CAMP'
         });
       }
       

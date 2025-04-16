@@ -6,6 +6,7 @@ import { db } from "./db";
 import { sql, eq, or, and } from "drizzle-orm";
 import { setupAuth, hashPassword, isAuthenticated } from "./auth";
 import { hasPermission } from '../shared/permissions';
+import anthropicService from "./services/anthropic-service";
 import { 
   leads,
   orders,

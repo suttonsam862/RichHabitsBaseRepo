@@ -51,6 +51,7 @@ import {
   ClipboardCheck,
   Filter,
   RefreshCw,
+  CheckCircle2,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FabricResearchForm } from "@/components/fabric-research-center/fabric-research-form";
@@ -64,18 +65,43 @@ export default function FabricResearchCenter() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("library");
   const [selectedFabricId, setSelectedFabricId] = useState<number | null>(null);
+  const [selectedPatternId, setSelectedPatternId] = useState<number | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isViewPatternDialogOpen, setIsViewPatternDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [patternSearchQuery, setPatternSearchQuery] = useState("");
   
-  // Fetch fabric types
+  // Fetch published fabric types
   const { 
     data: fabricTypes, 
     isLoading: isLoadingFabrics,
     error: fabricsError,
     refetch: refetchFabrics
   } = useQuery({
-    queryKey: ["/api/fabric-types"],
+    queryKey: ["/api/fabric-types", { published: true }],
     enabled: activeTab === "library",
+  });
+  
+  // Fetch unpublished fabric types
+  const { 
+    data: unpublishedFabrics, 
+    isLoading: isLoadingUnpublished,
+    error: unpublishedError,
+    refetch: refetchUnpublished
+  } = useQuery({
+    queryKey: ["/api/fabric-types", { published: false }],
+    enabled: activeTab === "unpublished",
+  });
+  
+  // Fetch sewing patterns
+  const { 
+    data: sewingPatterns, 
+    isLoading: isLoadingPatterns,
+    error: patternsError,
+    refetch: refetchPatterns
+  } = useQuery({
+    queryKey: ["/api/sewing-patterns"],
+    enabled: activeTab === "patterns" || activeTab === "suggestions",
   });
   
   // Delete fabric mutation
@@ -107,12 +133,30 @@ export default function FabricResearchCenter() {
     }
   };
   
-  // Filter fabrics based on search query
+  // Filter published fabrics based on search query
   const filteredFabrics = fabricTypes?.data 
     ? fabricTypes.data.filter(fabric => 
         fabric.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         fabric.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         fabric.composition?.some(comp => comp.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : [];
+    
+  // Filter unpublished fabrics based on search query
+  const filteredUnpublished = unpublishedFabrics?.data 
+    ? unpublishedFabrics.data.filter(fabric => 
+        fabric.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        fabric.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        fabric.composition?.some(comp => comp.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : [];
+    
+  // Filter patterns based on search query
+  const filteredPatterns = sewingPatterns?.data 
+    ? sewingPatterns.data.filter(pattern => 
+        pattern.name.toLowerCase().includes(patternSearchQuery.toLowerCase()) ||
+        pattern.description?.toLowerCase().includes(patternSearchQuery.toLowerCase()) ||
+        pattern.type?.toLowerCase().includes(patternSearchQuery.toLowerCase())
       )
     : [];
   
@@ -250,9 +294,224 @@ export default function FabricResearchCenter() {
             )}
           </TabsContent>
           
-          {/* AI Research Tab */}
+          {/* Unpublished Fabrics Tab */}
+          <TabsContent value="unpublished" className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <div className="relative w-full max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search unpublished fabrics..."
+                  className="pl-8 w-full"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => refetchUnpublished()}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Draft
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[625px]">
+                    <DialogHeader>
+                      <DialogTitle>Add New Unpublished Fabric</DialogTitle>
+                      <DialogDescription>
+                        Create a draft fabric for research and testing
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      {/* Add Fabric Form */}
+                      <Label htmlFor="name">Name</Label>
+                      <Input id="name" placeholder="e.g., Experimental Blend" />
+                      
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea id="description" placeholder="Describe the fabric and its key features..." />
+                      
+                      {/* Add more fields as needed */}
+                    </div>
+                    <DialogFooter>
+                      <Button type="submit">Save as Draft</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+            
+            {isLoadingUnpublished ? (
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : unpublishedError ? (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <p className="text-red-500">Error loading unpublished fabrics: {(unpublishedError as Error).message}</p>
+                  <Button variant="outline" className="mt-4" onClick={() => refetchUnpublished()}>
+                    Try Again
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : filteredUnpublished.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <p className="text-muted-foreground">No unpublished fabrics found. Use the AI Research tool to create and save research results.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredUnpublished.map((fabric) => (
+                  <Card key={fabric.id} className="overflow-hidden border-dashed">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between">
+                        <CardTitle>{fabric.name}</CardTitle>
+                        <Badge variant="outline" className="ml-2">Draft</Badge>
+                      </div>
+                      <CardDescription className="line-clamp-2">
+                        {fabric.description}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pb-3">
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {fabric.composition?.slice(0, 3).map((comp, idx) => (
+                          <Badge key={idx} variant="outline">{comp}</Badge>
+                        ))}
+                        {fabric.composition && fabric.composition.length > 3 && (
+                          <Badge variant="outline">+{fabric.composition.length - 3} more</Badge>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="secondary" 
+                          className="flex-1"
+                          onClick={() => handleViewFabric(fabric.id)}
+                        >
+                          Edit
+                        </Button>
+                        <Button variant="outline" className="flex-1">
+                          Publish
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+          
+          {/* Fabric Research Tab */}
           <TabsContent value="research">
             <FabricResearchForm />
+          </TabsContent>
+          
+          {/* Pattern Research Tab */}
+          <TabsContent value="patterns" className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <div className="relative w-full max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search patterns..."
+                  className="pl-8 w-full"
+                  value={patternSearchQuery}
+                  onChange={(e) => setPatternSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => refetchPatterns()}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Research New Pattern
+                </Button>
+              </div>
+            </div>
+            
+            {isLoadingPatterns ? (
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : patternsError ? (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <p className="text-red-500">Error loading patterns: {(patternsError as Error).message}</p>
+                  <Button variant="outline" className="mt-4" onClick={() => refetchPatterns()}>
+                    Try Again
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : filteredPatterns.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <p className="text-muted-foreground">No sewing patterns found. Research a new pattern to get started.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredPatterns.map((pattern) => (
+                  <Card key={pattern.id} className="overflow-hidden">
+                    <div className="aspect-video w-full bg-muted-foreground/10 relative">
+                      {pattern.referenceImageUrl ? (
+                        <img 
+                          src={pattern.referenceImageUrl} 
+                          alt={pattern.name} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
+                          <FileText className="h-10 w-10" />
+                        </div>
+                      )}
+                    </div>
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between">
+                        <CardTitle>{pattern.name}</CardTitle>
+                        <Badge>{pattern.type}</Badge>
+                      </div>
+                      <CardDescription className="line-clamp-2">
+                        {pattern.description}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pb-3">
+                      <div className="flex gap-2 mb-2">
+                        <Badge variant="outline" className="flex items-center">
+                          <FileText className="h-3 w-3 mr-1" />
+                          {pattern.measurements?.length || 0} measurements
+                        </Badge>
+                        <Badge variant="outline">
+                          {pattern.complexity}
+                        </Badge>
+                      </div>
+                      <Button 
+                        variant="secondary" 
+                        className="w-full"
+                        onClick={() => {
+                          setSelectedPatternId(pattern.id);
+                          setIsViewPatternDialogOpen(true);
+                        }}
+                      >
+                        View Details
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
           
           {/* Compatibility Analysis Tab */}
@@ -275,6 +534,125 @@ export default function FabricResearchCenter() {
               fabricId={selectedFabricId} 
               onDelete={handleDeleteFabric}
             />
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Pattern Detail Dialog */}
+      <Dialog open={isViewPatternDialogOpen} onOpenChange={setIsViewPatternDialogOpen}>
+        <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-hidden">
+          {selectedPatternId && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-2xl font-bold">Pattern Details</h2>
+                  <p className="text-muted-foreground">View detailed information and measurements</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle>Preview</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="aspect-square w-full bg-muted-foreground/10 rounded-md overflow-hidden">
+                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                        <FileText className="h-16 w-16" />
+                        <p>Pattern preview image</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle>Measurements</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <ScrollArea className="h-[300px]">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Measurement</TableHead>
+                            <TableHead>Value</TableHead>
+                            <TableHead>Required</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <TableRow>
+                            <TableCell>Length</TableCell>
+                            <TableCell>42 cm</TableCell>
+                            <TableCell>
+                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Width</TableCell>
+                            <TableCell>35 cm</TableCell>
+                            <TableCell>
+                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Sleeve Length</TableCell>
+                            <TableCell>65 cm</TableCell>
+                            <TableCell>
+                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle>Material Requirements</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="font-medium">Main Fabric:</span>
+                      <span>Cotton Jersey (1.5 meters)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Lining:</span>
+                      <span>Polyester (0.5 meters)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Elastic:</span>
+                      <span>1 cm width (30 cm)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Suitable For:</span>
+                      <div className="flex flex-wrap gap-1">
+                        <Badge variant="outline">Cotton</Badge>
+                        <Badge variant="outline">Jersey</Badge>
+                        <Badge variant="outline">Knit</Badge>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <div className="flex justify-end gap-2">
+                <Button variant="outline">
+                  Close
+                </Button>
+                <Button>
+                  Use in Product Suggestion
+                </Button>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>

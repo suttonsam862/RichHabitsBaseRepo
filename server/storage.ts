@@ -30,6 +30,8 @@ import {
   accommodations,
   fabricTypes,
   fabricCompatibilities,
+  sewingPatterns,
+  productSuggestions,
   financialTransactions,
   campFinancials,
   campVendorAssignments,
@@ -93,7 +95,11 @@ import {
   type FabricType,
   type InsertFabricType,
   type FabricCompatibility,
-  type InsertFabricCompatibility
+  type InsertFabricCompatibility,
+  type SewingPattern,
+  type InsertSewingPattern,
+  type ProductSuggestion,
+  type InsertProductSuggestion
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, or, isNull, asc, inArray } from "drizzle-orm";
@@ -194,6 +200,13 @@ export interface IStorage {
   createFabricCompatibility(compatibility: InsertFabricCompatibility): Promise<FabricCompatibility>;
   updateFabricCompatibility(id: number, compatibility: Partial<InsertFabricCompatibility>): Promise<FabricCompatibility>;
   deleteFabricCompatibility(id: number): Promise<void>;
+  
+  // Sewing pattern methods
+  getAllSewingPatterns(): Promise<SewingPattern[]>;
+  getSewingPatternById(id: number): Promise<SewingPattern | undefined>;
+  createSewingPattern(pattern: InsertSewingPattern): Promise<SewingPattern>;
+  updateSewingPattern(id: number, pattern: Partial<InsertSewingPattern>): Promise<SewingPattern>;
+  deleteSewingPattern(id: number): Promise<void>;
   
   // Fabric Cuts methods
   getFabricCuts(): Promise<FabricCut[]>;

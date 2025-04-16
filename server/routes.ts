@@ -4575,6 +4575,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
+  
+  // Sewing pattern routes
+  
+  // Get all sewing patterns
+  app.get("/api/sewing-patterns", isAuthenticated, async (req, res) => {
+    try {
+      const patterns = await storage.getAllSewingPatterns();
+      res.json({ data: patterns });
+    } catch (error: any) {
+      console.error("Error fetching sewing patterns:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Get a specific sewing pattern by ID
+  app.get("/api/sewing-patterns/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+      
+      const pattern = await storage.getSewingPatternById(id);
+      
+      if (!pattern) {
+        return res.status(404).json({ error: "Sewing pattern not found" });
+      }
+      
+      res.json({ data: pattern });
+    } catch (error: any) {
+      console.error("Error fetching sewing pattern:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Create a new sewing pattern
+  app.post("/api/sewing-patterns", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      
+      // Validate the request body against the schema
+      const validatedData = insertSewingPatternSchema.parse({
+        ...req.body,
+        createdBy: user.id
+      });
+      
+      // Create the pattern
+      const newPattern = await storage.createSewingPattern(validatedData);
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "CREATE",
+        content: `Created new sewing pattern: ${newPattern.name}`,
+        userId: user.id,
+        relatedId: newPattern.id,
+        relatedType: "SEWING_PATTERN"
+      });
+      
+      res.status(201).json({ data: newPattern });
+    } catch (error: any) {
+      console.error("Error creating sewing pattern:", error);
+      if (error.name === "ZodError") {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Update a sewing pattern
+  app.put("/api/sewing-patterns/:id", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+      
+      // Check if the pattern exists
+      const existingPattern = await storage.getSewingPatternById(id);
+      
+      if (!existingPattern) {
+        return res.status(404).json({ error: "Sewing pattern not found" });
+      }
+      
+      // Update the pattern
+      const updatedPattern = await storage.updateSewingPattern(id, req.body);
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "UPDATE",
+        content: `Updated sewing pattern: ${updatedPattern.name}`,
+        userId: user.id,
+        relatedId: id,
+        relatedType: "SEWING_PATTERN"
+      });
+      
+      res.json({ data: updatedPattern });
+    } catch (error: any) {
+      console.error("Error updating sewing pattern:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Delete a sewing pattern
+  app.delete("/api/sewing-patterns/:id", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+      
+      // Check if the pattern exists
+      const existingPattern = await storage.getSewingPatternById(id);
+      
+      if (!existingPattern) {
+        return res.status(404).json({ error: "Sewing pattern not found" });
+      }
+      
+      // Delete the pattern
+      await storage.deleteSewingPattern(id);
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "DELETE",
+        content: `Deleted sewing pattern: ${existingPattern.name}`,
+        userId: user.id,
+        relatedId: id,
+        relatedType: "SEWING_PATTERN"
+      });
+      
+      res.status(200).json({ success: true, message: "Sewing pattern deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting sewing pattern:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   // Endpoint to research fabric using Anthropic API
   app.post("/api/fabric-research", isAuthenticated, async (req, res) => {

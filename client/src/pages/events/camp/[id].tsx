@@ -736,70 +736,118 @@ export default function CampDetailPage() {
                       Manage staff assigned to this camp
                     </CardDescription>
                   </div>
-                  {!isNewCamp && (
-                    <Dialog open={staffDialogOpen} onOpenChange={setStaffDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button className="flex items-center gap-1">
-                          <Plus className="h-4 w-4" /> Add Clinician
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Add Clinician to Camp</DialogTitle>
-                        </DialogHeader>
-                        <div className="py-4">
-                          <h3 className="mb-4 text-sm font-medium">Select a clinician to add:</h3>
-                          <ScrollArea className="h-[300px]">
-                            {isLoadingStaff ? (
-                              <div className="flex justify-center p-4">
-                                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                              </div>
-                            ) : availableStaff.length === 0 ? (
-                              <div className="p-4 text-center text-muted-foreground">
-                                No staff members available
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                {availableStaff
-                                  .filter(staff => !campStaff.some(cs => cs.id === staff.id))
-                                  .map(staff => (
-                                    <div 
-                                      key={staff.id} 
-                                      className="flex items-center justify-between p-3 rounded-md hover:bg-muted"
-                                    >
-                                      <div className="flex items-center gap-3">
-                                        <Avatar>
-                                          <AvatarFallback>{staff.firstName?.[0]}{staff.lastName?.[0]}</AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                          <p className="font-medium">{staff.firstName} {staff.lastName}</p>
-                                          <p className="text-sm text-muted-foreground">{staff.role || 'Clinician'}</p>
-                                        </div>
+                  <Dialog open={staffDialogOpen} onOpenChange={setStaffDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-1">
+                        <Plus className="h-4 w-4" /> Add Clinician
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Clinician to Camp</DialogTitle>
+                      </DialogHeader>
+                      <div className="py-4">
+                        <h3 className="mb-4 text-sm font-medium">Select a clinician to add:</h3>
+                        <ScrollArea className="h-[300px]">
+                          {isLoadingStaff ? (
+                            <div className="flex justify-center p-4">
+                              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                            </div>
+                          ) : availableStaff.length === 0 ? (
+                            <div className="p-4 text-center text-muted-foreground">
+                              No staff members available
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              {availableStaff
+                                .filter(staff => isNewCamp 
+                                  ? !selectedStaff.some(s => s.id === staff.id) 
+                                  : !campStaff.some(cs => cs.id === staff.id)
+                                )
+                                .map(staff => (
+                                  <div 
+                                    key={staff.id} 
+                                    className="flex items-center justify-between p-3 rounded-md hover:bg-muted"
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <Avatar>
+                                        <AvatarFallback>{staff.firstName?.[0]}{staff.lastName?.[0]}</AvatarFallback>
+                                      </Avatar>
+                                      <div>
+                                        <p className="font-medium">{staff.firstName} {staff.lastName}</p>
+                                        <p className="text-sm text-muted-foreground">{staff.role || 'Clinician'}</p>
                                       </div>
-                                      <Button 
-                                        size="sm" 
-                                        onClick={() => {
-                                          addStaffToCampMutation.mutate(staff.id);
-                                          setStaffDialogOpen(false);
-                                        }}
-                                      >
-                                        <Plus className="h-4 w-4 mr-1" /> Add
-                                      </Button>
                                     </div>
-                                  ))}
-                              </div>
-                            )}
-                          </ScrollArea>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  )}
+                                    <Button 
+                                      size="sm" 
+                                      onClick={() => {
+                                        if (isNewCamp) {
+                                          setSelectedStaff(prev => [...prev, staff]);
+                                        } else {
+                                          addStaffToCampMutation.mutate(staff.id);
+                                        }
+                                        setStaffDialogOpen(false);
+                                      }}
+                                    >
+                                      <Plus className="h-4 w-4 mr-1" /> Add
+                                    </Button>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </ScrollArea>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </CardHeader>
                 <CardContent>
                   {isNewCamp ? (
-                    <div className="text-center p-6 text-muted-foreground">
-                      Save the camp first to add staff members
-                    </div>
+                    selectedStaff.length > 0 ? (
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Selected clinicians will be added when the camp is created:
+                        </p>
+                        {selectedStaff.map(staff => (
+                          <div 
+                            key={staff.id} 
+                            className="flex items-center justify-between p-3 border rounded-md"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Avatar>
+                                <AvatarFallback>{staff.firstName?.[0]}{staff.lastName?.[0]}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium">{staff.firstName} {staff.lastName}</p>
+                                <p className="text-sm text-muted-foreground">{staff.role || 'Clinician'}</p>
+                              </div>
+                            </div>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setSelectedStaff(prev => prev.filter(s => s.id !== staff.id));
+                              }}
+                            >
+                              <X className="h-4 w-4 mr-1" /> Remove
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center p-6 border rounded-md">
+                        <UserCheck className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                        <h3 className="text-lg font-medium mb-1">No Clinicians Selected</h3>
+                        <p className="text-muted-foreground mb-4">
+                          Click the "Add Clinician" button to select clinicians for this camp
+                        </p>
+                        <Button 
+                          onClick={() => setStaffDialogOpen(true)}
+                          className="flex items-center gap-1"
+                        >
+                          <Plus className="h-4 w-4" /> Add Clinician
+                        </Button>
+                      </div>
+                    )
                   ) : isLoadingCampStaff ? (
                     <div className="flex justify-center p-6">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />

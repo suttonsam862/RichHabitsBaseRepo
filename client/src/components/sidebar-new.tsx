@@ -994,14 +994,25 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
                       key={item.href} 
                       href={item.href}
                       className={cn(
-                        "flex items-center px-3 py-2 text-sm font-medium rounded-md",
+                        "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all",
                         location === item.href || (item.href === "/dashboard" && location === "/") 
-                          ? "bg-primary/10 text-primary font-semibold" 
+                          ? "text-primary font-semibold relative overflow-hidden shadow-md" 
                           : "text-gray-800 hover:bg-gray-100"
                       )}
+                      style={
+                        location === item.href || (item.href === "/dashboard" && location === "/") 
+                          ? {
+                              background: 'linear-gradient(90deg, #fff 0%, #fff 80%, rgba(var(--primary), 0.3) 100%)',
+                              boxShadow: '0 2px 8px rgba(var(--primary), 0.15)'
+                            } 
+                          : {}
+                      }
                     >
                       {item.icon}
-                      {item.name}
+                      <span>{item.name}</span>
+                      {(location === item.href || (item.href === "/dashboard" && location === "/")) && (
+                        <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-gradient-to-r from-primary/40 to-primary"></div>
+                      )}
                     </Link>
                   ))}
                 </div>

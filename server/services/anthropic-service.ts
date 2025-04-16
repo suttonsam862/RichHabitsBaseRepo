@@ -269,7 +269,8 @@ Provide practical, industry-standard fabrics that are actually used for this typ
       });
 
       // Extract the text content from the response
-      const content = response.content[0].text;
+      const contentBlock = response.content[0];
+      const content = 'text' in contentBlock ? contentBlock.text : '';
       
       // Parse the JSON response
       const result = JSON.parse(content);

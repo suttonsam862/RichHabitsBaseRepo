@@ -1404,47 +1404,96 @@ const AddCampForm = ({ onClose }: { onClose: () => void }) => {
           
           {/* Staff Tab */}
           <TabsContent value="staff" className="space-y-4">
+            {/* Selected Clinicians Section */}
             <div className="bg-gray-50 p-4 rounded-md mb-4">
               <h3 className="text-lg font-medium mb-2">Selected Clinicians</h3>
               {selectedStaff.length === 0 ? (
                 <p className="text-gray-500 italic">No clinicians selected yet. Use the search below to add clinicians.</p>
               ) : (
                 <div className="space-y-2">
-                  {selectedStaff.map(staff => (
-                    <div key={staff.id} className="flex items-center justify-between bg-white p-2 rounded border">
-                      <div className="flex items-center">
-                        <Avatar className="h-8 w-8 mr-2">
-                          <AvatarImage src={staff.avatar} />
-                          <AvatarFallback>
-                            {staff.name.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium text-sm">{staff.name}</div>
-                          <div className="text-xs text-gray-500">{staff.role}</div>
+                  {selectedStaff.map(staff => {
+                    // Create a unique state for each staff's camp rate
+                    const [campRate, setCampRate] = useState(staff.rate);
+                    
+                    return (
+                      <div key={staff.id} className="flex items-center justify-between bg-white p-3 rounded border">
+                        <div className="flex items-center flex-grow">
+                          <Avatar className="h-10 w-10 mr-3">
+                            <AvatarImage src={staff.avatar} />
+                            <AvatarFallback>
+                              {staff.name.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-grow">
+                            <div className="font-medium">{staff.name}</div>
+                            <div className="text-xs text-gray-500">{staff.role}</div>
+                          </div>
                         </div>
+                        
+                        {/* Camp Rate Input */}
+                        <div className="flex items-center mr-4">
+                          <div className="flex flex-col">
+                            <Label htmlFor={`rate-${staff.id}`} className="text-xs mb-1">Camp Rate</Label>
+                            <div className="flex items-center">
+                              <span className="text-sm mr-1">$</span>
+                              <Input 
+                                id={`rate-${staff.id}`}
+                                type="number" 
+                                className="w-20 h-8 text-sm"
+                                value={campRate}
+                                onChange={(e) => {
+                                  const newRate = parseFloat(e.target.value);
+                                  setCampRate(newRate);
+                                  // Update the staff object with the new rate
+                                  setSelectedStaff(prev => 
+                                    prev.map(s => 
+                                      s.id === staff.id ? {...s, campRate: newRate} : s
+                                    )
+                                  );
+                                }}
+                              />
+                              <span className="text-xs text-gray-500 ml-1">/{staff.rateType}</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Remove Button */}
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => removeClinician(staff.id)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => removeClinician(staff.id)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
             
+            {/* Clinician Search Section */}
             <div className="space-y-2">
-              <Label>Search for Clinicians</Label>
+              <div className="flex justify-between items-center">
+                <Label className="text-base font-medium">Search for Clinicians</Label>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    // Clear the search and show all available staff
+                    setClinicianSearchTerm("");
+                  }}
+                >
+                  Show All Staff
+                </Button>
+              </div>
+              
               <div className="flex gap-2">
                 <div className="relative flex-grow">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                   <Input
-                    placeholder="Search by name or role"
+                    placeholder="Search by name, role, or specialty"
                     className="pl-8"
                     value={clinicianSearchTerm}
                     onChange={(e) => setClinicianSearchTerm(e.target.value)}
@@ -1452,48 +1501,57 @@ const AddCampForm = ({ onClose }: { onClose: () => void }) => {
                 </div>
               </div>
               
-              {/* Search Results */}
-              <div className="mt-2 border rounded-md divide-y max-h-[200px] overflow-y-auto bg-white">
+              {/* Search Results with Improved UI */}
+              <div className="mt-2 border rounded-md divide-y max-h-[300px] overflow-y-auto bg-white">
                 {staffLoading ? (
                   <div className="flex items-center justify-center p-4">
                     <span className="loading loading-spinner loading-sm mr-2"></span>
                     Loading staff...
                   </div>
-                ) : clinicianSearchTerm.length > 0 ? (
-                  staffData
+                ) : staffData
                     .filter(staff => 
+                      clinicianSearchTerm.length === 0 || // Show all if search is empty
                       staff.name.toLowerCase().includes(clinicianSearchTerm.toLowerCase()) ||
                       staff.role.toLowerCase().includes(clinicianSearchTerm.toLowerCase())
                     )
                     .filter(staff => !selectedStaff.some(s => s.id === staff.id))
-                    .map(staff => (
-                      <div 
-                        key={staff.id}
-                        className="flex items-center justify-between p-2 hover:bg-gray-50 cursor-pointer"
-                        onClick={() => addClinician(staff)}
-                      >
-                        <div className="flex items-center">
-                          <Avatar className="h-8 w-8 mr-2">
-                            <AvatarImage src={staff.avatar} />
-                            <AvatarFallback>
-                              {staff.name.split(' ').map(n => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium text-sm">{staff.name}</div>
-                            <div className="text-xs text-gray-500">{staff.role} • ${staff.rate}/{staff.rateType}</div>
+                    .length === 0 ? (
+                    <div className="p-4 text-gray-500 text-center">
+                      No matching staff found or all staff already selected
+                    </div>
+                  ) : (
+                    staffData
+                      .filter(staff => 
+                        clinicianSearchTerm.length === 0 || // Show all if search is empty
+                        staff.name.toLowerCase().includes(clinicianSearchTerm.toLowerCase()) ||
+                        staff.role.toLowerCase().includes(clinicianSearchTerm.toLowerCase())
+                      )
+                      .filter(staff => !selectedStaff.some(s => s.id === staff.id))
+                      .map(staff => (
+                        <div 
+                          key={staff.id}
+                          className="flex items-center justify-between p-3 hover:bg-gray-50 cursor-pointer"
+                          onClick={() => addClinician(staff)}
+                        >
+                          <div className="flex items-center">
+                            <Avatar className="h-10 w-10 mr-3">
+                              <AvatarImage src={staff.avatar} />
+                              <AvatarFallback>
+                                {staff.name.split(' ').map(n => n[0]).join('')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium">{staff.name}</div>
+                              <div className="text-sm text-gray-600">{staff.role}</div>
+                              <div className="text-xs text-gray-500">Standard Rate: ${staff.rate}/{staff.rateType}</div>
+                            </div>
                           </div>
+                          <Button variant="outline" size="sm" className="ml-4">
+                            <Plus className="h-4 w-4 mr-1" /> Add
+                          </Button>
                         </div>
-                        <Button variant="ghost" size="sm">
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))
-                ) : (
-                  <div className="p-4 text-gray-500 text-center">
-                    Type to search for clinicians
-                  </div>
-                )}
+                      ))
+                  )}
               </div>
             </div>
           </TabsContent>

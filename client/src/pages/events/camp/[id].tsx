@@ -34,11 +34,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Loader2, Calendar, MapPin, ArrowLeft, Users, DollarSign } from "lucide-react";
+import { Loader2, Calendar, MapPin, ArrowLeft, Users, DollarSign, Plus, X, UserCheck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Camp form schema
 const campFormSchema = z.object({
@@ -71,6 +74,8 @@ export default function CampDetailPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("details");
+  const [selectedStaff, setSelectedStaff] = useState<any[]>([]);
+  const [staffDialogOpen, setStaffDialogOpen] = useState(false);
 
   // Fetch camp data if editing an existing camp
   const {
@@ -79,6 +84,24 @@ export default function CampDetailPage() {
     error: campError,
   } = useQuery({
     queryKey: ["/api/camps", id],
+    enabled: !isNewCamp,
+  });
+  
+  // Fetch available staff for selection
+  const {
+    data: availableStaff = [],
+    isLoading: isLoadingStaff,
+  } = useQuery({
+    queryKey: ["/api/staff"],
+  });
+  
+  // Fetch staff assigned to this camp
+  const {
+    data: campStaff = [],
+    isLoading: isLoadingCampStaff,
+    refetch: refetchCampStaff,
+  } = useQuery({
+    queryKey: ["/api/camps", id, "staff"],
     enabled: !isNewCamp,
   });
 
@@ -216,6 +239,74 @@ export default function CampDetailPage() {
       });
     },
   });
+  
+  // Mutation to add staff to the camp
+  const addStaffToCampMutation = useMutation({
+    mutationFn: async (staffId: number) => {
+      const response = await fetch(`/api/camps/${id}/staff`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ staffId, action: 'add' }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to add staff to camp");
+      }
+
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Staff member added to camp",
+      });
+      refetchCampStaff();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Mutation to remove staff from the camp
+  const removeStaffFromCampMutation = useMutation({
+    mutationFn: async (staffId: number) => {
+      const response = await fetch(`/api/camps/${id}/staff`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ staffId, action: 'remove' }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to remove staff from camp");
+      }
+
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Staff member removed from camp",
+      });
+      refetchCampStaff();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Handle form submission
   const onSubmit = (values: CampFormValues) => {
@@ -303,6 +394,7 @@ export default function CampDetailPage() {
             <TabsList className="mb-6">
               <TabsTrigger value="details">Basic Details</TabsTrigger>
               <TabsTrigger value="financial">Financial</TabsTrigger>
+              <TabsTrigger value="staff">Staff & Clinicians</TabsTrigger>
               <TabsTrigger value="contact">Contact Information</TabsTrigger>
               <TabsTrigger value="notes">Notes</TabsTrigger>
             </TabsList>
@@ -620,6 +712,132 @@ export default function CampDetailPage() {
                       </div>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="staff">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Staff & Clinicians</CardTitle>
+                    <CardDescription>
+                      Manage staff assigned to this camp
+                    </CardDescription>
+                  </div>
+                  {!isNewCamp && (
+                    <Dialog open={staffDialogOpen} onOpenChange={setStaffDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button className="flex items-center gap-1">
+                          <Plus className="h-4 w-4" /> Add Clinician
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add Clinician to Camp</DialogTitle>
+                        </DialogHeader>
+                        <div className="py-4">
+                          <h3 className="mb-4 text-sm font-medium">Select a clinician to add:</h3>
+                          <ScrollArea className="h-[300px]">
+                            {isLoadingStaff ? (
+                              <div className="flex justify-center p-4">
+                                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                              </div>
+                            ) : availableStaff.length === 0 ? (
+                              <div className="p-4 text-center text-muted-foreground">
+                                No staff members available
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                {availableStaff
+                                  .filter(staff => !campStaff.some(cs => cs.id === staff.id))
+                                  .map(staff => (
+                                    <div 
+                                      key={staff.id} 
+                                      className="flex items-center justify-between p-3 rounded-md hover:bg-muted"
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <Avatar>
+                                          <AvatarFallback>{staff.firstName?.[0]}{staff.lastName?.[0]}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                          <p className="font-medium">{staff.firstName} {staff.lastName}</p>
+                                          <p className="text-sm text-muted-foreground">{staff.role || 'Clinician'}</p>
+                                        </div>
+                                      </div>
+                                      <Button 
+                                        size="sm" 
+                                        onClick={() => {
+                                          addStaffToCampMutation.mutate(staff.id);
+                                          setStaffDialogOpen(false);
+                                        }}
+                                      >
+                                        <Plus className="h-4 w-4 mr-1" /> Add
+                                      </Button>
+                                    </div>
+                                  ))}
+                              </div>
+                            )}
+                          </ScrollArea>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  {isNewCamp ? (
+                    <div className="text-center p-6 text-muted-foreground">
+                      Save the camp first to add staff members
+                    </div>
+                  ) : isLoadingCampStaff ? (
+                    <div className="flex justify-center p-6">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : campStaff.length === 0 ? (
+                    <div className="text-center p-6 border rounded-md">
+                      <UserCheck className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                      <h3 className="text-lg font-medium mb-1">No Staff Assigned</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Click the "Add Clinician" button to assign staff to this camp
+                      </p>
+                      <Button 
+                        onClick={() => setStaffDialogOpen(true)}
+                        className="flex items-center gap-1"
+                      >
+                        <Plus className="h-4 w-4" /> Add Clinician
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {campStaff.map(staff => (
+                        <div 
+                          key={staff.id} 
+                          className="flex items-center justify-between p-3 border rounded-md"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarFallback>{staff.firstName?.[0]}{staff.lastName?.[0]}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{staff.firstName} {staff.lastName}</p>
+                              <p className="text-sm text-muted-foreground">{staff.role || 'Clinician'}</p>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              if (confirm(`Remove ${staff.firstName} ${staff.lastName} from this camp?`)) {
+                                removeStaffFromCampMutation.mutate(staff.id);
+                              }
+                            }}
+                          >
+                            <X className="h-4 w-4 mr-1" /> Remove
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

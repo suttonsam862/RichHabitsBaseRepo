@@ -3920,6 +3920,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Assign staff to camp
+  // Get all staff assigned to a camp
+  app.get("/api/camps/:id/staff", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: "Invalid camp ID" });
+      }
+      
+      // Check if camp exists
+      const existingCamp = await storage.getCampById(campId);
+      if (!existingCamp) {
+        return res.status(404).json({ error: "Camp not found" });
+      }
+      
+      const campStaff = await storage.getCampStaff(campId);
+      res.status(200).json(campStaff);
+    } catch (error) {
+      console.error("Error fetching camp staff:", error);
+      res.status(500).json({ error: "Failed to fetch camp staff" });
+    }
+  });
+
   app.put("/api/camps/:id/staff", async (req, res) => {
     try {
       // Check if the user is authenticated
@@ -3944,24 +3971,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Camp not found" });
       }
       
-      const staffAssignments = req.body;
+      const { staffId, action } = req.body;
       
-      // Validate staff assignments
-      if (!Array.isArray(staffAssignments)) {
-        return res.status(400).json({ error: "Staff assignments must be an array" });
+      if (!staffId || !action) {
+        return res.status(400).json({ error: "Staff ID and action are required" });
       }
       
-      const updatedCamp = await storage.assignStaffToCamp(campId, staffAssignments);
+      if (action !== 'add' && action !== 'remove') {
+        return res.status(400).json({ error: "Action must be either 'add' or 'remove'" });
+      }
       
-      // Log the activity
-      await storage.createActivity({
-        userId: user.id,
-        username: user.fullName || user.username,
-        action: 'UPDATE',
-        resourceType: 'CAMP_STAFF',
-        resourceId: campId,
-        details: `Assigned staff to camp: ${existingCamp.name}`
-      });
+      // Check if staff exists
+      const staffMember = await storage.getStaffById(staffId);
+      if (!staffMember) {
+        return res.status(404).json({ error: "Staff member not found" });
+      }
+      
+      let result;
+      
+      if (action === 'add') {
+        result = await storage.addStaffToCamp(campId, staffId);
+        
+        // Log the activity
+        await storage.createActivity({
+          userId: user.id,
+          username: user.fullName || user.username,
+          action: 'ADD',
+          resourceType: 'CAMP_STAFF',
+          resourceId: campId,
+          details: `Added ${staffMember.firstName} ${staffMember.lastName} to camp: ${existingCamp.name}`
+        });
+      } else {
+        result = await storage.removeStaffFromCamp(campId, staffId);
+        
+        // Log the activity
+        await storage.createActivity({
+          userId: user.id,
+          username: user.fullName || user.username,
+          action: 'REMOVE',
+          resourceType: 'CAMP_STAFF',
+          resourceId: campId,
+          details: `Removed ${staffMember.firstName} ${staffMember.lastName} from camp: ${existingCamp.name}`
+        });
+      }
       
       res.status(200).json(updatedCamp);
     } catch (error) {

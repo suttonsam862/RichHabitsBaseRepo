@@ -62,6 +62,8 @@ const campFormSchema = z.object({
   contactName: z.string().optional(),
   contactEmail: z.string().optional(),
   contactPhone: z.string().optional(),
+  // Add array of initial staff IDs for new camp creation
+  initialStaffIds: z.array(z.number()).optional(),
 });
 
 // Ensure the form defaults cover the needed fields
@@ -74,8 +76,17 @@ export default function CampDetailPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("details");
+  // Track selected staff IDs for new camp creation
   const [selectedStaff, setSelectedStaff] = useState<any[]>([]);
   const [staffDialogOpen, setStaffDialogOpen] = useState(false);
+  
+  // Update form field with selected staff IDs
+  useEffect(() => {
+    if (isNewCamp && selectedStaff.length > 0) {
+      const staffIds = selectedStaff.map(staff => staff.id);
+      form.setValue('initialStaffIds', staffIds);
+    }
+  }, [selectedStaff, isNewCamp]);
 
   // Fetch camp data if editing an existing camp
   const {

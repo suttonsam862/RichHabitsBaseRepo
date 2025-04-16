@@ -862,26 +862,7 @@ const ProductForm: FC<ProductFormProps> = ({
           </div>
           <Separator />
           
-          <FormField
-            control={form.control}
-            name="measurementGrid"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Size & Measurement Chart</FormLabel>
-                <FormControl>
-                  <MeasurementGrid
-                    value={Array.isArray(field.value) ? field.value.filter(item => typeof item === 'object') : []}
-                    onChange={field.onChange}
-                    disabled={isSubmitting}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Add size and measurement information
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+
         </div>
 
         <FormField

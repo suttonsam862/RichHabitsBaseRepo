@@ -146,7 +146,8 @@ Ensure all information is factual, accurate, and detailed. Include typical manuf
       });
 
       // Extract the text content from the response
-      const content = response.content[0].text;
+      const contentBlock = response.content[0];
+      const content = 'text' in contentBlock ? contentBlock.text : '';
       
       // Parse the JSON response
       const result = JSON.parse(content) as FabricResearchResult;
@@ -196,7 +197,8 @@ Your analysis should consider:
       });
 
       // Extract the text content from the response
-      const content = response.content[0].text;
+      const contentBlock = response.content[0];
+      const content = 'text' in contentBlock ? contentBlock.text : '';
       
       // Parse the JSON response
       const result = JSON.parse(content) as FabricCompatibilityResult;

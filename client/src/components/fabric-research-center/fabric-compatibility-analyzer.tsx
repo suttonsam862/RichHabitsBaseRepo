@@ -189,7 +189,7 @@ export function FabricCompatibilityAnalyzer() {
                   </CardDescription>
                 </div>
                 <div>
-                  {analysisResults.isCompatible ? (
+                  {analysisResults.compatible ? (
                     <Badge className="bg-green-100 text-green-800 border-green-200">
                       <CheckCircle className="h-3.5 w-3.5 mr-1" /> 
                       Compatible
@@ -279,7 +279,7 @@ export function FabricCompatibilityAnalyzer() {
             
             <CardFooter className="pt-4 pb-4 border-t mt-2">
               <div className="w-full">
-                {analysisResults.isCompatible ? (
+                {analysisResults.compatible ? (
                   <Button className="w-full bg-green-600 hover:bg-green-700">
                     Proceed with This Combination
                   </Button>

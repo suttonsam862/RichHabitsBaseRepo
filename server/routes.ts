@@ -4697,7 +4697,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // If compatible and we have a fabric type in the DB, create a compatibility record
-      if (analysisResult.isCompatible) {
+      if (analysisResult.compatible) {
         const existingFabricType = await storage.getFabricTypeByName(fabricType);
         if (existingFabricType) {
           try {
@@ -4706,7 +4706,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               productionMethod,
               isCompatible: true,
               alternatives: analysisResult.alternatives || [],
-              considerations: analysisResult.considerations || [],
+              reasons: analysisResult.reasons || [],
               createdBy: user.id
             });
             

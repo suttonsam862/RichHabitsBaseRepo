@@ -48,9 +48,12 @@ export function FabricCompatibilityAnalyzer() {
   ];
   
   // Fetch fabric types for autocomplete
-  const { data: fabricTypes } = useQuery({
+  const { data: fabricTypesResponse } = useQuery<{ data: any[] }>({
     queryKey: ["/api/fabric-types"],
+    initialData: { data: [] },
   });
+  
+  const fabricTypes = fabricTypesResponse?.data || [];
   
   const compatibilityMutation = useMutation({
     mutationFn: async (data: { fabricType: string; productionMethod: string }) => {
@@ -111,8 +114,8 @@ export function FabricCompatibilityAnalyzer() {
                 list="fabricTypeOptions"
               />
               <datalist id="fabricTypeOptions">
-                {fabricTypes?.data?.map((fabric: any) => (
-                  <option key={fabric.id} value={fabric.name} />
+                {fabricTypes.map((fabric: any, index: number) => (
+                  <option key={index} value={fabric.name || `Fabric ${index + 1}`} />
                 ))}
               </datalist>
             </div>
@@ -231,7 +234,7 @@ export function FabricCompatibilityAnalyzer() {
                     )}
                   </div>
                   
-                  {!analysisResults.isCompatible && analysisResults.alternatives && (
+                  {!analysisResults.compatible && analysisResults.alternatives && (
                     <div>
                       <h3 className="font-medium text-base">Recommended Alternatives</h3>
                       <div className="flex flex-wrap gap-2 mt-2">
@@ -247,7 +250,7 @@ export function FabricCompatibilityAnalyzer() {
                   {analysisResults.considerations && analysisResults.considerations.length > 0 && (
                     <div>
                       <h3 className="font-medium text-base">Special Considerations</h3>
-                      <Alert variant="outline" className="mt-2">
+                      <Alert className="mt-2 border border-amber-200">
                         <AlertTriangle className="h-4 w-4" />
                         <AlertTitle>Important Notes</AlertTitle>
                         <AlertDescription>

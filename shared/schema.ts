@@ -707,8 +707,8 @@ export const campScheduleItems = pgTable('camp_schedule_items', {
   id: serial('id').primaryKey(),
   campId: integer('camp_id').references(() => camps.id, { onDelete: 'cascade' }),
   dayNumber: integer('day_number').notNull(),
-  startTime: time('start_time').notNull(),
-  endTime: time('end_time').notNull(),
+  startTime: text('start_time').notNull(), // Store time as text in format "HH:MM"
+  endTime: text('end_time').notNull(), // Store time as text in format "HH:MM"
   activity: text('activity').notNull(),
   location: text('location'),
   staffId: integer('staff_id').references(() => staffMembers.id),

@@ -55,7 +55,6 @@ import {
   Trash,
   Upload,
   ImagePlus,
-  X,
   Camera,
   Ruler,
   Grid,
@@ -81,6 +80,8 @@ import {
   Shirt,
   ChevronRight,
   ChevronLeft,
+  Check,
+  X
 } from "lucide-react";
 import { CSVImportDialog } from "@/components/products/csv-import-dialog";
 import {
@@ -262,6 +263,15 @@ const ProductForm: FC<ProductFormProps> = ({
       }
     }
   }, [defaultValues]);
+  
+  // Add a watch on the item field to detect when "__add_new__" is selected
+  const watchedItem = form.watch("item");
+  useEffect(() => {
+    if (watchedItem === "__add_new__") {
+      setShowNewGroupInput(true);
+      form.setValue("item", ""); // Clear the field since we'll populate it with the new group
+    }
+  }, [watchedItem, form]);
 
   // Update fabric details when selections change
   useEffect(() => {
@@ -382,7 +392,7 @@ const ProductForm: FC<ProductFormProps> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {sportOptions.filter(option => option !== "All").map((option) => (
+                      {sportOptions.map((option) => (
                         <SelectItem key={option} value={option}>
                           {option}
                         </SelectItem>
@@ -579,12 +589,74 @@ const ProductForm: FC<ProductFormProps> = ({
               name="item"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Item Type</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Jersey" {...field} />
-                  </FormControl>
+                  <FormLabel>Item Type (Product Group)</FormLabel>
+                  <div className="space-y-2">
+                    {!showNewGroupInput ? (
+                      <div className="flex items-center space-x-2">
+                        <FormControl>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value ?? ""}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select product group" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {productGroups.map((group) => (
+                                <SelectItem key={group} value={group}>
+                                  {group}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="__add_new__">
+                                <span className="flex items-center">
+                                  <PlusCircle className="mr-2 h-4 w-4" />
+                                  Add New Group
+                                </span>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <FormControl>
+                          <Input
+                            placeholder="New product group"
+                            value={newGroup}
+                            onChange={(e) => setNewGroup(e.target.value)}
+                          />
+                        </FormControl>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            if (newGroup.trim()) {
+                              setProductGroups([...productGroups, newGroup.trim()]);
+                              field.onChange(newGroup.trim());
+                              setNewGroup("");
+                              setShowNewGroupInput(false);
+                            }
+                          }}
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            setNewGroup("");
+                            setShowNewGroupInput(false);
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                   <FormDescription>
-                    Specific type of product
+                    Select an existing product group or add a new one
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

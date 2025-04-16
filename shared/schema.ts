@@ -412,8 +412,7 @@ export const designProjects = pgTable('design_projects', {
 export const staffMembers = pgTable('staff_members', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
-  firstName: text('first_name'),
-  lastName: text('last_name'),
+  // Removed firstName and lastName as they don't exist in the actual database
   role: text('role').notNull(),
   email: text('email'),
   phone: text('phone'),

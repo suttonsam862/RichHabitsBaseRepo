@@ -4727,6 +4727,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Suggest fabrics based on product requirements
+  // Pattern research endpoint using Anthropic API
+  app.post("/api/pattern-research", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      
+      // Validate request body
+      const { name, type, description } = req.body;
+      
+      if (!name || !type) {
+        return res.status(400).json({ error: "Pattern name and type are required" });
+      }
+      
+      // Call the pattern research function from the anthropic service
+      const researchResult = await anthropicService.researchPattern(
+        name,
+        type,
+        description
+      );
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "RESEARCH",
+        content: `Researched pattern: ${name} (${type})`,
+        userId: user.id,
+        relatedType: "PATTERN_RESEARCH"
+      });
+      
+      // Check if we should save this to the database
+      if (req.body.saveToDatabase) {
+        try {
+          // Save the pattern to the database
+          const newPattern = await storage.createSewingPattern({
+            name: researchResult.name,
+            type: researchResult.type,
+            description: researchResult.description,
+            complexity: researchResult.complexity,
+            measurements: researchResult.measurements,
+            materialRequirements: researchResult.materialRequirements,
+            suitableFabrics: researchResult.suitableFabrics,
+            instructions: researchResult.instructions || [],
+            tips: researchResult.tips || [],
+            referenceImageUrl: researchResult.referenceImageUrl || null,
+            createdBy: user.id
+          });
+          
+          // Log the creation
+          await storage.createActivity({
+            type: "CREATE",
+            content: `Created new sewing pattern from research: ${newPattern.name}`,
+            userId: user.id,
+            relatedId: newPattern.id,
+            relatedType: "SEWING_PATTERN"
+          });
+          
+          // Add the new pattern ID to the result
+          researchResult.savedPatternId = newPattern.id;
+        } catch (err) {
+          console.error("Error saving researched pattern:", err);
+          // We don't fail the whole request if saving fails
+        }
+      }
+      
+      res.json({ data: researchResult });
+    } catch (error: any) {
+      console.error("Error researching pattern:", error);
+      res.status(500).json({ error: error.message || "Failed to research pattern" });
+    }
+  });
+  
   app.post("/api/fabric-suggestions", isAuthenticated, async (req, res) => {
     try {
       const user = req.user as User;

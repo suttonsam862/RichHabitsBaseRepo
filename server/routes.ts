@@ -3681,9 +3681,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       campData.createdById = user.id;
       campData.createdByName = user.fullName || user.username;
       
-      const newCamp = await storage.createCamp(campData);
+      // Extract initialStaffIds from the request if present
+      const { initialStaffIds, ...campDataWithoutStaff } = campData;
       
-      // Log the activity
+      // Create the camp without staff first
+      const newCamp = await storage.createCamp(campDataWithoutStaff);
+      
+      // If there are initial staff IDs, assign them to the camp
+      if (initialStaffIds && Array.isArray(initialStaffIds) && initialStaffIds.length > 0) {
+        for (const staffId of initialStaffIds) {
+          try {
+            // Check if staff exists
+            const staffMember = await storage.getStaffById(staffId);
+            if (staffMember) {
+              await storage.addStaffToCamp(newCamp.id, staffId);
+              
+              // Log each staff assignment
+              await storage.createActivity({
+                type: 'user',
+                content: `Added ${staffMember.firstName} ${staffMember.lastName} to camp: ${newCamp.name}`,
+                userId: user.id,
+                relatedId: newCamp.id,
+                relatedType: 'camp'
+              });
+            }
+          } catch (staffError) {
+            console.error(`Error assigning staff ${staffId} to camp:`, staffError);
+            // Continue with other staff even if one fails
+          }
+        }
+      }
+      
+      // Log the camp creation activity
       await storage.createActivity({
         userId: user.id,
         username: user.fullName || user.username,
@@ -3693,7 +3722,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         details: `Created new camp: ${newCamp.name}`
       });
       
-      res.status(201).json(newCamp);
+      // Get the updated camp with its staff to return in the response
+      const campWithStaff = await storage.getCampById(newCamp.id);
+      
+      res.status(201).json(campWithStaff);
     } catch (error) {
       console.error(`Error creating camp:`, error);
       res.status(500).json({ error: "Failed to create camp" });

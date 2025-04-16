@@ -78,7 +78,11 @@ interface DesignMessage {
   attachments?: string[];
 }
 
-export default function DesignCommunicationPage() {
+interface DesignCommunicationProps {
+  isEmbedded?: boolean;
+}
+
+export default function DesignCommunicationPage({ isEmbedded = false }: DesignCommunicationProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();

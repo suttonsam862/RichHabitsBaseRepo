@@ -830,14 +830,29 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               icon: <Building2 className="mr-2" size={16} />,
             },
             {
-              name: "Messages",
-              href: "/messages",
-              icon: <MessageSquare className="mr-2" size={16} />,
+              name: "Company Calendar",
+              href: "/calendar",
+              icon: <CalendarClock className="mr-2" size={16} />,
             },
             {
               name: "Product Catalog",
               href: "/catalog",
               icon: <Shirt className="mr-2" size={16} />,
+            },
+          ],
+        },
+        {
+          title: "Communication",
+          items: [
+            {
+              name: "Communication Center",
+              href: "/communication-center",
+              icon: <MessageSquare className="mr-2" size={16} />,
+            },
+            {
+              name: "Outlook",
+              href: "/outlook",
+              icon: <Mail className="mr-2" size={16} />,
             },
           ],
         },
@@ -882,12 +897,12 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               name: "User Management",
               href: "/user-management",
               icon: <UserCog className="mr-2" size={16} />,
-              id: "user-management", // Adding explicit id to match page settings
+              id: "user-management",
             },
           ],
         },
         {
-          title: "Events Group",
+          title: "Events",
           items: [
             {
               name: "Camp Overview",
@@ -915,7 +930,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               icon: <Building2 className="mr-2" size={16} />,
             },
             {
-              name: "Calendar and Scheduling",
+              name: "Camps Calendar",
               href: "/events/calendar",
               icon: <CalendarClock className="mr-2" size={16} />,
             },

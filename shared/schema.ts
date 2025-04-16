@@ -627,6 +627,151 @@ export const campStaffAssignments = pgTable('camp_staff_assignments', {
   };
 });
 
+// Travel arrangements for staff members
+export const travelArrangements = pgTable('travel_arrangements', {
+  id: serial('id').primaryKey(),
+  staffId: integer('staff_id').references(() => staffMembers.id, { onDelete: 'cascade' }),
+  campId: integer('camp_id').references(() => camps.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(), // flight, car, bus, etc.
+  departureDate: timestamp('departure_date'),
+  departureLocation: text('departure_location'),
+  arrivalDate: timestamp('arrival_date'),
+  arrivalLocation: text('arrival_location'),
+  confirmationCode: text('confirmation_code'),
+  provider: text('provider'), // airline, rental car company, etc.
+  notes: text('notes'),
+  cost: numeric('cost'),
+  status: text('status').default('pending'), // pending, confirmed, cancelled
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Accommodations for staff during camps
+export const accommodations = pgTable('accommodations', {
+  id: serial('id').primaryKey(),
+  staffId: integer('staff_id').references(() => staffMembers.id, { onDelete: 'cascade' }),
+  campId: integer('camp_id').references(() => camps.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(), // hotel, airbnb, dorm, etc.
+  location: text('location'),
+  checkIn: timestamp('check_in'),
+  checkOut: timestamp('check_out'),
+  confirmationCode: text('confirmation_code'),
+  provider: text('provider'), // hotel name, property manager, etc.
+  roomType: text('room_type'),
+  roomNumber: text('room_number'),
+  cost: numeric('cost'),
+  status: text('status').default('pending'), // pending, confirmed, cancelled
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Financial transactions related to camps
+export const financialTransactions = pgTable('financial_transactions', {
+  id: serial('id').primaryKey(),
+  campId: integer('camp_id').references(() => camps.id, { onDelete: 'cascade' }),
+  transactionType: text('transaction_type').notNull(), // revenue, expense, refund, payment
+  category: text('category').notNull(), // registration, staff, accommodation, travel, equipment, food, etc.
+  amount: numeric('amount').notNull(),
+  date: timestamp('date').defaultNow(),
+  description: text('description'),
+  paymentMethod: text('payment_method'),
+  status: text('status').default('pending'), // pending, completed, cancelled
+  referenceId: text('reference_id'), // external reference like invoice number
+  createdBy: integer('created_by').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Camp financial summary
+export const campFinancials = pgTable('camp_financials', {
+  id: serial('id').primaryKey(),
+  campId: integer('camp_id').references(() => camps.id, { onDelete: 'cascade' }),
+  totalRevenue: numeric('total_revenue').default('0'),
+  totalExpenses: numeric('total_expenses').default('0'),
+  netProfit: numeric('net_profit').default('0'),
+  staffCosts: numeric('staff_costs').default('0'),
+  travelCosts: numeric('travel_costs').default('0'),
+  accommodationCosts: numeric('accommodation_costs').default('0'),
+  equipmentCosts: numeric('equipment_costs').default('0'),
+  foodCosts: numeric('food_costs').default('0'),
+  otherCosts: numeric('other_costs').default('0'),
+  registrationRevenue: numeric('registration_revenue').default('0'),
+  sponsorshipRevenue: numeric('sponsorship_revenue').default('0'),
+  otherRevenue: numeric('other_revenue').default('0'),
+  lastUpdated: timestamp('last_updated').defaultNow(),
+});
+
+// Camp schedule items
+export const campScheduleItems = pgTable('camp_schedule_items', {
+  id: serial('id').primaryKey(),
+  campId: integer('camp_id').references(() => camps.id, { onDelete: 'cascade' }),
+  dayNumber: integer('day_number').notNull(),
+  startTime: time('start_time').notNull(),
+  endTime: time('end_time').notNull(),
+  activity: text('activity').notNull(),
+  location: text('location'),
+  staffId: integer('staff_id').references(() => staffMembers.id),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Vendor assignments for camps
+export const campVendorAssignments = pgTable('camp_vendor_assignments', {
+  id: serial('id').primaryKey(),
+  campId: integer('camp_id').references(() => camps.id, { onDelete: 'cascade' }),
+  vendorName: text('vendor_name').notNull(),
+  serviceType: text('service_type').notNull(), // equipment, food, transportation, etc.
+  contactName: text('contact_name'),
+  contactEmail: text('contact_email'),
+  contactPhone: text('contact_phone'),
+  cost: numeric('cost'),
+  status: text('status').default('pending'), // pending, confirmed, completed, cancelled
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Camp tasks
+export const campTasks = pgTable('camp_tasks', {
+  id: serial('id').primaryKey(),
+  campId: integer('camp_id').references(() => camps.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  description: text('description'),
+  status: text('status').default('not-started'), // not-started, in-progress, completed
+  dueDate: timestamp('due_date'),
+  assignedTo: integer('assigned_to').references(() => users.id),
+  priority: text('priority').default('medium'), // low, medium, high
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Create insert schemas for all tables
 export const insertCampStaffAssignmentSchema = createInsertSchema(campStaffAssignments).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertTravelArrangementSchema = createInsertSchema(travelArrangements).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAccommodationSchema = createInsertSchema(accommodations).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertFinancialTransactionSchema = createInsertSchema(financialTransactions).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCampFinancialsSchema = createInsertSchema(campFinancials).omit({ id: true });
+export const insertCampScheduleItemSchema = createInsertSchema(campScheduleItems).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCampVendorAssignmentSchema = createInsertSchema(campVendorAssignments).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCampTaskSchema = createInsertSchema(campTasks).omit({ id: true, createdAt: true, updatedAt: true });
+
+// Define types for our new schemas
 export type InsertCampStaffAssignment = z.infer<typeof insertCampStaffAssignmentSchema>;
+export type InsertTravelArrangement = z.infer<typeof insertTravelArrangementSchema>;
+export type InsertAccommodation = z.infer<typeof insertAccommodationSchema>;
+export type InsertFinancialTransaction = z.infer<typeof insertFinancialTransactionSchema>;
+export type InsertCampFinancials = z.infer<typeof insertCampFinancialsSchema>;
+export type InsertCampScheduleItem = z.infer<typeof insertCampScheduleItemSchema>;
+export type InsertCampVendorAssignment = z.infer<typeof insertCampVendorAssignmentSchema>;
+export type InsertCampTask = z.infer<typeof insertCampTaskSchema>;
+
 export type CampStaffAssignment = typeof campStaffAssignments.$inferSelect;
+export type TravelArrangement = typeof travelArrangements.$inferSelect;
+export type Accommodation = typeof accommodations.$inferSelect;
+export type FinancialTransaction = typeof financialTransactions.$inferSelect;
+export type CampFinancials = typeof campFinancials.$inferSelect;
+export type CampScheduleItem = typeof campScheduleItems.$inferSelect;
+export type CampVendorAssignment = typeof campVendorAssignments.$inferSelect;
+export type CampTask = typeof campTasks.$inferSelect;

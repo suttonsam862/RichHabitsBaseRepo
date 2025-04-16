@@ -23,6 +23,7 @@ import Corporate from "./pages/corporate";
 import DesignCommunication from "./pages/design-communication";
 import ProductionCommunication from "./pages/production-communication";
 import CommunicationCenter from "./pages/communication-center";
+import FabricResearchCenter from "./pages/fabric-research-center";
 import Feedback from "./pages/feedback";
 import Outlook from "./pages/outlook";
 import SalesProcessGuide from "./pages/sales-process-guide";
@@ -158,6 +159,9 @@ function DashboardLayout() {
         </Route>
         <Route path="/communication-center">
           <ProtectedPageLoader pageId="communication-center"><CommunicationCenter /></ProtectedPageLoader>
+        </Route>
+        <Route path="/fabric-research-center">
+          <ProtectedPageLoader pageId="fabric-research-center"><FabricResearchCenter /></ProtectedPageLoader>
         </Route>
         <Route path="/feedback">
           <ProtectedPageLoader pageId="feedback"><Feedback /></ProtectedPageLoader>

@@ -899,7 +899,37 @@ export type InsertFabricType = z.infer<typeof insertFabricTypeSchema>;
 export type InsertFabricCompatibility = z.infer<typeof insertFabricCompatibilitySchema>;
 export type InsertSewingPattern = z.infer<typeof insertSewingPatternSchema>;
 export type InsertProductSuggestion = z.infer<typeof insertProductSuggestionSchema>;
+// AI Training Data schema
+export const aiTrainingData = pgTable('ai_training_data', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  dataType: text('data_type').notNull(), // fabric, pattern, measurement, product
+  sourceType: text('source_type').notNull(), // file, url
+  sourceUrl: text('source_url'),
+  filePath: text('file_path'),
+  fileName: text('file_name'),
+  fileSize: integer('file_size'),
+  mimeType: text('mime_type'),
+  status: text('status').default('processing'), // processing, processed, error
+  errorMessage: text('error_message'),
+  processingStats: json('processing_stats'), // word count, entities extracted, etc.
+  lastTrainedAt: timestamp('last_trained_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at'),
+  createdBy: integer('created_by').references(() => users.id),
+});
+
+export const insertAiTrainingDataSchema = createInsertSchema(aiTrainingData).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export type InsertAiTrainingData = z.infer<typeof insertAiTrainingDataSchema>;
+
 export type FabricType = typeof fabricTypes.$inferSelect;
 export type FabricCompatibility = typeof fabricCompatibilities.$inferSelect;
 export type SewingPattern = typeof sewingPatterns.$inferSelect;
 export type ProductSuggestion = typeof productSuggestions.$inferSelect;
+export type AiTrainingData = typeof aiTrainingData.$inferSelect;

@@ -7,6 +7,10 @@ import { sql, eq, or, and } from "drizzle-orm";
 import { setupAuth, hashPassword, isAuthenticated } from "./auth";
 import { hasPermission } from '../shared/permissions';
 import anthropicService from "./services/anthropic-service";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import { insertAiTrainingDataSchema } from "../shared/schema";
 import { 
   leads,
   orders,

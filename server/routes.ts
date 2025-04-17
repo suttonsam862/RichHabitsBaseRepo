@@ -4784,14 +4784,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               name: p.name,
               value: p.value,
               unit: p.unit || null,
-              description: p.description || null
+              description: p.description || null,
+              technicalDetails: p.technicalDetails || null
             })),
             applications: researchResult.applications,
             careInstructions: researchResult.careInstructions,
             sustainabilityInfo: {
               environmentalImpact: researchResult.sustainabilityInfo.environmentalImpact,
               recyclability: researchResult.sustainabilityInfo.recyclability,
-              certifications: researchResult.sustainabilityInfo.certifications
+              certifications: researchResult.sustainabilityInfo.certifications,
+              sustainabilityScore: researchResult.sustainabilityInfo.sustainabilityScore || null,
+              ecologicalFootprint: researchResult.sustainabilityInfo.ecologicalFootprint || null
             },
             manufacturingCosts: researchResult.manufacturingCosts.map(mc => ({
               region: mc.region,
@@ -4802,7 +4805,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               notes: mc.notes || null
             })),
             alternatives: researchResult.alternatives,
-            sources: researchResult.sources
+            sources: researchResult.sources,
+            visualDescriptionForMidjourney: researchResult.visualDescriptionForMidjourney || null,
+            imageGenerationPrompt: researchResult.imageGenerationPrompt || null,
+            specificRecommendations: researchResult.specificRecommendations || [],
+            finishingTechniques: researchResult.finishingTechniques || []
           });
           
           // Log the creation

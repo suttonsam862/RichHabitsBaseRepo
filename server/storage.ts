@@ -2685,6 +2685,95 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // AI Training Data methods
+  async getAiTrainingData(): Promise<{ 
+    fabrics: AiTrainingData[]; 
+    patterns: AiTrainingData[]; 
+    measurements: AiTrainingData[]; 
+    products: AiTrainingData[];
+  }> {
+    try {
+      const data = await db
+        .select()
+        .from(aiTrainingData)
+        .orderBy(desc(aiTrainingData.createdAt));
+
+      return {
+        fabrics: data.filter(item => item.dataType === 'fabric'),
+        patterns: data.filter(item => item.dataType === 'pattern'),
+        measurements: data.filter(item => item.dataType === 'measurement'),
+        products: data.filter(item => item.dataType === 'product'),
+      };
+    } catch (error) {
+      console.error('Error getting AI training data:', error);
+      throw error;
+    }
+  }
+
+  async addAiTrainingDataFile(data: InsertAiTrainingData): Promise<AiTrainingData> {
+    try {
+      const [result] = await db
+        .insert(aiTrainingData)
+        .values({
+          ...data,
+          sourceType: 'file',
+          status: 'processing',
+        })
+        .returning();
+        
+      return result;
+    } catch (error) {
+      console.error('Error adding AI training data file:', error);
+      throw error;
+    }
+  }
+
+  async addAiTrainingDataUrl(data: InsertAiTrainingData): Promise<AiTrainingData> {
+    try {
+      const [result] = await db
+        .insert(aiTrainingData)
+        .values({
+          ...data,
+          sourceType: 'url',
+          status: 'processing',
+        })
+        .returning();
+        
+      return result;
+    } catch (error) {
+      console.error('Error adding AI training data URL:', error);
+      throw error;
+    }
+  }
+
+  async updateAiTrainingDataStatus(id: number, status: string, errorMessage?: string): Promise<AiTrainingData> {
+    try {
+      const [result] = await db
+        .update(aiTrainingData)
+        .set({ 
+          status, 
+          errorMessage: errorMessage || null,
+          updatedAt: new Date(),
+        })
+        .where(eq(aiTrainingData.id, id))
+        .returning();
+        
+      return result;
+    } catch (error) {
+      console.error(`Error updating AI training data status for ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteAiTrainingData(id: number): Promise<void> {
+    try {
+      await db.delete(aiTrainingData).where(eq(aiTrainingData.id, id));
+    } catch (error) {
+      console.error(`Error deleting AI training data ${id}:`, error);
+      throw error;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

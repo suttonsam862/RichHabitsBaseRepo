@@ -392,7 +392,7 @@ export default function AITrainingDataPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Tabs.Content value="file">
+              <TabsContent value="file">
                 <Button 
                   className="w-full" 
                   onClick={handleFileUpload} 
@@ -408,8 +408,8 @@ export default function AITrainingDataPage() {
                     </>
                   )}
                 </Button>
-              </Tabs.Content>
-              <Tabs.Content value="url">
+              </TabsContent>
+              <TabsContent value="url">
                 <Button 
                   className="w-full" 
                   onClick={handleUrlAdd} 
@@ -425,7 +425,7 @@ export default function AITrainingDataPage() {
                     </>
                   )}
                 </Button>
-              </Tabs.Content>
+              </TabsContent>
             </CardFooter>
           </Card>
           
@@ -480,13 +480,13 @@ export default function AITrainingDataPage() {
                 <div className="px-6 pt-2">
                   <TabsList className="grid grid-cols-4 w-full">
                     <TabsTrigger value="fabrics" className="flex items-center">
-                      <Fabric className="h-4 w-4 mr-2" /> Fabrics
+                      <ShirtIcon className="h-4 w-4 mr-2" /> Fabrics
                     </TabsTrigger>
                     <TabsTrigger value="patterns" className="flex items-center">
                       <Scissors className="h-4 w-4 mr-2" /> Patterns
                     </TabsTrigger>
                     <TabsTrigger value="measurements" className="flex items-center">
-                      <PencilRuler className="h-4 w-4 mr-2" /> Measurements
+                      <Ruler className="h-4 w-4 mr-2" /> Measurements
                     </TabsTrigger>
                     <TabsTrigger value="products" className="flex items-center">
                       <FileText className="h-4 w-4 mr-2" /> Products

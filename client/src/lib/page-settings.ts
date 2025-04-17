@@ -172,6 +172,48 @@ export const AVAILABLE_PAGES = [
     description: "Calendar view of all camp events",
     category: "Events",
   },
+  {
+    id: "events/team-portal",
+    name: "Team Portal",
+    description: "Role-based access for event directors, managers, and staff",
+    category: "Events",
+  },
+  {
+    id: "events/checkin-tools",
+    name: "Check-In Tools",
+    description: "Tablet-friendly interface for QR code scanning and gear distribution",
+    category: "Events",
+  },
+  {
+    id: "events/registration",
+    name: "Registration System",
+    description: "Customizable registration tiers with Shopify integration",
+    category: "Events",
+  },
+  {
+    id: "events/budget-tracker",
+    name: "Budget Tracker",
+    description: "Financial management with revenue and expense tracking",
+    category: "Events",
+  },
+  {
+    id: "events/swag-manager",
+    name: "Swag Pack Manager",
+    description: "Track merchandise distribution, sizing, and packing slips",
+    category: "Events",
+  },
+  {
+    id: "events/media-panel",
+    name: "Marketing & Media Panel",
+    description: "Manage social media campaigns and sponsor assets",
+    category: "Events",
+  },
+  {
+    id: "events/venue-planner",
+    name: "Venue Planner",
+    description: "Visual map layout tool for organizing event spaces",
+    category: "Events",
+  },
   // Admin pages
   {
     id: "user-management",

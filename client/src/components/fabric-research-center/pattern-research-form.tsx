@@ -33,10 +33,11 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, FileText, Search, TrendingUp, Lightbulb } from "lucide-react";
+import { Loader2, FileText, Search, TrendingUp, Lightbulb, CheckCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { PatternDetailDialog } from "./pattern-detail-dialog";
 
 // Define pattern types
 const PATTERN_TYPES = [
@@ -110,6 +111,8 @@ export function PatternResearchForm() {
   const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(false);
   const [researchResult, setResearchResult] = useState<PatternResearchResult | null>(null);
+  const [patternDetailOpen, setPatternDetailOpen] = useState(false);
+  const [selectedPatternId, setSelectedPatternId] = useState<number | null>(null);
   
   const form = useForm<PatternResearchValues>({
     resolver: zodResolver(patternResearchSchema),
@@ -313,7 +316,15 @@ export function PatternResearchForm() {
               <TrendingUp className="h-4 w-4 text-green-600" />
               <AlertTitle className="text-green-800">Research Complete</AlertTitle>
               <AlertDescription className="text-green-700">
-                Pattern research has been completed successfully. {researchResult.savedPatternId && "The pattern has been saved to your library."}
+                Pattern research has been completed successfully. 
+                {researchResult.savedPatternId && 
+                  <> 
+                    <div className="mt-1 flex items-center">
+                      <CheckCircle className="h-4 w-4 text-green-600 mr-1" />
+                      <span>The pattern has been saved to your library.</span>
+                    </div>
+                  </>
+                }
               </AlertDescription>
             </Alert>
             
@@ -369,6 +380,12 @@ export function PatternResearchForm() {
                 <Button 
                   variant="default" 
                   disabled={!researchResult.savedPatternId}
+                  onClick={() => {
+                    if (researchResult.savedPatternId) {
+                      setSelectedPatternId(researchResult.savedPatternId);
+                      setPatternDetailOpen(true);
+                    }
+                  }}
                 >
                   View Details
                 </Button>
@@ -376,6 +393,18 @@ export function PatternResearchForm() {
             </Card>
           </div>
         )}
+
+        {/* Pattern Detail Dialog */}
+        <PatternDetailDialog 
+          patternId={selectedPatternId}
+          isOpen={patternDetailOpen}
+          onOpenChange={(open) => {
+            setPatternDetailOpen(open);
+            if (!open) {
+              setSelectedPatternId(null);
+            }
+          }}
+        />
       </CardContent>
     </Card>
   );

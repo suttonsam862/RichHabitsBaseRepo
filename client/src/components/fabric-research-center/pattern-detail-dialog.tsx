@@ -43,7 +43,15 @@ export function PatternDetailDialog({
 
   // Fetch pattern details
   const { data: pattern, isLoading } = useQuery({
-    queryKey: [`/api/sewing-patterns/${patternId}`],
+    queryKey: ['/api/sewing-patterns', patternId],
+    queryFn: async () => {
+      if (!patternId) return null;
+      const response = await fetch(`/api/sewing-patterns/${patternId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch pattern details");
+      }
+      return response.json();
+    },
     enabled: isOpen && !!patternId,
   });
 

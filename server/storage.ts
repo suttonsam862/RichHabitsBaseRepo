@@ -105,7 +105,13 @@ import {
   type ProductSuggestion,
   type InsertProductSuggestion,
   type AiTrainingData,
-  type InsertAiTrainingData
+  type InsertAiTrainingData,
+  type CampRegistration,
+  type InsertCampRegistration,
+  type CampRegistrationTier,
+  type InsertCampRegistrationTier,
+  type RegistrationCommunication,
+  type InsertRegistrationCommunication
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, or, isNull, asc, inArray } from "drizzle-orm";
@@ -376,6 +382,173 @@ export class DatabaseStorage implements IStorage {
       pool,
       createTableIfMissing: true
     });
+  }
+  
+  // Camp Registration Tier methods
+  async createRegistrationTier(tierData: InsertCampRegistrationTier): Promise<CampRegistrationTier> {
+    try {
+      console.log('Creating registration tier:', tierData);
+      const [tier] = await db
+        .insert(campRegistrationTiers)
+        .values(tierData)
+        .returning();
+      return tier;
+    } catch (error) {
+      console.error('Error creating registration tier:', error);
+      throw error;
+    }
+  }
+  
+  async getRegistrationTiersByCampId(campId: number): Promise<CampRegistrationTier[]> {
+    try {
+      return db
+        .select()
+        .from(campRegistrationTiers)
+        .where(eq(campRegistrationTiers.campId, campId))
+        .orderBy(asc(campRegistrationTiers.price));
+    } catch (error) {
+      console.error(`Error getting registration tiers for camp ${campId}:`, error);
+      throw error;
+    }
+  }
+  
+  async updateRegistrationTier(id: number, data: Partial<InsertCampRegistrationTier>): Promise<CampRegistrationTier> {
+    try {
+      const [updatedTier] = await db
+        .update(campRegistrationTiers)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(campRegistrationTiers.id, id))
+        .returning();
+      return updatedTier;
+    } catch (error) {
+      console.error(`Error updating registration tier ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async deleteRegistrationTier(id: number): Promise<boolean> {
+    try {
+      await db
+        .delete(campRegistrationTiers)
+        .where(eq(campRegistrationTiers.id, id));
+      return true;
+    } catch (error) {
+      console.error(`Error deleting registration tier ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  // Camp Registration methods
+  async createRegistration(registrationData: InsertCampRegistration): Promise<CampRegistration> {
+    try {
+      console.log('Creating registration:', registrationData);
+      const [registration] = await db
+        .insert(campRegistrations)
+        .values(registrationData)
+        .returning();
+      return registration;
+    } catch (error) {
+      console.error('Error creating registration:', error);
+      throw error;
+    }
+  }
+  
+  async getRegistrationById(id: number): Promise<CampRegistration | undefined> {
+    try {
+      const [registration] = await db
+        .select()
+        .from(campRegistrations)
+        .where(eq(campRegistrations.id, id));
+      return registration;
+    } catch (error) {
+      console.error(`Error getting registration ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async getRegistrationsByCampId(campId: number): Promise<CampRegistration[]> {
+    try {
+      return db
+        .select()
+        .from(campRegistrations)
+        .where(eq(campRegistrations.campId, campId))
+        .orderBy(desc(campRegistrations.createdAt));
+    } catch (error) {
+      console.error(`Error getting registrations for camp ${campId}:`, error);
+      throw error;
+    }
+  }
+  
+  async updateRegistration(id: number, data: Partial<InsertCampRegistration>): Promise<CampRegistration> {
+    try {
+      const [updatedRegistration] = await db
+        .update(campRegistrations)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(campRegistrations.id, id))
+        .returning();
+      return updatedRegistration;
+    } catch (error) {
+      console.error(`Error updating registration ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async getRegistrationsByShopifyOrderId(shopifyOrderId: string): Promise<CampRegistration | undefined> {
+    try {
+      const [registration] = await db
+        .select()
+        .from(campRegistrations)
+        .where(eq(campRegistrations.shopifyOrderId, shopifyOrderId));
+      return registration;
+    } catch (error) {
+      console.error(`Error getting registration by Shopify order ID ${shopifyOrderId}:`, error);
+      throw error;
+    }
+  }
+  
+  async deleteRegistration(id: number): Promise<boolean> {
+    try {
+      await db
+        .delete(campRegistrations)
+        .where(eq(campRegistrations.id, id));
+      return true;
+    } catch (error) {
+      console.error(`Error deleting registration ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  // Registration Communication methods
+  async createRegistrationCommunication(data: InsertRegistrationCommunication): Promise<RegistrationCommunication> {
+    try {
+      const [communication] = await db
+        .insert(registrationCommunications)
+        .values(data)
+        .returning();
+      return communication;
+    } catch (error) {
+      console.error('Error creating registration communication:', error);
+      throw error;
+    }
+  }
+  
+  async getCommunicationsByRegistrationId(registrationId: number): Promise<RegistrationCommunication[]> {
+    try {
+      return db
+        .select()
+        .from(registrationCommunications)
+        .where(eq(registrationCommunications.registrationId, registrationId))
+        .orderBy(desc(registrationCommunications.communicationDate));
+    } catch (error) {
+      console.error(`Error getting communications for registration ${registrationId}:`, error);
+      throw error;
+    }
   }
   
   // User methods
@@ -2845,6 +3018,231 @@ export class DatabaseStorage implements IStorage {
       await db.delete(aiTrainingData).where(eq(aiTrainingData.id, id));
     } catch (error) {
       console.error(`Error deleting AI training data ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  // Camp Registration Tier methods
+  async createRegistrationTier(tierData: InsertCampRegistrationTier): Promise<CampRegistrationTier> {
+    try {
+      // Validate tier data
+      if (!tierData.name) throw new Error("Tier name is required");
+      if (!tierData.campId) throw new Error("Camp ID is required");
+      if (tierData.price === undefined) throw new Error("Price is required");
+      
+      console.log('Creating registration tier:', tierData);
+      const [tier] = await db
+        .insert(campRegistrationTiers)
+        .values(tierData)
+        .returning();
+      
+      return tier;
+    } catch (error) {
+      console.error('Error creating registration tier:', error);
+      throw error;
+    }
+  }
+  
+  async getRegistrationTiersByCampId(campId: number): Promise<CampRegistrationTier[]> {
+    try {
+      const tiers = await db
+        .select()
+        .from(campRegistrationTiers)
+        .where(eq(campRegistrationTiers.campId, campId))
+        .orderBy(asc(campRegistrationTiers.price));
+      
+      return tiers;
+    } catch (error) {
+      console.error(`Error getting registration tiers for camp ${campId}:`, error);
+      throw error;
+    }
+  }
+  
+  async updateRegistrationTier(id: number, data: Partial<InsertCampRegistrationTier>): Promise<CampRegistrationTier> {
+    try {
+      const [tier] = await db
+        .update(campRegistrationTiers)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(campRegistrationTiers.id, id))
+        .returning();
+      
+      return tier;
+    } catch (error) {
+      console.error(`Error updating registration tier ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async deleteRegistrationTier(id: number): Promise<boolean> {
+    try {
+      // Check if there are any registrations using this tier
+      const registrations = await db
+        .select()
+        .from(campRegistrations)
+        .where(eq(campRegistrations.tierId, id))
+        .limit(1);
+      
+      if (registrations.length > 0) {
+        throw new Error("Cannot delete tier that has active registrations");
+      }
+      
+      await db
+        .delete(campRegistrationTiers)
+        .where(eq(campRegistrationTiers.id, id));
+      
+      return true;
+    } catch (error) {
+      console.error(`Error deleting registration tier ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  // Camp Registration methods
+  async createRegistration(registrationData: InsertCampRegistration): Promise<CampRegistration> {
+    try {
+      // Validate required fields
+      if (!registrationData.campId) throw new Error("Camp ID is required");
+      if (!registrationData.tierId) throw new Error("Registration tier ID is required");
+      if (!registrationData.athleteName) throw new Error("Athlete name is required");
+      if (!registrationData.contactEmail) throw new Error("Contact email is required");
+      
+      console.log('Creating camp registration:', registrationData);
+      
+      // Handle Shopify order data if provided
+      if (registrationData.shopifyOrderId) {
+        // Check if registration with this Shopify order ID already exists
+        const existingRegistration = await this.getRegistrationsByShopifyOrderId(registrationData.shopifyOrderId);
+        if (existingRegistration) {
+          throw new Error(`Registration with Shopify Order ID ${registrationData.shopifyOrderId} already exists`);
+        }
+      }
+      
+      const [registration] = await db
+        .insert(campRegistrations)
+        .values(registrationData)
+        .returning();
+      
+      return registration;
+    } catch (error) {
+      console.error('Error creating registration:', error);
+      throw error;
+    }
+  }
+  
+  async getRegistrationById(id: number): Promise<CampRegistration | undefined> {
+    try {
+      const [registration] = await db
+        .select()
+        .from(campRegistrations)
+        .where(eq(campRegistrations.id, id));
+      
+      return registration;
+    } catch (error) {
+      console.error(`Error getting registration ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async getRegistrationsByCampId(campId: number): Promise<CampRegistration[]> {
+    try {
+      const registrations = await db
+        .select()
+        .from(campRegistrations)
+        .where(eq(campRegistrations.campId, campId))
+        .orderBy(desc(campRegistrations.createdAt));
+      
+      return registrations;
+    } catch (error) {
+      console.error(`Error getting registrations for camp ${campId}:`, error);
+      throw error;
+    }
+  }
+  
+  async updateRegistration(id: number, data: Partial<InsertCampRegistration>): Promise<CampRegistration> {
+    try {
+      const [registration] = await db
+        .update(campRegistrations)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(campRegistrations.id, id))
+        .returning();
+      
+      return registration;
+    } catch (error) {
+      console.error(`Error updating registration ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async getRegistrationsByShopifyOrderId(shopifyOrderId: string): Promise<CampRegistration | undefined> {
+    try {
+      const [registration] = await db
+        .select()
+        .from(campRegistrations)
+        .where(eq(campRegistrations.shopifyOrderId, shopifyOrderId));
+      
+      return registration;
+    } catch (error) {
+      console.error(`Error getting registration by Shopify Order ID ${shopifyOrderId}:`, error);
+      throw error;
+    }
+  }
+  
+  async deleteRegistration(id: number): Promise<boolean> {
+    try {
+      // Delete any associated communications
+      await db
+        .delete(registrationCommunications)
+        .where(eq(registrationCommunications.registrationId, id));
+      
+      // Delete the registration
+      await db
+        .delete(campRegistrations)
+        .where(eq(campRegistrations.id, id));
+      
+      return true;
+    } catch (error) {
+      console.error(`Error deleting registration ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  // Registration Communication methods
+  async createRegistrationCommunication(data: InsertRegistrationCommunication): Promise<RegistrationCommunication> {
+    try {
+      // Validate required fields
+      if (!data.registrationId) throw new Error("Registration ID is required");
+      if (!data.messageType) throw new Error("Message type is required");
+      if (!data.content) throw new Error("Content is required");
+      
+      const [communication] = await db
+        .insert(registrationCommunications)
+        .values(data)
+        .returning();
+      
+      return communication;
+    } catch (error) {
+      console.error('Error creating registration communication:', error);
+      throw error;
+    }
+  }
+  
+  async getCommunicationsByRegistrationId(registrationId: number): Promise<RegistrationCommunication[]> {
+    try {
+      const communications = await db
+        .select()
+        .from(registrationCommunications)
+        .where(eq(registrationCommunications.registrationId, registrationId))
+        .orderBy(desc(registrationCommunications.createdAt));
+      
+      return communications;
+    } catch (error) {
+      console.error(`Error getting communications for registration ${registrationId}:`, error);
       throw error;
     }
   }

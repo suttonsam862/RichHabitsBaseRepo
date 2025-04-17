@@ -787,6 +787,7 @@ export const fabricTypes = pgTable('fabric_types', {
     value: string;
     description?: string;
     unit?: string;
+    technicalDetails?: string;
   }[]>(),
   applications: json('applications').$type<string[]>(),
   manufacturingCosts: json('manufacturing_costs').$type<{
@@ -801,10 +802,16 @@ export const fabricTypes = pgTable('fabric_types', {
     environmentalImpact: string;
     recyclability: string;
     certifications: string[];
+    sustainabilityScore?: number;
+    ecologicalFootprint?: string;
   }>(),
   careInstructions: json('care_instructions').$type<string[]>(),
   alternatives: json('alternatives').$type<string[]>(),
   sources: json('sources').$type<string[]>(),
+  visualDescriptionForMidjourney: text('visual_description_for_midjourney'),
+  imageGenerationPrompt: text('image_generation_prompt'),
+  specificRecommendations: json('specific_recommendations').$type<string[]>(),
+  finishingTechniques: json('finishing_techniques').$type<string[]>(),
   imageUrl: text('image_url'),
   isPublished: boolean('is_published').default(true),
   createdBy: integer('created_by').references(() => users.id),

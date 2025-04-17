@@ -26,6 +26,7 @@ export interface FabricResearchResult {
     value: string;
     description: string;
     unit?: string;
+    technicalDetails?: string;
   }[];
   applications: string[];
   manufacturingCosts: {
@@ -40,10 +41,16 @@ export interface FabricResearchResult {
     environmentalImpact: string;
     recyclability: string;
     certifications: string[];
+    sustainabilityScore?: number;
+    ecologicalFootprint?: string;
   };
   careInstructions: string[];
   alternatives: string[];
   sources: string[];
+  visualDescriptionForMidjourney?: string;
+  imageGenerationPrompt?: string;
+  specificRecommendations?: string[];
+  finishingTechniques?: string[];
 }
 
 export interface FabricCompatibilityRequest {
@@ -120,20 +127,21 @@ export class AnthropicService {
     // Build a prompt based on the request parameters
     let systemPrompt = `You are a Fabric Research Assistant with expertise in textiles, manufacturing, and material science. 
 Your task is to research and provide detailed, factual information about fabrics.
-Always format your response as a valid JSON object without markdown formatting.`;
+Always format your response as a valid JSON object without markdown formatting.
+Include hyper-specific details, measurements, and practical applications in your research.`;
 
     if (detailLevel === 'comprehensive') {
-      systemPrompt += `\nProvide extremely detailed and technical information with precise specifications.`;
+      systemPrompt += `\nProvide extremely detailed and technical information with precise specifications, industry standards, and manufacturing nuances.`;
     } else if (detailLevel === 'basic') {
-      systemPrompt += `\nProvide concise, essential information without going into technical details.`;
+      systemPrompt += `\nProvide concise, essential information without going too deep into technical details, but still include specific measurements and key properties.`;
     }
 
     if (sustainabilityFocus) {
-      systemPrompt += `\nPrioritize information about environmental impact, sustainability certifications, and eco-friendly aspects of the fabric.`;
+      systemPrompt += `\nPrioritize information about environmental impact, sustainability certifications, eco-friendly aspects of the fabric, and provide a sustainability score from 1-10 with specific justification.`;
     }
 
     if (region && region !== 'global') {
-      systemPrompt += `\nFocus on manufacturing information, availability, and pricing specific to the ${region} region.`;
+      systemPrompt += `\nFocus on manufacturing information, availability, and pricing specific to the ${region} region, including regional suppliers and local manufacturing standards.`;
     }
 
     const userPrompt = `Research the fabric type: ${fabricType}${
@@ -150,9 +158,10 @@ Return your findings in the following JSON format:
   "properties": [
     {
       "name": "Property name (e.g., Breathability, Durability, Stretch)",
-      "value": "Rating or value",
-      "description": "Explanation of the property for this fabric",
-      "unit": "Unit of measurement if applicable"
+      "value": "Rating or value (be specific with numbers when possible)",
+      "description": "Detailed explanation of the property for this fabric",
+      "unit": "Unit of measurement if applicable",
+      "technicalDetails": "Specific technical details, test methods, or industry standards for measuring this property"
     }
   ],
   "applications": ["Application 1", "Application 2", ...],
@@ -167,16 +176,22 @@ Return your findings in the following JSON format:
     }
   ],
   "sustainabilityInfo": {
-    "environmentalImpact": "Description of environmental impact",
-    "recyclability": "Information on recyclability",
-    "certifications": ["Certification 1", "Certification 2", ...]
+    "environmentalImpact": "Detailed description of environmental impact",
+    "recyclability": "Specific information on recyclability including processes",
+    "certifications": ["Certification 1", "Certification 2", ...],
+    "sustainabilityScore": 7.5,
+    "ecologicalFootprint": "Details on water usage, carbon emissions, and land use"
   },
   "careInstructions": ["Instruction 1", "Instruction 2", ...],
   "alternatives": ["Alternative fabric 1", "Alternative fabric 2", ...],
-  "sources": ["Source 1", "Source 2", ...]
+  "sources": ["Source 1", "Source 2", ...],
+  "visualDescriptionForMidjourney": "Detailed visual description of the fabric's appearance, texture, drape, and how light interacts with it. This should be 2-3 sentences that vividly describe what the fabric looks like for image generation.",
+  "imageGenerationPrompt": "A clear, specific prompt that can be used with Midjourney to generate an accurate image of this fabric. Focus on texture, pattern, color, weave structure, and sheen.",
+  "specificRecommendations": ["Specific recommendation 1 for using this fabric", "Specific recommendation 2", ...],
+  "finishingTechniques": ["Finishing technique 1 appropriate for this fabric", "Finishing technique 2", ...]
 }
 
-Ensure all information is factual, accurate, and detailed. Include typical manufacturing costs, sustainability information, and care instructions.`;
+Ensure all information is factual, accurate, and hyper-specific with precise measurements and details. Include typical manufacturing costs, detailed sustainability information, specific care instructions, and image generation prompts that would allow accurate visual representation of the fabric.`;
 
     // Make the request to Anthropic
     try {
@@ -429,6 +444,10 @@ Ensure all measurements are accurate and typical for this pattern type. Include 
       careInstructions: result.careInstructions,
       alternatives: result.alternatives,
       sources: result.sources,
+      visualDescriptionForMidjourney: result.visualDescriptionForMidjourney || null,
+      imageGenerationPrompt: result.imageGenerationPrompt || null,
+      specificRecommendations: result.specificRecommendations || null,
+      finishingTechniques: result.finishingTechniques || null,
       createdBy: createdBy || null,
     };
   }

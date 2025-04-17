@@ -399,7 +399,11 @@ export default function FabricResearchCenter() {
                         >
                           Edit
                         </Button>
-                        <Button variant="outline" className="flex-1">
+                        <Button 
+                          variant="outline" 
+                          className="flex-1"
+                          onClick={() => handlePublishFabric(fabric.id)}
+                        >
                           Publish
                         </Button>
                       </div>

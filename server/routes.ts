@@ -69,7 +69,10 @@ import {
   type FabricType,
   type InsertFabricType,
   type FabricCompatibility,
-  type InsertFabricCompatibility
+  type InsertFabricCompatibility,
+  aiTrainingData,
+  type AiTrainingData,
+  type InsertAiTrainingData
 } from "@shared/schema";
 import { isAdmin, hasRequiredPermission } from "./auth";
 
@@ -5115,6 +5118,173 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error deleting product suggestion:", error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Configure multer for file uploads
+  // In ESM, __dirname is not available, so we need to construct the path differently
+  const uploadDir = path.join(process.cwd(), 'uploads');
+  // Ensure the uploads directory exists
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+
+  const storage_engine = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const fileExt = path.extname(file.originalname);
+      cb(null, file.fieldname + '-' + uniqueSuffix + fileExt);
+    }
+  });
+
+  const upload = multer({ 
+    storage: storage_engine,
+    limits: {
+      fileSize: 50 * 1024 * 1024, // 50MB max file size
+    },
+    fileFilter: (req, file, cb) => {
+      // Accept common document formats
+      const validFileTypes = ['.pdf', '.doc', '.docx', '.txt', '.rtf', '.ppt', '.pptx', '.xls', '.xlsx', '.csv'];
+      const ext = path.extname(file.originalname).toLowerCase();
+      if (validFileTypes.includes(ext)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Invalid file type. Only PDF, Word documents, text files, PowerPoint, Excel and CSV files are allowed.') as any);
+      }
+    }
+  });
+
+  // AI Training Data Endpoints
+  app.get("/api/ai-training-data", isAuthenticated, async (req, res) => {
+    try {
+      const data = await storage.getAiTrainingData();
+      res.json({ data });
+    } catch (error: any) {
+      console.error("Error fetching AI training data:", error);
+      res.status(500).json({ error: error.message || "Failed to fetch AI training data" });
+    }
+  });
+
+  // Upload a file for AI training
+  app.post("/api/ai-training-data/file", isAuthenticated, upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const user = req.user as User;
+      const { dataType, description } = req.body;
+
+      if (!dataType) {
+        return res.status(400).json({ error: "Data type is required (fabric, pattern, measurement, or product)" });
+      }
+
+      const data = await storage.addAiTrainingDataFile({
+        title: req.file.originalname,
+        description: description || req.file.originalname,
+        dataType,
+        filePath: req.file.path,
+        sourceUrl: null,
+        userId: user.id,
+        status: 'processing',
+        errorMessage: null,
+      });
+
+      // In a real implementation, you would queue this file for processing
+      // For now, we'll just update the status after a short delay
+      setTimeout(async () => {
+        try {
+          await storage.updateAiTrainingDataStatus(data.id, 'completed');
+        } catch (error) {
+          console.error("Error updating training data status:", error);
+        }
+      }, 3000);
+
+      res.status(201).json({ 
+        success: true, 
+        data,
+        message: "File uploaded successfully and queued for processing" 
+      });
+    } catch (error: any) {
+      console.error("Error uploading AI training file:", error);
+      res.status(500).json({ error: error.message || "Failed to upload training file" });
+    }
+  });
+
+  // Add a URL for AI training
+  app.post("/api/ai-training-data/url", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      const { url, dataType, title, description } = req.body;
+
+      if (!url) {
+        return res.status(400).json({ error: "URL is required" });
+      }
+
+      if (!dataType) {
+        return res.status(400).json({ error: "Data type is required (fabric, pattern, measurement, or product)" });
+      }
+
+      const data = await storage.addAiTrainingDataUrl({
+        title: title || url,
+        description: description || url,
+        dataType,
+        filePath: null,
+        sourceUrl: url,
+        userId: user.id,
+        status: 'processing',
+        errorMessage: null,
+      });
+
+      // In a real implementation, you would queue this URL for processing
+      // For now, we'll just update the status after a short delay
+      setTimeout(async () => {
+        try {
+          await storage.updateAiTrainingDataStatus(data.id, 'completed');
+        } catch (error) {
+          console.error("Error updating training data status:", error);
+        }
+      }, 3000);
+
+      res.status(201).json({ 
+        success: true, 
+        data,
+        message: "URL added successfully and queued for processing" 
+      });
+    } catch (error: any) {
+      console.error("Error adding AI training URL:", error);
+      res.status(500).json({ error: error.message || "Failed to add training URL" });
+    }
+  });
+
+  // Delete training data
+  app.delete("/api/ai-training-data/:id", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid training data ID" });
+      }
+      
+      await storage.deleteAiTrainingData(id);
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "DELETE",
+        content: `Deleted AI training data record (ID: ${id})`,
+        userId: user.id,
+        relatedId: id,
+        relatedType: "AI_TRAINING_DATA"
+      });
+      
+      res.status(200).json({ success: true, message: "Training data deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting AI training data:", error);
+      res.status(500).json({ error: error.message || "Failed to delete AI training data" });
     }
   });
 

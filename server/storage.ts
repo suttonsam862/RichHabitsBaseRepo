@@ -35,6 +35,7 @@ import {
   financialTransactions,
   campFinancials,
   campVendorAssignments,
+  aiTrainingData,
   ROLES,
   type User, 
   type InsertUser, 
@@ -99,7 +100,9 @@ import {
   type SewingPattern,
   type InsertSewingPattern,
   type ProductSuggestion,
-  type InsertProductSuggestion
+  type InsertProductSuggestion,
+  type AiTrainingData,
+  type InsertAiTrainingData
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, or, isNull, asc, inArray } from "drizzle-orm";
@@ -214,6 +217,18 @@ export interface IStorage {
   createProductSuggestion(suggestion: InsertProductSuggestion): Promise<ProductSuggestion>;
   updateProductSuggestion(id: number, suggestion: Partial<InsertProductSuggestion>): Promise<ProductSuggestion>;
   deleteProductSuggestion(id: number): Promise<void>;
+  
+  // AI Training Data methods
+  getAiTrainingData(): Promise<{ 
+    fabrics: AiTrainingData[]; 
+    patterns: AiTrainingData[]; 
+    measurements: AiTrainingData[]; 
+    products: AiTrainingData[];
+  }>;
+  addAiTrainingDataFile(data: InsertAiTrainingData): Promise<AiTrainingData>;
+  addAiTrainingDataUrl(data: InsertAiTrainingData): Promise<AiTrainingData>;
+  updateAiTrainingDataStatus(id: number, status: string, errorMessage?: string): Promise<AiTrainingData>;
+  deleteAiTrainingData(id: number): Promise<void>;
   
   // Fabric Cuts methods
   getFabricCuts(): Promise<FabricCut[]>;

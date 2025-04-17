@@ -23,7 +23,9 @@ import {
   CircleDashed,
   ShoppingBag,
   Share2,
-  Newspaper
+  Newspaper,
+  UserPlus,
+  Tablet
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -661,6 +663,52 @@ function CampProject() {
                   onClick={() => navigateToModule('media-panel')}
                 >
                   Open Media Panel
+                </Button>
+              </CardFooter>
+            </Card>
+            
+            {/* Team Portal */}
+            <Card className="group hover:shadow-md transition-shadow">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center">
+                  <UserPlus className="mr-2 h-5 w-5 text-primary" />
+                  Team Portal
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-2">
+                <p className="text-sm text-muted-foreground">
+                  Manage staff, assign roles, and coordinate team tasks.
+                </p>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  className="w-full group-hover:bg-primary/90"
+                  onClick={() => navigateToModule('team-portal')}
+                >
+                  Manage Team
+                </Button>
+              </CardFooter>
+            </Card>
+            
+            {/* Check-In & Onsite Tools */}
+            <Card className="group hover:shadow-md transition-shadow">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center">
+                  <Tablet className="mr-2 h-5 w-5 text-primary" />
+                  Check-In & Onsite Tools
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-2">
+                <p className="text-sm text-muted-foreground">
+                  Digital check-in, QR scanning, and real-time camp management.
+                </p>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  className="w-full group-hover:bg-primary/90"
+                  onClick={() => navigateToModule('checkin-tools')}
+                >
+                  Open Onsite Tools
                 </Button>
               </CardFooter>
             </Card>

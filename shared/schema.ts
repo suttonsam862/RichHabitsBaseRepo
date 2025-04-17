@@ -776,6 +776,89 @@ export type CampScheduleItem = typeof campScheduleItems.$inferSelect;
 export type CampVendorAssignment = typeof campVendorAssignments.$inferSelect;
 export type CampTask = typeof campTasks.$inferSelect;
 
+// Camp Registration Schema
+export const campRegistrationTiers = pgTable('camp_registration_tiers', {
+  id: serial('id').primaryKey(),
+  campId: integer('camp_id').notNull().references(() => camps.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(), // 'Early Bird', 'Standard', 'VIP', 'Team', etc.
+  description: text('description'),
+  price: numeric('price').notNull(),
+  maxParticipants: integer('max_participants'),
+  startDate: timestamp('start_date'), // When registration opens
+  endDate: timestamp('end_date'),   // When registration closes
+  isActive: boolean('is_active').default(true),
+  shopifyProductId: text('shopify_product_id'), // Link to Shopify product for orders
+  shopifyVariantId: text('shopify_variant_id'), // Link to Shopify variant
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const campRegistrations = pgTable('camp_registrations', {
+  id: serial('id').primaryKey(),
+  campId: integer('camp_id').notNull().references(() => camps.id, { onDelete: 'cascade' }),
+  tierId: integer('tier_id').references(() => campRegistrationTiers.id),
+  firstName: text('first_name').notNull(),
+  lastName: text('last_name').notNull(),
+  email: text('email').notNull(),
+  phone: text('phone'),
+  address: text('address'),
+  city: text('city'),
+  state: text('state'),
+  zipCode: text('zip_code'),
+  dateOfBirth: text('date_of_birth'),
+  age: integer('age'),
+  gender: text('gender'),
+  emergencyContactName: text('emergency_contact_name'),
+  emergencyContactPhone: text('emergency_contact_phone'),
+  school: text('school'),
+  grade: text('grade'),
+  weightClass: text('weight_class'),
+  shirtSize: text('shirt_size'),
+  allergies: text('allergies'),
+  specialRequirements: text('special_requirements'),
+  waiverSigned: boolean('waiver_signed').default(false),
+  waiverUrl: text('waiver_url'),
+  registrationStatus: text('registration_status').default('pending').notNull(), // 'pending', 'confirmed', 'cancelled'
+  paymentStatus: text('payment_status').default('pending').notNull(), // 'pending', 'paid', 'refunded'
+  shopifyOrderId: text('shopify_order_id'),
+  paymentAmount: numeric('payment_amount'),
+  paymentDate: timestamp('payment_date'),
+  notes: text('notes'),
+  source: text('source'), // how the participant heard about the camp
+  checkInDate: timestamp('check_in_date'),
+  checkOutDate: timestamp('check_out_date'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Communication logs for event registration follow-ups
+export const registrationCommunications = pgTable('registration_communications', {
+  id: serial('id').primaryKey(),
+  registrationId: integer('registration_id').notNull().references(() => campRegistrations.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(), // 'email', 'sms', 'phone'
+  communicationDate: timestamp('communication_date').defaultNow(),
+  subject: text('subject'),
+  content: text('content'),
+  status: text('status').notNull(), // 'sent', 'failed', 'pending'
+  messageId: text('message_id'), // External ID from email/SMS provider
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Create insert schemas
+export const insertCampRegistrationTierSchema = createInsertSchema(campRegistrationTiers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCampRegistrationSchema = createInsertSchema(campRegistrations).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertRegistrationCommunicationSchema = createInsertSchema(registrationCommunications).omit({ id: true, createdAt: true });
+
+// Create types from insert schemas
+export type InsertCampRegistrationTier = z.infer<typeof insertCampRegistrationTierSchema>;
+export type InsertCampRegistration = z.infer<typeof insertCampRegistrationSchema>;
+export type InsertRegistrationCommunication = z.infer<typeof insertRegistrationCommunicationSchema>;
+
+// Add types for select schemas
+export type CampRegistrationTier = typeof campRegistrationTiers.$inferSelect;
+export type CampRegistration = typeof campRegistrations.$inferSelect;
+export type RegistrationCommunication = typeof registrationCommunications.$inferSelect;
+
 // Fabric Research Schema
 export const fabricTypes = pgTable('fabric_types', {
   id: serial('id').primaryKey(),

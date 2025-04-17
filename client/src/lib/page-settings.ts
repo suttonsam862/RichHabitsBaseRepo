@@ -113,6 +113,12 @@ export const AVAILABLE_PAGES = [
     category: "Events",
   },
   {
+    id: "events/admin-dashboard",
+    name: "Global Admin Dashboard",
+    description: "Admin view for all camps with comprehensive metrics",
+    category: "Events",
+  },
+  {
     id: "events/planning",
     name: "Camp Planning",
     description: "Camp creation and planning tools",

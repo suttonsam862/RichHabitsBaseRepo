@@ -194,6 +194,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           ],
           'EVENTS': [
             { id: 'events/overview', name: 'Camps Dashboard' },
+            { id: 'events/admin-dashboard', name: 'Global Admin Dashboard' },
             { id: 'events/planning', name: 'Camp Planning' },
             { id: 'events/agenda', name: 'Agenda Builder' },
             { id: 'events/clinicians', name: 'Clinician Module' },
@@ -503,6 +504,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       feedback: <MessageSquare className="mr-2" size={16} />,
       // Events module
       'events/overview': <LayoutDashboard className="mr-2" size={16} />,
+      'events/admin-dashboard': <BarChart3 className="mr-2" size={16} />,
       'events/planning': <Pencil className="mr-2" size={16} />,
       'events/agenda': <CalendarRange className="mr-2" size={16} />,
       'events/clinicians': <UserCog className="mr-2" size={16} />,
@@ -922,6 +924,11 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               name: "Camps Dashboard",
               href: "/events/overview",
               icon: <LayoutDashboard className="mr-2" size={16} />,
+            },
+            {
+              name: "Global Admin Dashboard",
+              href: "/events/admin-dashboard",
+              icon: <BarChart3 className="mr-2" size={16} />,
             },
             {
               name: "Camp Planning",

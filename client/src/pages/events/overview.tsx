@@ -27,7 +27,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { cn } from '@/lib/utils';
 
 // Icons
-import { CalendarIcon, ChevronRight, Filter, Search, Plus, X, Users, MapPin, DollarSign, Clock, CheckCircle, Calendar, UserCheck, Loader2 } from 'lucide-react';
+import { CalendarIcon, ChevronRight, Filter, Search, Plus, X, Users, MapPin, DollarSign, Clock, CheckCircle, Calendar, UserCheck, Loader2, BarChart3 } from 'lucide-react';
 
 // Sample data for development
 const sampleCamps = [
@@ -1160,7 +1160,15 @@ export default function CampOverview() {
           <h1 className="text-3xl font-bold">Camp Overview</h1>
           <p className="text-gray-500 mt-1">Manage all your camp operations in one place</p>
         </div>
-        <div className="mt-4 md:mt-0">
+        <div className="mt-4 md:mt-0 flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setLocation('/events/admin-dashboard')}
+            className="flex items-center"
+          >
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Admin Dashboard
+          </Button>
           <Dialog open={isAddCampOpen} onOpenChange={setIsAddCampOpen}>
             <DialogTrigger asChild>
               <Button className="bg-primary hover:bg-primary/90">

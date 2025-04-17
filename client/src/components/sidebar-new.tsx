@@ -28,6 +28,7 @@ import {
   PenTool,
   HardHat,
   BadgeDollarSign,
+  Calendar,
   CalendarClock,
   CalendarRange,
   Shirt,
@@ -988,7 +989,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             {
               name: "Check-In Tools",
               href: "/events/checkin-tools",
-              icon: <CheckCircle className="mr-2" size={16} />,
+              icon: <Calendar className="mr-2" size={16} />,
             },
             {
               name: "Travel & Accommodations",

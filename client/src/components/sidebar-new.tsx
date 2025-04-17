@@ -28,12 +28,17 @@ import {
   HardHat,
   BadgeDollarSign,
   CalendarClock,
+  CalendarRange,
   Shirt,
   PackageOpen,
   MessageCircle,
   ChevronDown,
   ChevronRight,
-  Mail
+  Mail,
+  MapPin,
+  Pencil,
+  Plane,
+  Truck
 } from "lucide-react";
 
 interface SidebarProps {
@@ -188,12 +193,16 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             { id: 'messages', name: 'Messages' },
           ],
           'EVENTS': [
-            { id: 'events/overview', name: 'Camp Overview' },
-            { id: 'events/travel', name: 'Travel and Accommodations' },
-            { id: 'events/financial', name: 'Financial Management' },
+            { id: 'events/overview', name: 'Camps Dashboard' },
+            { id: 'events/planning', name: 'Camp Planning' },
+            { id: 'events/agenda', name: 'Agenda Builder' },
+            { id: 'events/clinicians', name: 'Clinician Module' },
+            { id: 'events/venue', name: 'Venue Module' },
             { id: 'events/staff', name: 'Staff Management' },
-            { id: 'events/vendors', name: 'Vendors and Services' },
-            { id: 'events/calendar', name: 'Calendar and Scheduling' },
+            { id: 'events/travel', name: 'Travel & Accommodations' },
+            { id: 'events/financial', name: 'Financial Management' },
+            { id: 'events/vendors', name: 'Vendors & Services' },
+            { id: 'events/calendar', name: 'Calendar' },
             { id: 'feedback', name: 'Feedback' },
           ],
           'SETTINGS': [
@@ -494,10 +503,14 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       feedback: <MessageSquare className="mr-2" size={16} />,
       // Events module
       'events/overview': <LayoutDashboard className="mr-2" size={16} />,
-      'events/travel': <Building className="mr-2" size={16} />,
-      'events/financial': <BadgeDollarSign className="mr-2" size={16} />,
+      'events/planning': <Pencil className="mr-2" size={16} />,
+      'events/agenda': <CalendarRange className="mr-2" size={16} />,
+      'events/clinicians': <UserCog className="mr-2" size={16} />,
+      'events/venue': <MapPin className="mr-2" size={16} />,
       'events/staff': <UsersRound className="mr-2" size={16} />,
-      'events/vendors': <Building2 className="mr-2" size={16} />,
+      'events/travel': <Plane className="mr-2" size={16} />,
+      'events/financial': <BadgeDollarSign className="mr-2" size={16} />,
+      'events/vendors': <Truck className="mr-2" size={16} />,
       'events/calendar': <CalendarClock className="mr-2" size={16} />,
     };
     
@@ -906,19 +919,29 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           title: "Events",
           items: [
             {
-              name: "Camp Overview",
+              name: "Camps Dashboard",
               href: "/events/overview",
               icon: <LayoutDashboard className="mr-2" size={16} />,
             },
             {
-              name: "Travel and Accommodations",
-              href: "/events/travel",
-              icon: <Building className="mr-2" size={16} />,
+              name: "Camp Planning",
+              href: "/events/planning",
+              icon: <Pencil className="mr-2" size={16} />,
             },
             {
-              name: "Financial Management",
-              href: "/events/financial",
-              icon: <BadgeDollarSign className="mr-2" size={16} />,
+              name: "Agenda Builder",
+              href: "/events/agenda",
+              icon: <CalendarRange className="mr-2" size={16} />,
+            },
+            {
+              name: "Clinician Module",
+              href: "/events/clinicians",
+              icon: <UserCog className="mr-2" size={16} />,
+            },
+            {
+              name: "Venue Module",
+              href: "/events/venue",
+              icon: <MapPin className="mr-2" size={16} />,
             },
             {
               name: "Staff Management",
@@ -926,12 +949,22 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               icon: <UsersRound className="mr-2" size={16} />,
             },
             {
-              name: "Vendors and Services",
-              href: "/events/vendors",
-              icon: <Building2 className="mr-2" size={16} />,
+              name: "Travel & Accommodations",
+              href: "/events/travel",
+              icon: <Plane className="mr-2" size={16} />,
             },
             {
-              name: "Camps Calendar",
+              name: "Financial Management",
+              href: "/events/financial",
+              icon: <BadgeDollarSign className="mr-2" size={16} />,
+            },
+            {
+              name: "Vendors & Services",
+              href: "/events/vendors",
+              icon: <Truck className="mr-2" size={16} />,
+            },
+            {
+              name: "Calendar",
               href: "/events/calendar",
               icon: <CalendarClock className="mr-2" size={16} />,
             },

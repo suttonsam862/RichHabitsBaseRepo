@@ -105,6 +105,67 @@ export const AVAILABLE_PAGES = [
     description: "User feedback and feature requests",
     category: "System",
   },
+  // Events/Camps pages
+  {
+    id: "events/overview",
+    name: "Camps Dashboard",
+    description: "Master dashboard for all camps and events",
+    category: "Events",
+  },
+  {
+    id: "events/planning",
+    name: "Camp Planning",
+    description: "Camp creation and planning tools",
+    category: "Events",
+  },
+  {
+    id: "events/agenda",
+    name: "Agenda Builder",
+    description: "Drag-and-drop daily agenda builder for camp schedules",
+    category: "Events",
+  },
+  {
+    id: "events/staff",
+    name: "Staff Management",
+    description: "Manage camp staff roles and assignments",
+    category: "Events",
+  },
+  {
+    id: "events/clinicians",
+    name: "Clinician Module",
+    description: "Manage clinicians and assign to agenda blocks",
+    category: "Events",
+  },
+  {
+    id: "events/venue",
+    name: "Venue Module",
+    description: "Manage venues and assign spaces per activity",
+    category: "Events",
+  },
+  {
+    id: "events/travel",
+    name: "Travel & Accommodations",
+    description: "Manage travel arrangements and accommodations",
+    category: "Events",
+  },
+  {
+    id: "events/financial",
+    name: "Financial Management",
+    description: "Manage camp budgets and financial data",
+    category: "Events",
+  },
+  {
+    id: "events/vendors",
+    name: "Vendors & Services",
+    description: "Manage service providers and vendors for camps",
+    category: "Events",
+  },
+  {
+    id: "events/calendar",
+    name: "Calendar",
+    description: "Calendar view of all camp events",
+    category: "Events",
+  },
   // Admin pages
   {
     id: "user-management",

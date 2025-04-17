@@ -28,6 +28,9 @@ import {
   campTasks,
   travelArrangements,
   accommodations,
+  campRegistrationTiers,
+  campRegistrations,
+  registrationCommunications,
   fabricTypes,
   fabricCompatibilities,
   sewingPatterns,
@@ -344,6 +347,24 @@ export interface IStorage {
   updateCampSchedule(id: number, schedule: any): Promise<Camp>;
   updateCampTasks(id: number, tasks: any): Promise<Camp>;
   assignStaffToCamp(campId: number, staffAssignments: any): Promise<Camp>;
+  
+  // Camp Registration Tier methods
+  createRegistrationTier(tierData: InsertCampRegistrationTier): Promise<CampRegistrationTier>;
+  getRegistrationTiersByCampId(campId: number): Promise<CampRegistrationTier[]>;
+  updateRegistrationTier(id: number, data: Partial<InsertCampRegistrationTier>): Promise<CampRegistrationTier>;
+  deleteRegistrationTier(id: number): Promise<boolean>;
+  
+  // Camp Registration methods
+  createRegistration(registrationData: InsertCampRegistration): Promise<CampRegistration>;
+  getRegistrationById(id: number): Promise<CampRegistration | undefined>;
+  getRegistrationsByCampId(campId: number): Promise<CampRegistration[]>;
+  updateRegistration(id: number, data: Partial<InsertCampRegistration>): Promise<CampRegistration>;
+  getRegistrationsByShopifyOrderId(shopifyOrderId: string): Promise<CampRegistration | undefined>;
+  deleteRegistration(id: number): Promise<boolean>;
+  
+  // Registration Communication methods
+  createRegistrationCommunication(data: InsertRegistrationCommunication): Promise<RegistrationCommunication>;
+  getCommunicationsByRegistrationId(registrationId: number): Promise<RegistrationCommunication[]>;
 }
 
 export class DatabaseStorage implements IStorage {

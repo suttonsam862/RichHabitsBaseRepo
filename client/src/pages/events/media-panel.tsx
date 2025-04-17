@@ -31,7 +31,8 @@ import {
   ArrowDownCircle,
   CheckCircle2,
   XCircle,
-  Building
+  Building,
+  DollarSign
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";

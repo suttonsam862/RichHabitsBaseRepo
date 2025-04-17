@@ -618,6 +618,52 @@ function CampProject() {
                 </Button>
               </CardFooter>
             </Card>
+            
+            {/* Swag Pack Manager */}
+            <Card className="group hover:shadow-md transition-shadow">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center">
+                  <ShoppingBag className="mr-2 h-5 w-5 text-primary" />
+                  Swag Pack Manager
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-2">
+                <p className="text-sm text-muted-foreground">
+                  Track merchandise distribution, sizing, and generate packing slips.
+                </p>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  className="w-full group-hover:bg-primary/90"
+                  onClick={() => navigateToModule('swag-manager')}
+                >
+                  Manage Swag
+                </Button>
+              </CardFooter>
+            </Card>
+            
+            {/* Marketing & Media Panel */}
+            <Card className="group hover:shadow-md transition-shadow">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center">
+                  <Newspaper className="mr-2 h-5 w-5 text-primary" />
+                  Marketing & Media
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-2">
+                <p className="text-sm text-muted-foreground">
+                  Manage social media, email campaigns, and sponsor assets.
+                </p>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  className="w-full group-hover:bg-primary/90"
+                  onClick={() => navigateToModule('media-panel')}
+                >
+                  Open Media Panel
+                </Button>
+              </CardFooter>
+            </Card>
           </div>
           
           {/* Task Management */}

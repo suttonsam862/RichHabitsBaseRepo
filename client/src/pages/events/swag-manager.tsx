@@ -24,7 +24,8 @@ import {
   Settings,
   MoreHorizontal,
   Import,
-  ListFilter
+  ListFilter,
+  DollarSign
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";

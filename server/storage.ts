@@ -3106,8 +3106,9 @@ export class DatabaseStorage implements IStorage {
       // Validate required fields
       if (!registrationData.campId) throw new Error("Camp ID is required");
       if (!registrationData.tierId) throw new Error("Registration tier ID is required");
-      if (!registrationData.athleteName) throw new Error("Athlete name is required");
-      if (!registrationData.contactEmail) throw new Error("Contact email is required");
+      if (!registrationData.firstName) throw new Error("First name is required");
+      if (!registrationData.lastName) throw new Error("Last name is required");
+      if (!registrationData.email) throw new Error("Email is required");
       
       console.log('Creating camp registration:', registrationData);
       
@@ -3217,8 +3218,8 @@ export class DatabaseStorage implements IStorage {
     try {
       // Validate required fields
       if (!data.registrationId) throw new Error("Registration ID is required");
-      if (!data.messageType) throw new Error("Message type is required");
-      if (!data.content) throw new Error("Content is required");
+      if (!data.type) throw new Error("Communication type is required");
+      if (!data.status) throw new Error("Status is required");
       
       const [communication] = await db
         .insert(registrationCommunications)

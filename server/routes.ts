@@ -5318,5 +5318,521 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Camp Registration Tier routes
+  app.get("/api/camp/:campId/registration-tiers", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: "Invalid camp ID" });
+      }
+      
+      const tiers = await storage.getRegistrationTiersByCampId(campId);
+      res.json({ data: tiers });
+    } catch (error: any) {
+      console.error("Error fetching registration tiers:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/camp/:campId/registration-tiers", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as User;
+      const isUserAdmin = user.role === ROLES.ADMIN;
+      
+      if (!isUserAdmin) {
+        return res.status(403).json({ error: "Only admins can create registration tiers" });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: "Invalid camp ID" });
+      }
+      
+      // Validate the tier data
+      const tierData = insertCampRegistrationTierSchema.parse({
+        ...req.body,
+        campId
+      });
+      
+      // Create the tier
+      const tier = await storage.createRegistrationTier(tierData);
+      
+      res.status(201).json({ data: tier });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        console.error("Error creating registration tier:", error);
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  app.put("/api/registration-tiers/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as User;
+      const isUserAdmin = user.role === ROLES.ADMIN;
+      
+      if (!isUserAdmin) {
+        return res.status(403).json({ error: "Only admins can update registration tiers" });
+      }
+      
+      const tierId = parseInt(req.params.id);
+      if (isNaN(tierId)) {
+        return res.status(400).json({ error: "Invalid tier ID" });
+      }
+      
+      // Update the tier
+      const updatedTier = await storage.updateRegistrationTier(tierId, req.body);
+      
+      res.json({ data: updatedTier });
+    } catch (error: any) {
+      console.error("Error updating registration tier:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.delete("/api/registration-tiers/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as User;
+      const isUserAdmin = user.role === ROLES.ADMIN;
+      
+      if (!isUserAdmin) {
+        return res.status(403).json({ error: "Only admins can delete registration tiers" });
+      }
+      
+      const tierId = parseInt(req.params.id);
+      if (isNaN(tierId)) {
+        return res.status(400).json({ error: "Invalid tier ID" });
+      }
+      
+      // Delete the tier
+      await storage.deleteRegistrationTier(tierId);
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting registration tier:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Camp Registration routes
+  app.get("/api/camp/:campId/registrations", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: "Invalid camp ID" });
+      }
+      
+      const registrations = await storage.getRegistrationsByCampId(campId);
+      res.json({ data: registrations });
+    } catch (error: any) {
+      console.error("Error fetching camp registrations:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/registrations/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const registrationId = parseInt(req.params.id);
+      if (isNaN(registrationId)) {
+        return res.status(400).json({ error: "Invalid registration ID" });
+      }
+      
+      const registration = await storage.getRegistrationById(registrationId);
+      if (!registration) {
+        return res.status(404).json({ error: "Registration not found" });
+      }
+      
+      // Get related communications
+      const communications = await storage.getCommunicationsByRegistrationId(registrationId);
+      
+      res.json({ 
+        data: {
+          ...registration,
+          communications
+        }
+      });
+    } catch (error: any) {
+      console.error("Error fetching registration details:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Manual registration entry (for in-person registrations or phone registrations)
+  app.post("/api/camp/:campId/registrations", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: "Invalid camp ID" });
+      }
+      
+      // Validate registration data
+      const registrationData = insertCampRegistrationSchema.parse({
+        ...req.body,
+        campId,
+        source: req.body.source || 'manual', // Set source to manual if not provided
+        registrationStatus: 'confirmed',      // Manually entered registrations are confirmed automatically
+      });
+      
+      // Create the registration
+      const registration = await storage.createRegistration(registrationData);
+      
+      // Create communication entry for manual registration
+      await storage.createRegistrationCommunication({
+        registrationId: registration.id,
+        type: 'system',
+        status: 'sent',
+        content: `Registration manually entered by ${req.user?.username || 'admin'}`,
+      });
+      
+      res.status(201).json({ data: registration });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        console.error("Error creating registration:", error);
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  app.put("/api/registrations/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const registrationId = parseInt(req.params.id);
+      if (isNaN(registrationId)) {
+        return res.status(400).json({ error: "Invalid registration ID" });
+      }
+      
+      // Update the registration
+      const updatedRegistration = await storage.updateRegistration(registrationId, req.body);
+      
+      res.json({ data: updatedRegistration });
+    } catch (error: any) {
+      console.error("Error updating registration:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.delete("/api/registrations/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as User;
+      const isUserAdmin = user.role === ROLES.ADMIN;
+      
+      if (!isUserAdmin) {
+        return res.status(403).json({ error: "Only admins can delete registrations" });
+      }
+      
+      const registrationId = parseInt(req.params.id);
+      if (isNaN(registrationId)) {
+        return res.status(400).json({ error: "Invalid registration ID" });
+      }
+      
+      // Delete the registration
+      await storage.deleteRegistration(registrationId);
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting registration:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Registration Communication routes
+  app.post("/api/registrations/:id/communications", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const registrationId = parseInt(req.params.id);
+      if (isNaN(registrationId)) {
+        return res.status(400).json({ error: "Invalid registration ID" });
+      }
+      
+      // Validate communication data
+      const communicationData = insertRegistrationCommunicationSchema.parse({
+        ...req.body,
+        registrationId,
+        status: req.body.status || 'pending',
+      });
+      
+      // Create the communication
+      const communication = await storage.createRegistrationCommunication(communicationData);
+      
+      res.status(201).json({ data: communication });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        console.error("Error creating registration communication:", error);
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  // Shopify API Integration for Registration Import
+  app.post("/api/camp/:campId/import-shopify-orders", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as User;
+      const isUserAdmin = user.role === ROLES.ADMIN;
+      
+      if (!isUserAdmin) {
+        return res.status(403).json({ error: "Only admins can import Shopify orders" });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      if (isNaN(campId)) {
+        return res.status(400).json({ error: "Invalid camp ID" });
+      }
+      
+      // For security, we'll make a clean object with just the fields we need
+      const shopifyCredentials = {
+        shopName: req.body.shopName,
+        apiKey: req.body.apiKey,
+        accessToken: req.body.accessToken
+      };
+      
+      // Validate basic Shopify credentials
+      if (!shopifyCredentials.shopName || !shopifyCredentials.apiKey || !shopifyCredentials.accessToken) {
+        return res.status(400).json({ error: "Missing required Shopify API credentials" });
+      }
+      
+      // Get the date range for orders if provided
+      const dateFrom = req.body.dateFrom || null;
+      const dateTo = req.body.dateTo || null;
+      
+      // Set up base Shopify API URL
+      const shopifyBaseUrl = `https://${shopifyCredentials.shopName}.myshopify.com/admin/api/2023-10`;
+      
+      // Construct the query parameters for the Shopify API request
+      let orderParams = new URLSearchParams({
+        status: 'any',
+        limit: '250' // Maximum allowed by Shopify
+      });
+      
+      // Add date filters if provided
+      if (dateFrom) {
+        orderParams.append('created_at_min', new Date(dateFrom).toISOString());
+      }
+      if (dateTo) {
+        orderParams.append('created_at_max', new Date(dateTo).toISOString());
+      }
+      
+      // Set up product ID filter if provided
+      if (req.body.productId) {
+        orderParams.append('product_id', req.body.productId);
+      }
+      
+      // Get registration tiers for this camp to map from Shopify products
+      const registrationTiers = await storage.getRegistrationTiersByCampId(campId);
+      
+      // Check if there are tiers with Shopify product IDs
+      const tiersWithProductIds = registrationTiers.filter(tier => tier.shopifyProductId);
+      if (tiersWithProductIds.length === 0) {
+        return res.status(400).json({ 
+          error: "No registration tiers with Shopify product IDs found for this camp",
+          message: "Please configure Shopify product IDs in your registration tiers first"
+        });
+      }
+      
+      // Prepare to track results
+      const importResults = {
+        totalOrders: 0,
+        newRegistrations: 0,
+        updatedRegistrations: 0,
+        skippedOrders: 0,
+        errors: [] as string[]
+      };
+      
+      try {
+        // Make API request to Shopify
+        const options = {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Shopify-Access-Token': shopifyCredentials.accessToken
+          }
+        };
+        
+        const apiUrl = `${shopifyBaseUrl}/orders.json?${orderParams.toString()}`;
+        console.log(`Fetching orders from Shopify API: ${apiUrl}`);
+        
+        const response = await fetch(apiUrl, options);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Shopify API error: ${response.status} ${response.statusText}`, errorText);
+          return res.status(response.status).json({ 
+            error: "Error from Shopify API", 
+            details: errorText
+          });
+        }
+        
+        const data = await response.json();
+        const orders = data.orders || [];
+        importResults.totalOrders = orders.length;
+        
+        // Process each order
+        for (const order of orders) {
+          try {
+            // Skip orders without line items
+            if (!order.line_items || !order.line_items.length) {
+              importResults.skippedOrders++;
+              continue;
+            }
+            
+            // Check if we already have this order in our database
+            const existingRegistration = await storage.getRegistrationsByShopifyOrderId(order.id.toString());
+            
+            // For each line item, check if it matches one of our registration tiers
+            for (const lineItem of order.line_items) {
+              // Find matching tier by product ID
+              const matchingTier = registrationTiers.find(tier => 
+                tier.shopifyProductId === lineItem.product_id.toString() ||
+                tier.shopifyVariantId === lineItem.variant_id.toString()
+              );
+              
+              if (!matchingTier) {
+                // Skip items that don't match any of our registration tiers
+                continue;
+              }
+              
+              // Extract customer information
+              const customer = order.customer || {};
+              const shippingAddress = order.shipping_address || customer.default_address || {};
+              
+              // Extract custom checkout fields if they exist (depends on Shopify store setup)
+              const customAttributes = {};
+              if (order.note_attributes && Array.isArray(order.note_attributes)) {
+                order.note_attributes.forEach(attr => {
+                  if (attr.name && attr.value) {
+                    customAttributes[attr.name] = attr.value;
+                  }
+                });
+              }
+              
+              const registrationData: InsertCampRegistration = {
+                campId,
+                tierId: matchingTier.id,
+                firstName: customer.first_name || shippingAddress.first_name || '',
+                lastName: customer.last_name || shippingAddress.last_name || '',
+                email: customer.email || order.contact_email || '',
+                phone: customer.phone || shippingAddress.phone || '',
+                address: shippingAddress.address1 || '',
+                city: shippingAddress.city || '',
+                state: shippingAddress.province || shippingAddress.province_code || '',
+                zipCode: shippingAddress.zip || '',
+                // Use custom attributes if available
+                dateOfBirth: customAttributes['date_of_birth'] || customAttributes['dob'] || '',
+                gender: customAttributes['gender'] || '',
+                school: customAttributes['school'] || '',
+                grade: customAttributes['grade'] || '',
+                weightClass: customAttributes['weight_class'] || '',
+                shirtSize: customAttributes['shirt_size'] || lineItem.variant_title || '',
+                // Emergency contact info if collected
+                emergencyContactName: customAttributes['emergency_contact_name'] || '',
+                emergencyContactPhone: customAttributes['emergency_contact_phone'] || '',
+                // Allergies and special requirements
+                allergies: customAttributes['allergies'] || '',
+                specialRequirements: customAttributes['special_requirements'] || order.note || '',
+                // Record all Shopify info
+                shopifyOrderId: order.id.toString(),
+                registrationStatus: 'confirmed',
+                paymentStatus: order.financial_status === 'paid' ? 'paid' : 'pending',
+                paymentAmount: lineItem.price,
+                paymentDate: order.processed_at ? new Date(order.processed_at) : undefined,
+                source: 'shopify',
+                notes: `Imported from Shopify. Order #${order.name}. ${order.note || ''}`
+              };
+              
+              if (existingRegistration) {
+                // Update existing registration
+                await storage.updateRegistration(existingRegistration.id, registrationData);
+                importResults.updatedRegistrations++;
+                
+                // Add communication about update
+                await storage.createRegistrationCommunication({
+                  registrationId: existingRegistration.id,
+                  type: 'system',
+                  status: 'sent',
+                  subject: 'Shopify Order Updated',
+                  content: `Registration updated from Shopify order #${order.name} (${order.id})`
+                });
+              } else {
+                // Create new registration
+                const registration = await storage.createRegistration(registrationData);
+                importResults.newRegistrations++;
+                
+                // Add communication about new registration
+                await storage.createRegistrationCommunication({
+                  registrationId: registration.id,
+                  type: 'system',
+                  status: 'sent',
+                  subject: 'New Shopify Order',
+                  content: `New registration created from Shopify order #${order.name} (${order.id})`
+                });
+              }
+            }
+          } catch (orderError: any) {
+            console.error(`Error processing Shopify order ${order.id}:`, orderError);
+            importResults.errors.push(`Order #${order.name || order.id}: ${orderError.message}`);
+          }
+        }
+        
+        res.json({ data: importResults });
+      } catch (apiError: any) {
+        console.error("Error calling Shopify API:", apiError);
+        res.status(500).json({ 
+          error: "Error calling Shopify API", 
+          message: apiError.message 
+        });
+      }
+    } catch (error: any) {
+      console.error("Error importing Shopify orders:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return httpServer;
 }

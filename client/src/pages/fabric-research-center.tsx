@@ -58,6 +58,8 @@ import { FabricResearchForm } from "@/components/fabric-research-center/fabric-r
 import { FabricDetailView } from "@/components/fabric-research-center/fabric-detail-view";
 import { FabricCompatibilityAnalyzer } from "@/components/fabric-research-center/fabric-compatibility-analyzer";
 import { FabricSuggestionTool } from "@/components/fabric-research-center/fabric-suggestion-tool";
+import { PatternResearchForm } from "@/components/fabric-research-center/pattern-research-form";
+import { PatternDetailDialog } from "@/components/fabric-research-center/pattern-detail-dialog";
 import { Separator } from "@/components/ui/separator";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -435,10 +437,23 @@ export default function FabricResearchCenter() {
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Refresh
                 </Button>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Research New Pattern
-                </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Research New Pattern
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[700px]">
+                    <DialogHeader>
+                      <DialogTitle>AI Pattern Research</DialogTitle>
+                      <DialogDescription>
+                        Research detailed measurements for clothing patterns
+                      </DialogDescription>
+                    </DialogHeader>
+                    <PatternResearchForm />
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
             
@@ -539,123 +554,11 @@ export default function FabricResearchCenter() {
       </Dialog>
       
       {/* Pattern Detail Dialog */}
-      <Dialog open={isViewPatternDialogOpen} onOpenChange={setIsViewPatternDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-hidden">
-          {selectedPatternId && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h2 className="text-2xl font-bold">Pattern Details</h2>
-                  <p className="text-muted-foreground">View detailed information and measurements</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle>Preview</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="aspect-square w-full bg-muted-foreground/10 rounded-md overflow-hidden">
-                      <div className="flex items-center justify-center h-full text-muted-foreground">
-                        <FileText className="h-16 w-16" />
-                        <p>Pattern preview image</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle>Measurements</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <ScrollArea className="h-[300px]">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Measurement</TableHead>
-                            <TableHead>Value</TableHead>
-                            <TableHead>Required</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          <TableRow>
-                            <TableCell>Length</TableCell>
-                            <TableCell>42 cm</TableCell>
-                            <TableCell>
-                              <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            </TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell>Width</TableCell>
-                            <TableCell>35 cm</TableCell>
-                            <TableCell>
-                              <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            </TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell>Sleeve Length</TableCell>
-                            <TableCell>65 cm</TableCell>
-                            <TableCell>
-                              <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            </TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </Table>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle>Material Requirements</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="font-medium">Main Fabric:</span>
-                      <span>Cotton Jersey (1.5 meters)</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Lining:</span>
-                      <span>Polyester (0.5 meters)</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Elastic:</span>
-                      <span>1 cm width (30 cm)</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Suitable For:</span>
-                      <div className="flex flex-wrap gap-1">
-                        <Badge variant="outline">Cotton</Badge>
-                        <Badge variant="outline">Jersey</Badge>
-                        <Badge variant="outline">Knit</Badge>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <div className="flex justify-end gap-2">
-                <Button variant="outline">
-                  Close
-                </Button>
-                <Button>
-                  Use in Product Suggestion
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <PatternDetailDialog 
+        patternId={selectedPatternId} 
+        isOpen={isViewPatternDialogOpen} 
+        onOpenChange={setIsViewPatternDialogOpen} 
+      />
     </div>
   );
 }

@@ -92,6 +92,39 @@ export function FabricSuggestionTool() {
     },
   });
   
+  const saveProductSuggestionMutation = useMutation({
+    mutationFn: async (data: {
+      name: string;
+      description: string;
+      fabricTypeId: number;
+      patternId?: number;
+      imageUrl?: string;
+      properties?: { name: string; value: string }[];
+      productType: string;
+    }) => {
+      const response = await apiRequest("POST", "/api/product-suggestions", data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Product Saved",
+        description: "The product suggestion has been saved to the library",
+      });
+      setSelectedFabricForSave(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/product-suggestions"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Save Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsSaving(false);
+    },
+  });
+  
   const handleGetSuggestions = () => {
     if (!productType) {
       toast({

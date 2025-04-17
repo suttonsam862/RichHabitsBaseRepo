@@ -20,7 +20,10 @@ import {
   Settings,
   Loader2,
   CheckCircle2,
-  CircleDashed
+  CircleDashed,
+  ShoppingBag,
+  Share2,
+  Newspaper
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";

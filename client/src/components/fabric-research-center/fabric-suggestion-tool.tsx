@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Card, 
   CardContent, 
@@ -14,15 +14,28 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, AlertTriangle, Plus, ArrowRight, ArrowDown, Star, StarHalf, Stars } from "lucide-react";
+import { 
+  Loader2, 
+  AlertTriangle, 
+  Plus, 
+  ArrowRight, 
+  ArrowDown, 
+  Star, 
+  StarHalf, 
+  Stars, 
+  Save,
+  Check,
+  BookmarkPlus
+} from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function FabricSuggestionTool() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [productType, setProductType] = useState("");
   const [properties, setProperties] = useState<string[]>([]);
   const [sustainabilityRequired, setSustainabilityRequired] = useState(false);
@@ -31,6 +44,8 @@ export function FabricSuggestionTool() {
   const [suggestions, setSuggestions] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
+  const [selectedFabricForSave, setSelectedFabricForSave] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
   
   const propertyOptions = [
     { id: "breathable", label: "Breathable" },

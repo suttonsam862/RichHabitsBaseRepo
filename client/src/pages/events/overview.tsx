@@ -823,6 +823,7 @@ export default function CampOverview() {
   const [campData, setCampData] = useState(sampleCamps);
   const [clinicianSearchTerm, setClinicianSearchTerm] = useState("");
   const [selectedClinicians, setSelectedClinicians] = useState<any[]>([]);
+  const [isDetailView, setIsDetailView] = useState(false);
   
   // In a real app, you would fetch camps from the server
   const { data: camps = campData, isLoading } = useQuery({
@@ -830,7 +831,28 @@ export default function CampOverview() {
     enabled: false, // Disabled for now as we're using sample data
   });
   
-  // Filter camps based on search term and status
+  // Group camps by type for the streaming-style UI
+  const groupedCamps = Array.isArray(camps) ? 
+    Object.entries(
+      camps.reduce((acc: Record<string, any[]>, camp: any) => {
+        // Filter by search term and status
+        const matchesSearch = camp.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            camp.venue.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = statusFilter === "all" || camp.status === statusFilter;
+        
+        if (matchesSearch && matchesStatus) {
+          // Initialize array for this type if it doesn't exist
+          if (!acc[camp.type]) {
+            acc[camp.type] = [];
+          }
+          // Add camp to its type group
+          acc[camp.type].push(camp);
+        }
+        return acc;
+      }, {})
+    ) : [];
+    
+  // Also have a flat filtered list for other views
   const filteredCamps = Array.isArray(camps) ? camps.filter((camp: any) => {
     const matchesSearch = camp.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           camp.venue.toLowerCase().includes(searchTerm.toLowerCase());
@@ -862,7 +884,275 @@ export default function CampOverview() {
     // In a real app, you would also delete from the server
     console.log("Deleted camp:", selectedCamp);
   };
+  
+  // Helper function to get a background gradient for camp cards
+  const getCampTypeGradient = (type: string) => {
+    switch (type) {
+      case 'training':
+        return 'from-blue-500 to-blue-700';
+      case 'elite':
+        return 'from-purple-500 to-purple-700';
+      case 'youth':
+        return 'from-green-500 to-green-700';
+      case 'skills':
+        return 'from-orange-500 to-orange-700';
+      case 'competition':
+        return 'from-red-500 to-red-700';
+      default:
+        return 'from-gray-500 to-gray-700';
+    }
+  };
+  
+  // Helper function to get an icon for camp types
+  const getCampTypeIcon = (type: string) => {
+    switch (type) {
+      case 'training':
+        return <Clock className="h-5 w-5" />;
+      case 'elite':
+        return <Users className="h-5 w-5" />;
+      case 'youth':
+        return <Users className="h-5 w-5" />;
+      case 'skills':
+        return <CheckCircle className="h-5 w-5" />;
+      case 'competition':
+        return <CheckCircle className="h-5 w-5" />;
+      default:
+        return <Calendar className="h-5 w-5" />;
+    }
+  };
+  
+  // Handler for clicking on a camp card
+  const handleCampClick = (camp: any) => {
+    setSelectedCamp(camp);
+    setIsDetailView(true);
+  };
 
+  // If we're in the detail view for a specific camp
+  if (isDetailView && selectedCamp) {
+    return (
+      <div className="p-6">
+        <div className="mb-6 flex items-center">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setIsDetailView(false)}
+            className="mr-4"
+          >
+            <ChevronRight className="h-4 w-4 rotate-180 mr-1" />
+            Back to Camps
+          </Button>
+          <h1 className="text-3xl font-bold">{selectedCamp.name}</h1>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main info card */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="text-2xl font-bold">{selectedCamp.name}</CardTitle>
+                  <CardDescription className="text-lg mt-1">
+                    Led by {selectedCamp.clinician}
+                  </CardDescription>
+                </div>
+                <Badge className={`${getStatusColor(selectedCamp.status)} text-md px-3 py-1`}>
+                  {selectedCamp.status.charAt(0).toUpperCase() + selectedCamp.status.slice(1)}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-md font-medium text-gray-500">Dates</h3>
+                    <p className="text-lg">{formatDate(selectedCamp.startDate)} - {formatDate(selectedCamp.endDate)}</p>
+                    <p className="text-sm text-gray-500">{selectedCamp.totalDays} days total</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-md font-medium text-gray-500">Location</h3>
+                    <p className="text-lg">{selectedCamp.venue}</p>
+                    <p className="text-sm text-gray-500">{selectedCamp.address}</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-md font-medium text-gray-500">Participants</h3>
+                    <p className="text-lg">{selectedCamp.participants} attendees</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-md font-medium text-gray-500">Financial</h3>
+                    <p className="text-lg">${selectedCamp.campCost} per participant</p>
+                    <p className="text-sm text-gray-500">Total revenue: ${selectedCamp.selloutCost}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div>
+                <h3 className="text-lg font-medium mb-3">Camp Tasks</h3>
+                <div className="grid grid-cols-1 gap-2">
+                  {selectedCamp.tasks && selectedCamp.tasks.length > 0 ? (
+                    selectedCamp.tasks.map((task: any, index: number) => (
+                      <div 
+                        key={index} 
+                        className="flex items-center justify-between p-3 border rounded-md"
+                      >
+                        <div className="flex items-center">
+                          <div className={`w-3 h-3 rounded-full mr-3 ${task.status === 'completed' ? 'bg-green-500' : task.status === 'in-progress' ? 'bg-amber-500' : 'bg-gray-300'}`} />
+                          <span>{task.name}</span>
+                        </div>
+                        <Badge className={`${task.status === 'completed' ? 'bg-green-100 text-green-800' : task.status === 'in-progress' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-800'}`}>
+                          {task.status === 'completed' ? 'Completed' : task.status === 'in-progress' ? 'In Progress' : 'Not Started'}
+                        </Badge>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500">No tasks have been added yet.</p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-between border-t pt-6">
+              <Button
+                variant="outline"
+                onClick={() => setIsTasksDialogOpen(true)}
+              >
+                Manage Tasks
+              </Button>
+              <div className="space-x-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsDeleteCampOpen(true)}
+                >
+                  Delete Camp
+                </Button>
+                <Button 
+                  onClick={() => setIsEditCampOpen(true)}
+                >
+                  Edit Camp
+                </Button>
+              </div>
+            </CardFooter>
+          </Card>
+          
+          {/* Stats cards column */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg font-medium">Staff Assigned</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{selectedCamp.staffCount}</div>
+                <p className="text-sm text-gray-500">out of {selectedCamp.staffCount + 2} needed</p>
+                <div className="mt-2 h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500" 
+                    style={{ width: `${(selectedCamp.staffCount / (selectedCamp.staffCount + 2)) * 100}%` }}
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="pt-0">
+                <Button variant="outline" size="sm" className="w-full">
+                  Manage Staff
+                </Button>
+              </CardFooter>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg font-medium">Task Completion</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {selectedCamp.tasks && selectedCamp.tasks.length > 0 ? (
+                  <>
+                    <div className="text-3xl font-bold">
+                      {Math.round((selectedCamp.tasks.filter((t: any) => t.status === 'completed').length / selectedCamp.tasks.length) * 100)}%
+                    </div>
+                    <p className="text-sm text-gray-500">
+                      {selectedCamp.tasks.filter((t: any) => t.status === 'completed').length} of {selectedCamp.tasks.length} tasks completed
+                    </p>
+                    <div className="mt-2 h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-green-500" 
+                        style={{ width: `${(selectedCamp.tasks.filter((t: any) => t.status === 'completed').length / selectedCamp.tasks.length) * 100}%` }}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-gray-500">No tasks added yet</p>
+                )}
+              </CardContent>
+              <CardFooter className="pt-0">
+                <Button variant="outline" size="sm" className="w-full">
+                  View All Tasks
+                </Button>
+              </CardFooter>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg font-medium">Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button variant="outline" size="sm" className="w-full justify-start">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  View Schedule
+                </Button>
+                <Button variant="outline" size="sm" className="w-full justify-start">
+                  <UserCheck className="mr-2 h-4 w-4" />
+                  Assign Staff
+                </Button>
+                <Button variant="outline" size="sm" className="w-full justify-start">
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  Manage Budget
+                </Button>
+                <Button variant="outline" size="sm" className="w-full justify-start">
+                  <MapPin className="mr-2 h-4 w-4" />
+                  View Location
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        
+        {/* Edit Camp Dialog */}
+        {isEditCampOpen && (
+          <EditCampDialog
+            camp={selectedCamp}
+            isOpen={isEditCampOpen}
+            onClose={() => setIsEditCampOpen(false)}
+            onSave={handleEditCamp}
+          />
+        )}
+        
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={isDeleteCampOpen} onOpenChange={setIsDeleteCampOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Camp</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete <span className="font-medium">{selectedCamp.name}</span>? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDeleteCampOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteCamp}>
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
+  // Default view showing all camps
   return (
     <div className="p-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
@@ -873,7 +1163,7 @@ export default function CampOverview() {
         <div className="mt-4 md:mt-0">
           <Dialog open={isAddCampOpen} onOpenChange={setIsAddCampOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-brand-600 hover:bg-brand-700">
+              <Button className="bg-primary hover:bg-primary/90">
                 <Plus className="mr-2 h-4 w-4" />
                 Add New Camp
               </Button>
@@ -927,15 +1217,100 @@ export default function CampOverview() {
       </div>
 
       {/* Main Content with Tabs */}
-      <Tabs defaultValue="list" className="w-full">
+      <Tabs defaultValue="gallery" className="w-full">
         <TabsList className="mb-6">
+          <TabsTrigger value="gallery">Gallery View</TabsTrigger>
           <TabsTrigger value="list">List View</TabsTrigger>
           <TabsTrigger value="timeline">Timeline View</TabsTrigger>
           <TabsTrigger value="stats">Statistics</TabsTrigger>
         </TabsList>
         
+        {/* Gallery View - Inspired by streaming UI */}
+        <TabsContent value="gallery" className="space-y-8">
+          {groupedCamps.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center h-40">
+                <p className="text-gray-500 mb-4">No camps found matching your criteria</p>
+                <Button onClick={() => {
+                  setSearchTerm("");
+                  setStatusFilter("all");
+                }}>
+                  Clear Filters
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            groupedCamps.map(([type, camps]) => (
+              <div key={type} className="space-y-3">
+                <div className="flex items-center gap-2">
+                  {getCampTypeIcon(type)}
+                  <h2 className="text-xl font-bold capitalize">
+                    {type === 'skills' ? 'Skills Clinics' : 
+                     type === 'elite' ? 'Elite Training Camps' :
+                     type === 'youth' ? 'Youth Camps' :
+                     type === 'training' ? 'Training Camps' :
+                     type === 'competition' ? 'Competition Camps' : type}
+                  </h2>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {camps.map((camp: any) => (
+                    <Card 
+                      key={camp.id} 
+                      className="overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-lg"
+                      onClick={() => handleCampClick(camp)}
+                    >
+                      <div className={`h-32 bg-gradient-to-r ${getCampTypeGradient(camp.type)} p-4 relative flex flex-col justify-end`}>
+                        <Badge className={`absolute top-3 right-3 ${getStatusColor(camp.status)}`}>
+                          {camp.status.charAt(0).toUpperCase() + camp.status.slice(1)}
+                        </Badge>
+                        <h3 className="text-white font-bold text-lg">{camp.name}</h3>
+                        <p className="text-white text-opacity-90 text-sm">by {camp.clinician}</p>
+                      </div>
+                      <CardContent className="p-4">
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-gray-500">Dates</p>
+                            <p className="font-medium">{formatDate(camp.startDate)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Duration</p>
+                            <p className="font-medium">{camp.totalDays} days</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Participants</p>
+                            <p className="font-medium">{camp.participants}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Location</p>
+                            <p className="font-medium truncate">{camp.venue}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="px-4 py-3 border-t bg-gray-50">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="ml-auto"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCamp(camp);
+                            setIsEditCampOpen(true);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </TabsContent>
+        
+        {/* List View */}
         <TabsContent value="list" className="space-y-4">
-          {/* Camps List */}
           <Card>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
@@ -956,13 +1331,13 @@ export default function CampOverview() {
                       <tr 
                         key={camp.id} 
                         className="border-b hover:bg-gray-50 cursor-pointer"
-                        onClick={() => setSelectedCamp(camp)}
+                        onClick={() => handleCampClick(camp)}
                       >
                         <td className="p-4">
                           <div className="font-medium">{camp.name}</div>
                           <div className="text-sm text-gray-500">by {camp.clinician}</div>
                         </td>
-                        <td className="p-4">{camp.type}</td>
+                        <td className="p-4 capitalize">{camp.type}</td>
                         <td className="p-4">
                           <div>{formatDate(camp.startDate)}</div>
                           <div className="text-sm text-gray-500">to {formatDate(camp.endDate)}</div>

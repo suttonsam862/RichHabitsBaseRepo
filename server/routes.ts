@@ -4971,5 +4971,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Product Suggestions API routes
+  // Get all product suggestions
+  app.get("/api/product-suggestions", isAuthenticated, async (req, res) => {
+    try {
+      const suggestions = await storage.getProductSuggestions();
+      res.json({ data: suggestions });
+    } catch (error: any) {
+      console.error("Error fetching product suggestions:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get a single product suggestion by ID
+  app.get("/api/product-suggestions/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+      
+      const suggestion = await storage.getProductSuggestionById(id);
+      
+      if (!suggestion) {
+        return res.status(404).json({ error: "Product suggestion not found" });
+      }
+      
+      res.json({ data: suggestion });
+    } catch (error: any) {
+      console.error("Error fetching product suggestion:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Create a new product suggestion
+  app.post("/api/product-suggestions", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      
+      // Validate the request body against the schema
+      const validatedData = insertProductSuggestionSchema.parse({
+        ...req.body,
+        createdBy: user.id
+      });
+      
+      // Create the suggestion
+      const newSuggestion = await storage.createProductSuggestion(validatedData);
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "CREATE",
+        content: `Created new product suggestion: ${newSuggestion.name}`,
+        userId: user.id,
+        relatedId: newSuggestion.id,
+        relatedType: "PRODUCT_SUGGESTION"
+      });
+      
+      res.status(201).json({ data: newSuggestion });
+    } catch (error: any) {
+      console.error("Error creating product suggestion:", error);
+      if (error.name === "ZodError") {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update a product suggestion
+  app.put("/api/product-suggestions/:id", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+      
+      // Check if the suggestion exists
+      const existingSuggestion = await storage.getProductSuggestionById(id);
+      
+      if (!existingSuggestion) {
+        return res.status(404).json({ error: "Product suggestion not found" });
+      }
+      
+      // Update the suggestion
+      const updatedSuggestion = await storage.updateProductSuggestion(id, req.body);
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "UPDATE",
+        content: `Updated product suggestion: ${updatedSuggestion.name}`,
+        userId: user.id,
+        relatedId: id,
+        relatedType: "PRODUCT_SUGGESTION"
+      });
+      
+      res.json({ data: updatedSuggestion });
+    } catch (error: any) {
+      console.error("Error updating product suggestion:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Delete a product suggestion
+  app.delete("/api/product-suggestions/:id", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+      
+      // Check if the suggestion exists
+      const existingSuggestion = await storage.getProductSuggestionById(id);
+      
+      if (!existingSuggestion) {
+        return res.status(404).json({ error: "Product suggestion not found" });
+      }
+      
+      // Delete the suggestion
+      await storage.deleteProductSuggestion(id);
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "DELETE",
+        content: `Deleted product suggestion: ${existingSuggestion.name}`,
+        userId: user.id,
+        relatedId: id,
+        relatedType: "PRODUCT_SUGGESTION"
+      });
+      
+      res.status(200).json({ success: true, message: "Product suggestion deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting product suggestion:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return httpServer;
 }

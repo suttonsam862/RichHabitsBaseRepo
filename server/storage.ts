@@ -208,6 +208,13 @@ export interface IStorage {
   updateSewingPattern(id: number, pattern: Partial<InsertSewingPattern>): Promise<SewingPattern>;
   deleteSewingPattern(id: number): Promise<void>;
   
+  // Product suggestions methods
+  getProductSuggestions(): Promise<ProductSuggestion[]>;
+  getProductSuggestionById(id: number): Promise<ProductSuggestion | undefined>;
+  createProductSuggestion(suggestion: InsertProductSuggestion): Promise<ProductSuggestion>;
+  updateProductSuggestion(id: number, suggestion: Partial<InsertProductSuggestion>): Promise<ProductSuggestion>;
+  deleteProductSuggestion(id: number): Promise<void>;
+  
   // Fabric Cuts methods
   getFabricCuts(): Promise<FabricCut[]>;
   getFabricCutById(id: number): Promise<FabricCut | undefined>;
@@ -2543,6 +2550,138 @@ export class DatabaseStorage implements IStorage {
       await db.delete(fabricCompatibilities).where(eq(fabricCompatibilities.id, id));
     } catch (error) {
       console.error(`Error deleting fabric compatibility ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  // Sewing pattern methods
+  async getAllSewingPatterns(): Promise<SewingPattern[]> {
+    try {
+      return db.select()
+        .from(sewingPatterns)
+        .orderBy(asc(sewingPatterns.name));
+    } catch (error) {
+      console.error('Error fetching sewing patterns:', error);
+      throw error;
+    }
+  }
+  
+  async getSewingPatternById(id: number): Promise<SewingPattern | undefined> {
+    try {
+      const [pattern] = await db.select()
+        .from(sewingPatterns)
+        .where(eq(sewingPatterns.id, id));
+      return pattern || undefined;
+    } catch (error) {
+      console.error(`Error fetching sewing pattern ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async createSewingPattern(pattern: InsertSewingPattern): Promise<SewingPattern> {
+    try {
+      const [newPattern] = await db
+        .insert(sewingPatterns)
+        .values({
+          ...pattern,
+          createdAt: new Date()
+        })
+        .returning();
+      return newPattern;
+    } catch (error) {
+      console.error('Error creating sewing pattern:', error);
+      throw error;
+    }
+  }
+  
+  async updateSewingPattern(id: number, pattern: Partial<InsertSewingPattern>): Promise<SewingPattern> {
+    try {
+      const [updatedPattern] = await db
+        .update(sewingPatterns)
+        .set({
+          ...pattern,
+          updatedAt: new Date()
+        })
+        .where(eq(sewingPatterns.id, id))
+        .returning();
+      return updatedPattern;
+    } catch (error) {
+      console.error(`Error updating sewing pattern ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async deleteSewingPattern(id: number): Promise<void> {
+    try {
+      await db.delete(sewingPatterns).where(eq(sewingPatterns.id, id));
+    } catch (error) {
+      console.error(`Error deleting sewing pattern ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  // Product suggestions methods
+  async getProductSuggestions(): Promise<ProductSuggestion[]> {
+    try {
+      return db.select()
+        .from(productSuggestions)
+        .orderBy(asc(productSuggestions.name));
+    } catch (error) {
+      console.error('Error fetching product suggestions:', error);
+      throw error;
+    }
+  }
+  
+  async getProductSuggestionById(id: number): Promise<ProductSuggestion | undefined> {
+    try {
+      const [suggestion] = await db.select()
+        .from(productSuggestions)
+        .where(eq(productSuggestions.id, id));
+      return suggestion || undefined;
+    } catch (error) {
+      console.error(`Error fetching product suggestion ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async createProductSuggestion(suggestion: InsertProductSuggestion): Promise<ProductSuggestion> {
+    try {
+      const [newSuggestion] = await db
+        .insert(productSuggestions)
+        .values({
+          ...suggestion,
+          createdAt: new Date()
+        })
+        .returning();
+      return newSuggestion;
+    } catch (error) {
+      console.error('Error creating product suggestion:', error);
+      throw error;
+    }
+  }
+  
+  async updateProductSuggestion(id: number, suggestion: Partial<InsertProductSuggestion>): Promise<ProductSuggestion> {
+    try {
+      const [updatedSuggestion] = await db
+        .update(productSuggestions)
+        .set({
+          ...suggestion,
+          updatedAt: new Date()
+        })
+        .where(eq(productSuggestions.id, id))
+        .returning();
+      return updatedSuggestion;
+    } catch (error) {
+      console.error(`Error updating product suggestion ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async deleteProductSuggestion(id: number): Promise<void> {
+    try {
+      await db.delete(productSuggestions).where(eq(productSuggestions.id, id));
+    } catch (error) {
+      console.error(`Error deleting product suggestion ${id}:`, error);
       throw error;
     }
   }

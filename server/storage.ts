@@ -191,6 +191,7 @@ export interface IStorage {
   
   // Fabric Research Center methods
   getFabricTypes(): Promise<FabricType[]>;
+  getFabricTypesByPublishedStatus(isPublished: boolean): Promise<FabricType[]>;
   getFabricTypeById(id: number): Promise<FabricType | undefined>;
   getFabricTypeByName(name: string): Promise<FabricType | undefined>;
   createFabricType(fabricType: InsertFabricType): Promise<FabricType>;
@@ -2454,6 +2455,13 @@ export class DatabaseStorage implements IStorage {
   // Fabric Research Center methods
   async getFabricTypes(): Promise<FabricType[]> {
     return db.select().from(fabricTypes).orderBy(asc(fabricTypes.name));
+  }
+  
+  async getFabricTypesByPublishedStatus(isPublished: boolean): Promise<FabricType[]> {
+    return db.select()
+      .from(fabricTypes)
+      .where(eq(fabricTypes.isPublished, isPublished))
+      .orderBy(asc(fabricTypes.name));
   }
   
   async getFabricTypeById(id: number): Promise<FabricType | undefined> {

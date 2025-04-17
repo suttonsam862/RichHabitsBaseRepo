@@ -4304,7 +4304,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all fabric types
   app.get("/api/fabric-types", isAuthenticated, async (req, res) => {
     try {
-      const fabricTypes = await storage.getFabricTypes();
+      // Check if we need to filter by published status
+      const publishedFilter = req.query.published;
+      
+      let fabricTypes;
+      if (publishedFilter !== undefined) {
+        // Convert string 'true'/'false' to boolean
+        const isPublished = publishedFilter === 'true';
+        fabricTypes = await storage.getFabricTypesByPublishedStatus(isPublished);
+      } else {
+        fabricTypes = await storage.getFabricTypes();
+      }
+      
       res.json({ data: fabricTypes });
     } catch (error: any) {
       console.error("Error fetching fabric types:", error);

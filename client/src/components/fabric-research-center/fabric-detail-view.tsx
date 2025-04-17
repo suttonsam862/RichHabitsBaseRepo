@@ -91,11 +91,13 @@ export function FabricDetailView({ fabricId, onDelete }: FabricDetailViewProps) 
       </DialogHeader>
       
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList className="grid grid-cols-5 mb-2">
+        <TabsList className="grid grid-cols-7 mb-2">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="properties">Properties</TabsTrigger>
           <TabsTrigger value="manufacturing">Manufacturing</TabsTrigger>
           <TabsTrigger value="sustainability">Sustainability</TabsTrigger>
+          <TabsTrigger value="midjourney">Midjourney</TabsTrigger>
+          <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
           <TabsTrigger value="sources">Sources</TabsTrigger>
         </TabsList>
         
@@ -261,6 +263,67 @@ export function FabricDetailView({ fabricId, onDelete }: FabricDetailViewProps) 
                 <p className="text-muted-foreground">No sustainability data available.</p>
               </div>
             )}
+          </TabsContent>
+          
+          <TabsContent value="midjourney" className="mt-0 space-y-4">
+            <div>
+              <h3 className="font-medium text-lg">Visual Description</h3>
+              <p className="text-sm text-muted-foreground">
+                {fabricData.visualDescriptionForMidjourney || "No visual description available."}
+              </p>
+            </div>
+            
+            <div>
+              <h3 className="font-medium text-lg">Image Generation Prompt</h3>
+              <div className="p-3 border rounded-lg bg-slate-50">
+                <p className="text-sm font-mono">
+                  {fabricData.imageGenerationPrompt || "No image generation prompt available."}
+                </p>
+                {fabricData.imageGenerationPrompt && (
+                  <Button 
+                    size="sm" 
+                    onClick={() => {
+                      navigator.clipboard.writeText(fabricData.imageGenerationPrompt || "");
+                      toast({
+                        title: "Copied",
+                        description: "Image generation prompt copied to clipboard",
+                      });
+                    }}
+                    className="mt-2"
+                  >
+                    <Clipboard className="h-4 w-4 mr-2" /> Copy Prompt
+                  </Button>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="recommendations" className="mt-0 space-y-4">
+            <div>
+              <h3 className="font-medium text-lg">Specific Recommendations</h3>
+              {fabricData.specificRecommendations && fabricData.specificRecommendations.length > 0 ? (
+                <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                  {fabricData.specificRecommendations.map((rec: string, idx: number) => (
+                    <li key={idx}>{rec}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">No specific recommendations available.</p>
+              )}
+            </div>
+            
+            <div>
+              <h3 className="font-medium text-lg">Finishing Techniques</h3>
+              {fabricData.finishingTechniques && fabricData.finishingTechniques.length > 0 ? (
+                <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                  {fabricData.finishingTechniques.map((tech: string, idx: number) => (
+                    <li key={idx}>{tech}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">No finishing techniques available.</p>
+              )}
+            </div>
           </TabsContent>
           
           <TabsContent value="sources" className="mt-0">

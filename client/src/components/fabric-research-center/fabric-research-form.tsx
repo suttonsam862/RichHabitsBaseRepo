@@ -380,11 +380,13 @@ export function FabricResearchForm() {
             </CardHeader>
             <CardContent className="flex-grow p-0">
               <Tabs value={selectedTab} onValueChange={setSelectedTab} className="flex flex-col h-full">
-                <TabsList className="grid grid-cols-5 w-full">
+                <TabsList className="grid grid-cols-7 w-full">
                   <TabsTrigger value="general">General</TabsTrigger>
                   <TabsTrigger value="properties">Properties</TabsTrigger>
                   <TabsTrigger value="manufacturing">Manufacturing</TabsTrigger>
                   <TabsTrigger value="sustainability">Sustainability</TabsTrigger>
+                  <TabsTrigger value="midjourney">Midjourney</TabsTrigger>
+                  <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
                   <TabsTrigger value="sources">Sources</TabsTrigger>
                 </TabsList>
                 
@@ -511,6 +513,71 @@ export function FabricResearchForm() {
                             </Badge>
                           ))}
                         </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="midjourney" className="mt-0 h-full">
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="font-medium text-lg">Visual Description</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {researchResults.visualDescriptionForMidjourney || "No visual description available."}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h3 className="font-medium text-lg">Image Generation Prompt</h3>
+                        <div className="p-3 border rounded-lg bg-slate-50">
+                          <p className="text-sm font-mono">
+                            {researchResults.imageGenerationPrompt || "No image generation prompt available."}
+                          </p>
+                          {researchResults.imageGenerationPrompt && (
+                            <Button 
+                              size="sm" 
+                              onClick={() => {
+                                navigator.clipboard.writeText(researchResults.imageGenerationPrompt || "");
+                                toast({
+                                  title: "Copied",
+                                  description: "Image generation prompt copied to clipboard",
+                                });
+                              }}
+                              className="mt-2"
+                            >
+                              <Clipboard className="h-4 w-4 mr-2" /> Copy Prompt
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="recommendations" className="mt-0 h-full">
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="font-medium text-lg">Specific Recommendations</h3>
+                        {researchResults.specificRecommendations && researchResults.specificRecommendations.length > 0 ? (
+                          <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                            {researchResults.specificRecommendations.map((rec: string, idx: number) => (
+                              <li key={idx}>{rec}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No specific recommendations available.</p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <h3 className="font-medium text-lg">Finishing Techniques</h3>
+                        {researchResults.finishingTechniques && researchResults.finishingTechniques.length > 0 ? (
+                          <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                            {researchResults.finishingTechniques.map((tech: string, idx: number) => (
+                              <li key={idx}>{tech}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No finishing techniques available.</p>
+                        )}
                       </div>
                     </div>
                   </TabsContent>

@@ -128,7 +128,8 @@ export class AnthropicService {
     let systemPrompt = `You are a Fabric Research Assistant with expertise in textiles, manufacturing, and material science. 
 Your task is to research and provide detailed, factual information about fabrics.
 Always format your response as a valid JSON object without markdown formatting.
-Include hyper-specific details, measurements, and practical applications in your research.`;
+Include hyper-specific details, measurements, and practical applications in your research.
+Your response MUST include ALL fields in the response format, including visualDescriptionForMidjourney, imageGenerationPrompt, specificRecommendations, and finishingTechniques.`;
 
     if (detailLevel === 'comprehensive') {
       systemPrompt += `\nProvide extremely detailed and technical information with precise specifications, industry standards, and manufacturing nuances.`;

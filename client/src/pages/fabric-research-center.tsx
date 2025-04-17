@@ -145,7 +145,17 @@ export default function FabricResearchCenter() {
         title: "Fabric published",
         description: "The fabric has been published to the fabric library.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/fabric-types"] });
+      // Immediately invalidate both published and unpublished fabric queries
+      queryClient.invalidateQueries({ queryKey: ["/api/fabric-types", { published: true }] });
+      queryClient.invalidateQueries({ queryKey: ["/api/fabric-types", { published: false }] });
+      
+      // Also invalidate product management queries that might use fabric data
+      queryClient.invalidateQueries({ queryKey: ["/api/product-options"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      
+      // Force a refetch to update the UI immediately
+      refetchFabrics();
+      refetchUnpublished();
     },
     onError: (error: Error) => {
       toast({

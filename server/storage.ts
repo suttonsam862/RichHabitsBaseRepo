@@ -1135,7 +1135,37 @@ export class DatabaseStorage implements IStorage {
   
   // Fabric Options methods
   async getFabricOptions(): Promise<FabricOption[]> {
-    return db.select().from(fabricOptions).orderBy(asc(fabricOptions.name));
+    // Get existing fabric options from the fabric_options table
+    const options = await db.select().from(fabricOptions).orderBy(asc(fabricOptions.name));
+    
+    // Get published fabric types and convert them to fabric options
+    const publishedFabricTypes = await db.select()
+      .from(fabricTypes)
+      .where(eq(fabricTypes.isPublished, true))
+      .orderBy(asc(fabricTypes.name));
+    
+    // Convert fabric types to fabric options format
+    const fabricTypeOptions = publishedFabricTypes.map(fabricType => {
+      return {
+        id: fabricType.id, // Use the same ID
+        name: fabricType.name,
+        description: fabricType.description,
+        imageUrl: fabricType.imageUrl,
+        isActive: true, // Default to active
+        materialType: fabricType.materialType || null,
+        weight: fabricType.weight || null,
+        colors: fabricType.availableColors || null,
+        priceModifier: "0", // Default price modifier
+        createdAt: fabricType.createdAt,
+        updatedAt: fabricType.updatedAt
+      };
+    });
+    
+    // Combine both arrays, preferring existing fabric options (in case of ID collision)
+    const existingIds = new Set(options.map(o => o.id));
+    const uniqueFabricTypeOptions = fabricTypeOptions.filter(o => !existingIds.has(o.id));
+    
+    return [...options, ...uniqueFabricTypeOptions];
   }
   
   async getFabricOptionById(id: number): Promise<FabricOption | undefined> {

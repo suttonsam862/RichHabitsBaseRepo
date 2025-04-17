@@ -135,6 +135,31 @@ export default function FabricResearchCenter() {
     }
   };
   
+  // Publish fabric mutation
+  const publishFabricMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("PUT", `/api/fabric-types/${id}`, { isPublished: true });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Fabric published",
+        description: "The fabric has been published to the fabric library.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/fabric-types"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: `Failed to publish fabric: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const handlePublishFabric = (id: number) => {
+    publishFabricMutation.mutate(id);
+  };
+  
   // Filter published fabrics based on search query
   const filteredFabrics = fabricTypes?.data 
     ? fabricTypes.data.filter(fabric => 

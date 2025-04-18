@@ -1,6 +1,6 @@
-import * as React from "react"
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import React from 'react';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ScrollableSheetProps {
   open: boolean
@@ -14,6 +14,10 @@ interface ScrollableSheetProps {
   side?: "top" | "right" | "bottom" | "left"
 }
 
+/**
+ * A pre-configured sheet component with scroll functionality
+ * This component simplifies the creation of scrollable sheets/drawers throughout the application
+ */
 export function ScrollableSheet({
   open,
   onOpenChange,
@@ -21,8 +25,8 @@ export function ScrollableSheet({
   description,
   children,
   footer,
-  maxHeight = "calc(100vh - 120px)",
-  className,
+  maxHeight = "calc(100vh - 8rem)",
+  className = "",
   side = "right"
 }: ScrollableSheetProps) {
   return (
@@ -34,11 +38,19 @@ export function ScrollableSheet({
             {description && <SheetDescription>{description}</SheetDescription>}
           </SheetHeader>
         )}
+        
         <ScrollArea className="overflow-y-auto mt-4" style={{ maxHeight }}>
-          <div className="p-1">{children}</div>
+          <div className="pr-4">
+            {children}
+          </div>
         </ScrollArea>
-        {footer && <SheetFooter className="mt-4">{footer}</SheetFooter>}
+        
+        {footer && (
+          <div className="flex justify-end space-x-2 mt-4">
+            {footer}
+          </div>
+        )}
       </SheetContent>
     </Sheet>
-  )
+  );
 }

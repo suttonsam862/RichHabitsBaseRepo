@@ -1,6 +1,6 @@
-import * as React from "react"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import React from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogScrollPlugin } from '@/components/ui/dialog-scroll-plugin';
 
 interface ScrollableDialogProps {
   open: boolean
@@ -13,6 +13,10 @@ interface ScrollableDialogProps {
   className?: string
 }
 
+/**
+ * A pre-configured dialog component with scroll functionality
+ * This component simplifies the creation of scrollable dialogs throughout the application
+ */
 export function ScrollableDialog({
   open,
   onOpenChange,
@@ -21,7 +25,7 @@ export function ScrollableDialog({
   children,
   footer,
   maxHeight = "65vh",
-  className
+  className = ""
 }: ScrollableDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -32,11 +36,17 @@ export function ScrollableDialog({
             {description && <DialogDescription>{description}</DialogDescription>}
           </DialogHeader>
         )}
-        <ScrollArea className="overflow-y-auto" style={{ maxHeight }}>
-          <div className="p-1">{children}</div>
-        </ScrollArea>
-        {footer && <DialogFooter>{footer}</DialogFooter>}
+        
+        <DialogScrollPlugin maxHeight={maxHeight}>
+          {children}
+        </DialogScrollPlugin>
+        
+        {footer && (
+          <div className="flex justify-end space-x-2 mt-4">
+            {footer}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { db } from "./db";
-import { sql, eq, or, and } from "drizzle-orm";
+import { sql, eq, or, and, asc, desc } from "drizzle-orm";
 import { setupAuth, hashPassword, isAuthenticated } from "./auth";
 import { hasPermission } from '../shared/permissions';
 import anthropicService from "./services/anthropic-service";
@@ -18,6 +18,10 @@ import {
   users,
   products,
   fabricOptions,
+  camps,
+  campScheduleItems,
+  campStaffAssignments,
+  staffMembers,
   fabricCuts,
   customizationOptions,
   organizations,
@@ -26,10 +30,7 @@ import {
   feedbackVotes,
   outlookIntegrations,
   events,
-  camps,
   campTasks,
-  campStaffAssignments,
-  campScheduleItems,
   campFinancials,
   campRegistrationTiers,
   campRegistrations,
@@ -62,7 +63,6 @@ import {
   insertRegistrationCommunicationSchema,
   sewingPatterns,
   productSuggestions,
-  staffMembers,
   ROLES,
   PERMISSIONS,
   type User,

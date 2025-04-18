@@ -227,6 +227,7 @@ function CampPlanning() {
     endDate: '',
     location: '',
     venue: '',
+    address: '',
     city: '',
     state: '',
     type: 'camp',

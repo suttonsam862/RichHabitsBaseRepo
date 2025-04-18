@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
+import { useLocation } from 'wouter';
 import { queryClient } from '@/lib/queryClient';
 
 // UI Components
@@ -923,8 +924,11 @@ export default function CampOverview() {
   
   // Handler for clicking on a camp card
   const handleCampClick = (camp: any) => {
-    setSelectedCamp(camp);
-    setIsDetailView(true);
+    // Navigate to camp project page
+    window.location.href = `/events/camp-project?id=${camp.id}`;
+    // Optional: could also use the local state for detail view if needed
+    // setSelectedCamp(camp);
+    // setIsDetailView(true);
   };
 
   // If we're in the detail view for a specific camp
@@ -1163,7 +1167,7 @@ export default function CampOverview() {
         <div className="mt-4 md:mt-0 flex gap-2">
           <Button 
             variant="outline" 
-            onClick={() => setLocation('/events/admin-dashboard')}
+            onClick={() => { window.location.href = '/events/admin-dashboard'; }}
             className="flex items-center"
           >
             <BarChart3 className="mr-2 h-4 w-4" />

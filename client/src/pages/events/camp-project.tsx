@@ -123,7 +123,7 @@ function CampProject() {
   
   // Go back to overview
   const handleBackToOverview = () => {
-    setLocation('/events/overview');
+    window.location.href = '/events/overview';
   };
   
   // Navigate to a module

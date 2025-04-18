@@ -96,6 +96,7 @@ import {
 } from "@/components/ui/accordion";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollableDialog } from "@/components/ui/scrollable-dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatDate, formatCurrency } from "@/lib/utils";
 

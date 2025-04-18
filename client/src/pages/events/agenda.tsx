@@ -68,7 +68,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollableDialog } from "@/components/ui/scrollable-dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -88,6 +87,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tooltip,
   TooltipContent,
@@ -1158,168 +1158,15 @@ function AgendaBuilder() {
       </Dialog>
       
       {/* Edit Session Dialog */}
-      <Dialog open={showEditSession} onOpenChange={setShowEditSession}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Edit Session</DialogTitle>
-            <DialogDescription>
-              Edit the details of this session.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedSession && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-1 gap-2">
-                <Label htmlFor="edit-title">Session Title*</Label>
-                <Input
-                  id="edit-title"
-                  value={selectedSession.title}
-                  onChange={(e) => setSelectedSession({...selectedSession, title: e.target.value})}
-                  placeholder="Enter session title"
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 gap-2">
-                <Label htmlFor="edit-description">Description</Label>
-                <Textarea
-                  id="edit-description"
-                  value={selectedSession.description || ''}
-                  onChange={(e) => setSelectedSession({...selectedSession, description: e.target.value})}
-                  placeholder="Enter session description"
-                  rows={3}
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit-startTime">Start Time*</Label>
-                  <Input
-                    id="edit-startTime"
-                    type="time"
-                    value={selectedSession.startTime}
-                    onChange={(e) => setSelectedSession({...selectedSession, startTime: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-endTime">End Time*</Label>
-                  <Input
-                    id="edit-endTime"
-                    type="time"
-                    value={selectedSession.endTime}
-                    onChange={(e) => setSelectedSession({...selectedSession, endTime: e.target.value})}
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit-sessionType">Session Type*</Label>
-                  <Select
-                    value={selectedSession.sessionType}
-                    onValueChange={(value) => setSelectedSession({...selectedSession, sessionType: value as SessionType})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="opening">Opening Session</SelectItem>
-                      <SelectItem value="instruction">Instruction</SelectItem>
-                      <SelectItem value="drill">Drill</SelectItem>
-                      <SelectItem value="scrimmage">Scrimmage</SelectItem>
-                      <SelectItem value="evaluation">Evaluation</SelectItem>
-                      <SelectItem value="break">Break</SelectItem>
-                      <SelectItem value="meal">Meal</SelectItem>
-                      <SelectItem value="lecture">Lecture</SelectItem>
-                      <SelectItem value="activity">Activity</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-status">Status</Label>
-                  <Select
-                    value={selectedSession.status}
-                    onValueChange={(value) => setSelectedSession({...selectedSession, status: value as 'draft' | 'scheduled' | 'completed' | 'cancelled'})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="scheduled">Scheduled</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit-location">Location</Label>
-                  <Select
-                    value={selectedSession.locationId?.toString() || ''}
-                    onValueChange={(value) => setSelectedSession({...selectedSession, locationId: value ? parseInt(value, 10) : undefined})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select location" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">No location</SelectItem>
-                      {locations?.data?.map((location: Location) => (
-                        <SelectItem key={location.id} value={location.id.toString()}>
-                          {location.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-clinician">Clinician</Label>
-                  <Select
-                    value={selectedSession.clinicianId?.toString() || ''}
-                    onValueChange={(value) => setSelectedSession({...selectedSession, clinicianId: value ? parseInt(value, 10) : undefined})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select clinician" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">No clinician</SelectItem>
-                      {clinicians?.data?.map((clinician: Clinician) => (
-                        <SelectItem key={clinician.id} value={clinician.id.toString()}>
-                          {clinician.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 gap-2">
-                <Label htmlFor="edit-materials">Materials Needed</Label>
-                <Textarea
-                  id="edit-materials"
-                  value={selectedSession.materials || ''}
-                  onChange={(e) => setSelectedSession({...selectedSession, materials: e.target.value})}
-                  placeholder="List any required materials"
-                  rows={2}
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 gap-2">
-                <Label htmlFor="edit-notes">Notes</Label>
-                <Textarea
-                  id="edit-notes"
-                  value={selectedSession.notes || ''}
-                  onChange={(e) => setSelectedSession({...selectedSession, notes: e.target.value})}
-                  placeholder="Additional notes"
-                  rows={2}
-                />
-              </div>
-            </div>
-          )}
-          
-          <DialogFooter>
+      <ScrollableDialog
+        open={showEditSession}
+        onOpenChange={setShowEditSession}
+        title="Edit Session"
+        description="Edit the details of this session."
+        className="sm:max-w-xl"
+        maxHeight="70vh"
+        footer={
+          <>
             <Button variant="outline" onClick={() => setShowEditSession(false)}>
               Cancel
             </Button>
@@ -1336,9 +1183,161 @@ function AgendaBuilder() {
                 </>
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        {selectedSession && (
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-1 gap-2">
+              <Label htmlFor="edit-title">Session Title*</Label>
+              <Input
+                id="edit-title"
+                value={selectedSession.title}
+                onChange={(e) => setSelectedSession({...selectedSession, title: e.target.value})}
+                placeholder="Enter session title"
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 gap-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={selectedSession.description || ''}
+                onChange={(e) => setSelectedSession({...selectedSession, description: e.target.value})}
+                placeholder="Enter session description"
+                rows={3}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-startTime">Start Time*</Label>
+                <Input
+                  id="edit-startTime"
+                  type="time"
+                  value={selectedSession.startTime}
+                  onChange={(e) => setSelectedSession({...selectedSession, startTime: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-endTime">End Time*</Label>
+                <Input
+                  id="edit-endTime"
+                  type="time"
+                  value={selectedSession.endTime}
+                  onChange={(e) => setSelectedSession({...selectedSession, endTime: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-sessionType">Session Type*</Label>
+                <Select
+                  value={selectedSession.sessionType}
+                  onValueChange={(value) => setSelectedSession({...selectedSession, sessionType: value as SessionType})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="opening">Opening Session</SelectItem>
+                    <SelectItem value="instruction">Instruction</SelectItem>
+                    <SelectItem value="drill">Drill</SelectItem>
+                    <SelectItem value="scrimmage">Scrimmage</SelectItem>
+                    <SelectItem value="evaluation">Evaluation</SelectItem>
+                    <SelectItem value="break">Break</SelectItem>
+                    <SelectItem value="meal">Meal</SelectItem>
+                    <SelectItem value="lecture">Lecture</SelectItem>
+                    <SelectItem value="activity">Activity</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-status">Status</Label>
+                <Select
+                  value={selectedSession.status}
+                  onValueChange={(value) => setSelectedSession({...selectedSession, status: value as 'draft' | 'scheduled' | 'completed' | 'cancelled'})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-location">Location</Label>
+                <Select
+                  value={selectedSession.locationId?.toString() || ''}
+                  onValueChange={(value) => setSelectedSession({...selectedSession, locationId: value ? parseInt(value, 10) : undefined})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No location</SelectItem>
+                    {locations?.data?.map((location: Location) => (
+                      <SelectItem key={location.id} value={location.id.toString()}>
+                        {location.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-clinician">Clinician</Label>
+                <Select
+                  value={selectedSession.clinicianId?.toString() || ''}
+                  onValueChange={(value) => setSelectedSession({...selectedSession, clinicianId: value ? parseInt(value, 10) : undefined})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select clinician" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No clinician</SelectItem>
+                    {clinicians?.data?.map((clinician: Clinician) => (
+                      <SelectItem key={clinician.id} value={clinician.id.toString()}>
+                        {clinician.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-2">
+              <Label htmlFor="edit-materials">Materials Needed</Label>
+              <Textarea
+                id="edit-materials"
+                value={selectedSession.materials || ''}
+                onChange={(e) => setSelectedSession({...selectedSession, materials: e.target.value})}
+                placeholder="List any required materials"
+                rows={2}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 gap-2">
+              <Label htmlFor="edit-notes">Notes</Label>
+              <Textarea
+                id="edit-notes"
+                value={selectedSession.notes || ''}
+                onChange={(e) => setSelectedSession({...selectedSession, notes: e.target.value})}
+                placeholder="Additional notes"
+                rows={2}
+              />
+            </div>
+          </div>
+        )}
+      </ScrollableDialog>
       
       {/* Copy Session Dialog */}
       <Dialog open={showCopyOptions} onOpenChange={setShowCopyOptions}>

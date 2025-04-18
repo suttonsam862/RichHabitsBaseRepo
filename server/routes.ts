@@ -3908,11 +3908,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log the activity
       await storage.createActivity({
         userId: user.id,
-        username: user.fullName || user.username,
-        action: 'UPDATE',
-        resourceType: 'CAMP',
-        resourceId: updatedCamp.id,
-        details: `Updated camp: ${updatedCamp.name}`
+        type: 'camp_management',
+        content: `Updated camp: ${updatedCamp.name}`,
+        relatedId: updatedCamp.id,
+        relatedType: 'CAMP'
       });
       
       res.status(200).json(updatedCamp);
@@ -3952,11 +3951,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log the activity
       await storage.createActivity({
         userId: user.id,
-        username: user.fullName || user.username,
-        action: 'DELETE',
-        resourceType: 'CAMP',
-        resourceId: campId,
-        details: `Deleted camp: ${existingCamp.name}`
+        type: 'camp_management',
+        content: `Deleted camp: ${existingCamp.name}`,
+        relatedId: campId,
+        relatedType: 'CAMP'
       });
       
       res.status(200).json({ message: "Camp deleted successfully" });

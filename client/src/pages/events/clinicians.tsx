@@ -1203,112 +1203,15 @@ function ClinicianModule() {
       </Card>
       
       {/* Add Clinician Dialog */}
-      <Dialog open={showAddClinician} onOpenChange={setShowAddClinician}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Add New Clinician</DialogTitle>
-            <DialogDescription>
-              Add a new clinician to this camp.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-1 gap-2">
-              <Label htmlFor="name">Name*</Label>
-              <Input
-                id="name"
-                value={newClinician.name}
-                onChange={(e) => setNewClinician({...newClinician, name: e.target.value})}
-                placeholder="Enter clinician name"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="email">Email*</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newClinician.email}
-                  onChange={(e) => setNewClinician({...newClinician, email: e.target.value})}
-                  placeholder="Enter email address"
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  value={newClinician.phone || ''}
-                  onChange={(e) => setNewClinician({...newClinician, phone: e.target.value})}
-                  placeholder="Enter phone number"
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-2">
-              <Label>Specialties</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {['wrestling', 'mma', 'boxing', 'jiu-jitsu', 'strength', 'conditioning', 'nutrition', 'psychology', 'recovery', 'other'].map((specialty) => (
-                  <div key={specialty} className="flex items-center space-x-2">
-                    <Switch
-                      id={`specialty-${specialty}`}
-                      checked={newClinician.specialties?.includes(specialty)}
-                      onCheckedChange={() => toggleSpecialty(specialty as ClinicianSpecialty)}
-                    />
-                    <Label htmlFor={`specialty-${specialty}`}>{specialty}</Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-2">
-              <Label htmlFor="bio">Bio</Label>
-              <Textarea
-                id="bio"
-                value={newClinician.bio || ''}
-                onChange={(e) => setNewClinician({...newClinician, bio: e.target.value})}
-                placeholder="Enter clinician bio"
-                rows={3}
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={newClinician.status}
-                  onValueChange={(value) => setNewClinician({...newClinician, status: value as ClinicianStatus})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="invited">Invited</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="standby">Standby</SelectItem>
-                    <SelectItem value="unavailable">Unavailable</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="hourlyRate">Hourly Rate</Label>
-                <Input
-                  id="hourlyRate"
-                  type="number"
-                  value={newClinician.hourlyRate || ''}
-                  onChange={(e) => setNewClinician({
-                    ...newClinician, 
-                    hourlyRate: e.target.value ? parseInt(e.target.value) : undefined
-                  })}
-                  placeholder="Enter hourly rate"
-                />
-              </div>
-            </div>
-          </div>
-          
-          <DialogFooter>
+      <ScrollableDialog 
+        open={showAddClinician} 
+        onOpenChange={setShowAddClinician}
+        title="Add New Clinician"
+        description="Add a new clinician to this camp."
+        className="sm:max-w-xl"
+        maxHeight="80vh"
+        footer={
+          <>
             <Button variant="outline" onClick={() => setShowAddClinician(false)}>
               Cancel
             </Button>
@@ -1325,86 +1228,116 @@ function ClinicianModule() {
                 </>
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Availability Dialog */}
-      <Dialog open={showAvailabilityDialog} onOpenChange={setShowAvailabilityDialog}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Update Availability</DialogTitle>
-            <DialogDescription>
-              Set the availability for this clinician throughout the camp.
-            </DialogDescription>
-          </DialogHeader>
+          </>
+        }
+      >
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-1 gap-2">
+            <Label htmlFor="name">Name*</Label>
+            <Input
+              id="name"
+              value={newClinician.name}
+              onChange={(e) => setNewClinician({...newClinician, name: e.target.value})}
+              placeholder="Enter clinician name"
+            />
+          </div>
           
-          <div className="py-4">
-            <div className="space-y-4">
-              {newAvailability.map((slot, index) => (
-                <div key={index} className="flex items-center gap-2 p-2 border rounded-md">
-                  <div>
-                    <Label htmlFor={`day-${index}`}>Day</Label>
-                    <Select
-                      value={slot.day.toString()}
-                      onValueChange={(value) => updateAvailabilitySlot(index, 'day', parseInt(value))}
-                    >
-                      <SelectTrigger id={`day-${index}`} className="w-[100px]">
-                        <SelectValue placeholder="Day" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: campData.days || 5 }, (_, i) => (
-                          <SelectItem key={i} value={(i + 1).toString()}>
-                            Day {i + 1}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor={`start-${index}`}>Start</Label>
-                    <Input
-                      id={`start-${index}`}
-                      type="time"
-                      value={slot.startTime}
-                      onChange={(e) => updateAvailabilitySlot(index, 'startTime', e.target.value)}
-                      className="w-[110px]"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor={`end-${index}`}>End</Label>
-                    <Input
-                      id={`end-${index}`}
-                      type="time"
-                      value={slot.endTime}
-                      onChange={(e) => updateAvailabilitySlot(index, 'endTime', e.target.value)}
-                      className="w-[110px]"
-                    />
-                  </div>
-                  
-                  <div className="mt-auto">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => removeAvailabilitySlot(index)}
-                      disabled={newAvailability.length <= 1}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              
-              <Button variant="outline" onClick={addAvailabilitySlot}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Time Slot
-              </Button>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="email">Email*</Label>
+              <Input
+                id="email"
+                type="email"
+                value={newClinician.email}
+                onChange={(e) => setNewClinician({...newClinician, email: e.target.value})}
+                placeholder="Enter email address"
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                value={newClinician.phone || ''}
+                onChange={(e) => setNewClinician({...newClinician, phone: e.target.value})}
+                placeholder="Enter phone number"
+              />
             </div>
           </div>
           
-          <DialogFooter>
+          <div className="grid grid-cols-1 gap-2">
+            <Label>Specialties</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {['wrestling', 'mma', 'boxing', 'jiu-jitsu', 'strength', 'conditioning', 'nutrition', 'psychology', 'recovery', 'other'].map((specialty) => (
+                <div key={specialty} className="flex items-center space-x-2">
+                  <Switch
+                    id={`specialty-${specialty}`}
+                    checked={newClinician.specialties?.includes(specialty)}
+                    onCheckedChange={() => toggleSpecialty(specialty as ClinicianSpecialty)}
+                  />
+                  <Label htmlFor={`specialty-${specialty}`}>{specialty}</Label>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-2">
+            <Label htmlFor="bio">Bio</Label>
+            <Textarea
+              id="bio"
+              value={newClinician.bio || ''}
+              onChange={(e) => setNewClinician({...newClinician, bio: e.target.value})}
+              placeholder="Enter clinician bio"
+              rows={3}
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={newClinician.status}
+                onValueChange={(value) => setNewClinician({...newClinician, status: value as ClinicianStatus})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="invited">Invited</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="standby">Standby</SelectItem>
+                  <SelectItem value="unavailable">Unavailable</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="hourlyRate">Hourly Rate</Label>
+              <Input
+                id="hourlyRate"
+                type="number"
+                value={newClinician.hourlyRate || ''}
+                onChange={(e) => setNewClinician({
+                  ...newClinician, 
+                  hourlyRate: e.target.value ? parseInt(e.target.value) : undefined
+                })}
+                placeholder="Enter hourly rate"
+              />
+            </div>
+          </div>
+        </div>
+      </ScrollableDialog>
+      
+      {/* Availability Dialog */}
+      <ScrollableDialog 
+        open={showAvailabilityDialog} 
+        onOpenChange={setShowAvailabilityDialog}
+        title="Update Availability"
+        description="Set the availability for this clinician throughout the camp."
+        className="sm:max-w-lg"
+        maxHeight="80vh"
+        footer={
+          <>
             <Button variant="outline" onClick={() => setShowAvailabilityDialog(false)}>
               Cancel
             </Button>
@@ -1424,209 +1357,236 @@ function ClinicianModule() {
                 </>
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        <div className="py-4">
+          <div className="space-y-4">
+            {newAvailability.map((slot, index) => (
+              <div key={index} className="flex items-center gap-2 p-2 border rounded-md">
+                <div>
+                  <Label htmlFor={`day-${index}`}>Day</Label>
+                  <Select
+                    value={slot.day.toString()}
+                    onValueChange={(value) => updateAvailabilitySlot(index, 'day', parseInt(value))}
+                  >
+                    <SelectTrigger id={`day-${index}`} className="w-[100px]">
+                      <SelectValue placeholder="Day" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: campData.days || 5 }, (_, i) => (
+                        <SelectItem key={i} value={(i + 1).toString()}>
+                          Day {i + 1}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor={`start-${index}`}>Start</Label>
+                  <Input
+                    id={`start-${index}`}
+                    type="time"
+                    value={slot.startTime}
+                    onChange={(e) => updateAvailabilitySlot(index, 'startTime', e.target.value)}
+                    className="w-[110px]"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor={`end-${index}`}>End</Label>
+                  <Input
+                    id={`end-${index}`}
+                    type="time"
+                    value={slot.endTime}
+                    onChange={(e) => updateAvailabilitySlot(index, 'endTime', e.target.value)}
+                    className="w-[110px]"
+                  />
+                </div>
+                
+                <div className="mt-auto">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => removeAvailabilitySlot(index)}
+                    disabled={newAvailability.length <= 1}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            
+            <Button variant="outline" onClick={addAvailabilitySlot}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Time Slot
+            </Button>
+          </div>
+        </div>
+      </ScrollableDialog>
       
       {/* Contract Dialog */}
-      <Dialog open={showContractDialog} onOpenChange={setShowContractDialog}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Manage Contract</DialogTitle>
-            <DialogDescription>
-              Update contract details for this clinician.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="hourlyRate">Hourly Rate ($)</Label>
-                <Input
-                  id="hourlyRate"
-                  type="number"
-                  value={contractDetails.hourlyRate}
-                  onChange={(e) => setContractDetails({
-                    ...contractDetails,
-                    hourlyRate: parseInt(e.target.value) || 0
-                  })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="totalHours">Total Hours</Label>
-                <Input
-                  id="totalHours"
-                  type="number"
-                  value={contractDetails.totalHours}
-                  onChange={(e) => setContractDetails({
-                    ...contractDetails,
-                    totalHours: parseInt(e.target.value) || 0
-                  })}
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="startDate">Start Date</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={contractDetails.startDate}
-                  onChange={(e) => setContractDetails({
-                    ...contractDetails,
-                    startDate: e.target.value
-                  })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="endDate">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={contractDetails.endDate}
-                  onChange={(e) => setContractDetails({
-                    ...contractDetails,
-                    endDate: e.target.value
-                  })}
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="accommodationProvided"
-                  checked={contractDetails.accommodationProvided}
-                  onCheckedChange={(checked) => setContractDetails({
-                    ...contractDetails,
-                    accommodationProvided: checked
-                  })}
-                />
-                <Label htmlFor="accommodationProvided">Accommodation Provided</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="travelProvided"
-                  checked={contractDetails.travelProvided}
-                  onCheckedChange={(checked) => setContractDetails({
-                    ...contractDetails,
-                    travelProvided: checked
-                  })}
-                />
-                <Label htmlFor="travelProvided">Travel Provided</Label>
-              </div>
-            </div>
-            
+      <ScrollableDialog 
+        open={showContractDialog} 
+        onOpenChange={setShowContractDialog}
+        title="Manage Contract"
+        description="Update contract details for this clinician."
+        className="sm:max-w-xl"
+        maxHeight="80vh"
+        footer={
+          <div className="flex justify-between w-full">
             <div>
-              <Label htmlFor="contractNotes">Notes</Label>
-              <Textarea
-                id="contractNotes"
-                value={contractDetails.notes}
-                onChange={(e) => setContractDetails({
-                  ...contractDetails,
-                  notes: e.target.value
-                })}
-                rows={3}
-              />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline">
+                      <ClipboardPaste className="h-4 w-4 mr-2" />
+                      Generate Contract
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Generate a contract based on the details above</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
-            
-            <div className="mt-2">
-              <Button variant="outline" onClick={() => openUploadDialog(selectedClinicianId!)}>
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Contract Document
+            <div className="space-x-2">
+              <Button variant="outline" onClick={() => setShowContractDialog(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleUpdateContract}
+                disabled={updateContractMutation.isPending}
+              >
+                {updateContractMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Save Contract
+                  </>
+                )}
               </Button>
             </div>
           </div>
-          
-          <DialogFooter>
-            <div className="flex justify-between w-full">
-              <div>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline">
-                        <ClipboardPaste className="h-4 w-4 mr-2" />
-                        Generate Contract
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Generate a contract based on the details above</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <div className="space-x-2">
-                <Button variant="outline" onClick={() => setShowContractDialog(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleUpdateContract}
-                  disabled={updateContractMutation.isPending}
-                >
-                  {updateContractMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Save Contract
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Upload Dialog */}
-      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Upload Document</DialogTitle>
-            <DialogDescription>
-              Upload a document for this clinician.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
+        }
+      >
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="documentType">Document Type</Label>
-              <Select
-                value={uploadType}
-                onValueChange={setUploadType}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select document type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="contract">Contract</SelectItem>
-                  <SelectItem value="waiver">Waiver</SelectItem>
-                  <SelectItem value="bio">Bio</SelectItem>
-                  <SelectItem value="credential">Credential</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label htmlFor="fileUpload">File</Label>
+              <Label htmlFor="hourlyRate">Hourly Rate ($)</Label>
               <Input
-                id="fileUpload"
-                type="file"
-                onChange={handleFileChange}
-                className="mt-1"
+                id="hourlyRate"
+                type="number"
+                value={contractDetails.hourlyRate}
+                onChange={(e) => setContractDetails({
+                  ...contractDetails,
+                  hourlyRate: parseInt(e.target.value) || 0
+                })}
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Accepted file types: PDF, DOC, DOCX, JPG, PNG (max 10MB)
-              </p>
+            </div>
+            <div>
+              <Label htmlFor="totalHours">Total Hours</Label>
+              <Input
+                id="totalHours"
+                type="number"
+                value={contractDetails.totalHours}
+                onChange={(e) => setContractDetails({
+                  ...contractDetails,
+                  totalHours: parseInt(e.target.value) || 0
+                })}
+              />
             </div>
           </div>
           
-          <DialogFooter>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="startDate">Start Date</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={contractDetails.startDate}
+                onChange={(e) => setContractDetails({
+                  ...contractDetails,
+                  startDate: e.target.value
+                })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="endDate">End Date</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={contractDetails.endDate}
+                onChange={(e) => setContractDetails({
+                  ...contractDetails,
+                  endDate: e.target.value
+                })}
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="accommodationProvided"
+                checked={contractDetails.accommodationProvided}
+                onCheckedChange={(checked) => setContractDetails({
+                  ...contractDetails,
+                  accommodationProvided: checked
+                })}
+              />
+              <Label htmlFor="accommodationProvided">Accommodation Provided</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="travelProvided"
+                checked={contractDetails.travelProvided}
+                onCheckedChange={(checked) => setContractDetails({
+                  ...contractDetails,
+                  travelProvided: checked
+                })}
+              />
+              <Label htmlFor="travelProvided">Travel Provided</Label>
+            </div>
+          </div>
+          
+          <div>
+            <Label htmlFor="contractNotes">Notes</Label>
+            <Textarea
+              id="contractNotes"
+              value={contractDetails.notes}
+              onChange={(e) => setContractDetails({
+                ...contractDetails,
+                notes: e.target.value
+              })}
+              rows={3}
+            />
+          </div>
+          
+          <div className="mt-2">
+            <Button variant="outline" onClick={() => openUploadDialog(selectedClinicianId!)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Upload Contract Document
+            </Button>
+          </div>
+        </div>
+      </ScrollableDialog>
+      
+      {/* Upload Dialog */}
+      <ScrollableDialog 
+        open={showUploadDialog} 
+        onOpenChange={setShowUploadDialog}
+        title="Upload Document"
+        description="Upload a document for this clinician."
+        className="sm:max-w-md"
+        maxHeight="80vh"
+        footer={
+          <>
             <Button variant="outline" onClick={() => setShowUploadDialog(false)}>
               Cancel
             </Button>
@@ -1646,9 +1606,43 @@ function ClinicianModule() {
                 </>
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        <div className="grid gap-4 py-4">
+          <div>
+            <Label htmlFor="documentType">Document Type</Label>
+            <Select
+              value={uploadType}
+              onValueChange={setUploadType}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select document type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="contract">Contract</SelectItem>
+                <SelectItem value="waiver">Waiver</SelectItem>
+                <SelectItem value="bio">Bio</SelectItem>
+                <SelectItem value="credential">Credential</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <Label htmlFor="fileUpload">File</Label>
+            <Input
+              id="fileUpload"
+              type="file"
+              onChange={handleFileChange}
+              className="mt-1"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Accepted file types: PDF, DOC, DOCX, JPG, PNG (max 10MB)
+            </p>
+          </div>
+        </div>
+      </ScrollableDialog>
     </div>
   );
 }

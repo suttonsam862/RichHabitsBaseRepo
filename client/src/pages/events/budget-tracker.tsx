@@ -1242,111 +1242,15 @@ function BudgetTracker() {
       </Tabs>
       
       {/* Add Revenue Dialog */}
-      <Dialog open={showAddRevenue} onOpenChange={setShowAddRevenue}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Add Revenue</DialogTitle>
-            <DialogDescription>
-              Add a new revenue entry to the budget tracker.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="revenue-source" className="text-right">
-                Source
-              </Label>
-              <Input
-                id="revenue-source"
-                value={newRevenue.source}
-                onChange={(e) => setNewRevenue({...newRevenue, source: e.target.value})}
-                className="col-span-3"
-                placeholder="Registration Fees"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="revenue-category" className="text-right">
-                Category
-              </Label>
-              <Select 
-                value={newRevenue.category}
-                onValueChange={(value: any) => setNewRevenue({...newRevenue, category: value})}
-              >
-                <SelectTrigger id="revenue-category" className="col-span-3">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {revenueCategoryOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="revenue-amount" className="text-right">
-                Amount
-              </Label>
-              <Input
-                id="revenue-amount"
-                type="number"
-                step="0.01"
-                min="0"
-                value={newRevenue.amount || ''}
-                onChange={(e) => setNewRevenue({...newRevenue, amount: parseFloat(e.target.value) || 0})}
-                className="col-span-3"
-                placeholder="100.00"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="revenue-date" className="text-right">
-                Date
-              </Label>
-              <Input
-                id="revenue-date"
-                type="date"
-                value={newRevenue.date}
-                onChange={(e) => setNewRevenue({...newRevenue, date: e.target.value})}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="revenue-order-id" className="text-right">
-                Order ID
-              </Label>
-              <Input
-                id="revenue-order-id"
-                value={newRevenue.orderId || ''}
-                onChange={(e) => setNewRevenue({...newRevenue, orderId: e.target.value})}
-                className="col-span-3"
-                placeholder="Optional"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="revenue-payment-method" className="text-right">
-                Payment Method
-              </Label>
-              <Input
-                id="revenue-payment-method"
-                value={newRevenue.paymentMethod || ''}
-                onChange={(e) => setNewRevenue({...newRevenue, paymentMethod: e.target.value})}
-                className="col-span-3"
-                placeholder="Credit Card, Cash, etc."
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="revenue-notes" className="text-right">
-                Notes
-              </Label>
-              <Textarea
-                id="revenue-notes"
-                value={newRevenue.notes || ''}
-                onChange={(e) => setNewRevenue({...newRevenue, notes: e.target.value})}
-                className="col-span-3"
-                placeholder="Optional notes"
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
+      <ScrollableDialog 
+        open={showAddRevenue} 
+        onOpenChange={setShowAddRevenue}
+        title="Add Revenue"
+        description="Add a new revenue entry to the budget tracker."
+        className="sm:max-w-[500px]"
+        maxHeight="80vh"
+        footer={
+          <div className="flex justify-end space-x-2 w-full">
             <Button 
               variant="outline" 
               onClick={() => setShowAddRevenue(false)}
@@ -1364,136 +1268,117 @@ function BudgetTracker() {
                 <>Add Revenue</>
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        }
+      >
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="revenue-source" className="text-right">
+              Source
+            </Label>
+            <Input
+              id="revenue-source"
+              value={newRevenue.source}
+              onChange={(e) => setNewRevenue({...newRevenue, source: e.target.value})}
+              className="col-span-3"
+              placeholder="Registration Fees"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="revenue-category" className="text-right">
+              Category
+            </Label>
+            <Select 
+              value={newRevenue.category}
+              onValueChange={(value: any) => setNewRevenue({...newRevenue, category: value})}
+            >
+              <SelectTrigger id="revenue-category" className="col-span-3">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {revenueCategoryOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="revenue-amount" className="text-right">
+              Amount
+            </Label>
+            <Input
+              id="revenue-amount"
+              type="number"
+              step="0.01"
+              min="0"
+              value={newRevenue.amount || ''}
+              onChange={(e) => setNewRevenue({...newRevenue, amount: parseFloat(e.target.value) || 0})}
+              className="col-span-3"
+              placeholder="100.00"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="revenue-date" className="text-right">
+              Date
+            </Label>
+            <Input
+              id="revenue-date"
+              type="date"
+              value={newRevenue.date}
+              onChange={(e) => setNewRevenue({...newRevenue, date: e.target.value})}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="revenue-order-id" className="text-right">
+              Order ID
+            </Label>
+            <Input
+              id="revenue-order-id"
+              value={newRevenue.orderId || ''}
+              onChange={(e) => setNewRevenue({...newRevenue, orderId: e.target.value})}
+              className="col-span-3"
+              placeholder="Optional"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="revenue-payment-method" className="text-right">
+              Payment Method
+            </Label>
+            <Input
+              id="revenue-payment-method"
+              value={newRevenue.paymentMethod || ''}
+              onChange={(e) => setNewRevenue({...newRevenue, paymentMethod: e.target.value})}
+              className="col-span-3"
+              placeholder="Credit Card, Cash, etc."
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="revenue-notes" className="text-right">
+              Notes
+            </Label>
+            <Textarea
+              id="revenue-notes"
+              value={newRevenue.notes || ''}
+              onChange={(e) => setNewRevenue({...newRevenue, notes: e.target.value})}
+              className="col-span-3"
+              placeholder="Optional notes"
+              rows={3}
+            />
+          </div>
+        </div>
+      </ScrollableDialog>
       
       {/* Add Expense Dialog */}
-      <Dialog open={showAddExpense} onOpenChange={setShowAddExpense}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Add Expense</DialogTitle>
-            <DialogDescription>
-              Add a new expense entry to the budget tracker.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="expense-name" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="expense-name"
-                value={newExpense.name}
-                onChange={(e) => setNewExpense({...newExpense, name: e.target.value})}
-                className="col-span-3"
-                placeholder="Venue Rental"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="expense-category" className="text-right">
-                Category
-              </Label>
-              <Select 
-                value={newExpense.category}
-                onValueChange={(value: any) => setNewExpense({...newExpense, category: value})}
-              >
-                <SelectTrigger id="expense-category" className="col-span-3">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {expenseCategoryOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="expense-amount" className="text-right">
-                Amount
-              </Label>
-              <Input
-                id="expense-amount"
-                type="number"
-                step="0.01"
-                min="0"
-                value={newExpense.amount || ''}
-                onChange={(e) => setNewExpense({...newExpense, amount: parseFloat(e.target.value) || 0})}
-                className="col-span-3"
-                placeholder="100.00"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="expense-date" className="text-right">
-                Date
-              </Label>
-              <Input
-                id="expense-date"
-                type="date"
-                value={newExpense.date}
-                onChange={(e) => setNewExpense({...newExpense, date: e.target.value})}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="expense-vendor" className="text-right">
-                Vendor
-              </Label>
-              <Input
-                id="expense-vendor"
-                value={newExpense.vendor || ''}
-                onChange={(e) => setNewExpense({...newExpense, vendor: e.target.value})}
-                className="col-span-3"
-                placeholder="Vendor name"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="expense-payment-method" className="text-right">
-                Payment Method
-              </Label>
-              <Input
-                id="expense-payment-method"
-                value={newExpense.paymentMethod || ''}
-                onChange={(e) => setNewExpense({...newExpense, paymentMethod: e.target.value})}
-                className="col-span-3"
-                placeholder="Credit Card, Cash, etc."
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <div className="text-right">
-                <Label>Payment Status</Label>
-              </div>
-              <div className="col-span-3">
-                <RadioGroup 
-                  value={newExpense.paid ? "paid" : "pending"}
-                  onValueChange={(value) => setNewExpense({...newExpense, paid: value === "paid"})}
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="paid" id="paid" />
-                    <Label htmlFor="paid">Paid</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="pending" id="pending" />
-                    <Label htmlFor="pending">Pending</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="expense-notes" className="text-right">
-                Notes
-              </Label>
-              <Textarea
-                id="expense-notes"
-                value={newExpense.notes || ''}
-                onChange={(e) => setNewExpense({...newExpense, notes: e.target.value})}
-                className="col-span-3"
-                placeholder="Optional notes"
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
+      <ScrollableDialog
+        open={showAddExpense} 
+        onOpenChange={setShowAddExpense}
+        title="Add Expense"
+        description="Add a new expense entry to the budget tracker."
+        className="sm:max-w-[500px]"
+        maxHeight="80vh"
+        footer={
+          <div className="flex justify-end space-x-2 w-full">
             <Button 
               variant="outline" 
               onClick={() => setShowAddExpense(false)}
@@ -1511,20 +1396,136 @@ function BudgetTracker() {
                 <>Add Expense</>
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        }
+      >
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="expense-name" className="text-right">
+              Name
+            </Label>
+            <Input
+              id="expense-name"
+              value={newExpense.name}
+              onChange={(e) => setNewExpense({...newExpense, name: e.target.value})}
+              className="col-span-3"
+              placeholder="Venue Rental"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="expense-category" className="text-right">
+              Category
+            </Label>
+            <Select 
+              value={newExpense.category}
+              onValueChange={(value: any) => setNewExpense({...newExpense, category: value})}
+            >
+              <SelectTrigger id="expense-category" className="col-span-3">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {expenseCategoryOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="expense-amount" className="text-right">
+              Amount
+            </Label>
+            <Input
+              id="expense-amount"
+              type="number"
+              step="0.01"
+              min="0"
+              value={newExpense.amount || ''}
+              onChange={(e) => setNewExpense({...newExpense, amount: parseFloat(e.target.value) || 0})}
+              className="col-span-3"
+              placeholder="100.00"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="expense-date" className="text-right">
+              Date
+            </Label>
+            <Input
+              id="expense-date"
+              type="date"
+              value={newExpense.date}
+              onChange={(e) => setNewExpense({...newExpense, date: e.target.value})}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="expense-vendor" className="text-right">
+              Vendor
+            </Label>
+            <Input
+              id="expense-vendor"
+              value={newExpense.vendor || ''}
+              onChange={(e) => setNewExpense({...newExpense, vendor: e.target.value})}
+              className="col-span-3"
+              placeholder="Vendor name"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="expense-payment-method" className="text-right">
+              Payment Method
+            </Label>
+            <Input
+              id="expense-payment-method"
+              value={newExpense.paymentMethod || ''}
+              onChange={(e) => setNewExpense({...newExpense, paymentMethod: e.target.value})}
+              className="col-span-3"
+              placeholder="Credit Card, Cash, etc."
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <div className="text-right">
+              <Label>Payment Status</Label>
+            </div>
+            <div className="col-span-3">
+              <RadioGroup 
+                value={newExpense.paid ? "paid" : "pending"}
+                onValueChange={(value) => setNewExpense({...newExpense, paid: value === "paid"})}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="paid" id="paid" />
+                  <Label htmlFor="paid">Paid</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="pending" id="pending" />
+                  <Label htmlFor="pending">Pending</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="expense-notes" className="text-right">
+              Notes
+            </Label>
+            <Textarea
+              id="expense-notes"
+              value={newExpense.notes || ''}
+              onChange={(e) => setNewExpense({...newExpense, notes: e.target.value})}
+              className="col-span-3"
+              placeholder="Optional notes"
+              rows={3}
+            />
+          </div>
+        </div>
+      </ScrollableDialog>
       
       {/* Delete Confirmation Dialog */}
-      <Dialog open={!!showDeleteConfirm} onOpenChange={(open) => !open && setShowDeleteConfirm(null)}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this {showDeleteConfirm?.type} item? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+      <ScrollableDialog 
+        open={!!showDeleteConfirm} 
+        onOpenChange={(open) => !open && setShowDeleteConfirm(null)}
+        title="Confirm Deletion"
+        description={`Are you sure you want to delete this ${showDeleteConfirm?.type} item? This action cannot be undone.`}
+        className="sm:max-w-[425px]"
+        footer={
+          <div className="flex justify-end space-x-2 w-full">
             <Button 
               variant="outline" 
               onClick={() => setShowDeleteConfirm(null)}
@@ -1543,72 +1544,20 @@ function BudgetTracker() {
                 <>Delete</>
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        }
+      />
       
       {/* Import Shopify Dialog */}
-      <Dialog open={isMergingShopify} onOpenChange={setIsMergingShopify}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Import from Shopify</DialogTitle>
-            <DialogDescription>
-              Import registration and merchandise revenue from Shopify orders.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            {isLoadingShopify ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : shopifyData?.orders?.length ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span>Found {shopifyData.orders.length} Shopify orders</span>
-                  <Badge>{formatCurrency(shopifyData.totalAmount || 0)}</Badge>
-                </div>
-                
-                <div className="border rounded-md overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Order ID</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {shopifyData.orders.slice(0, 5).map((order: any) => (
-                        <TableRow key={order.id}>
-                          <TableCell>#{order.name}</TableCell>
-                          <TableCell>{order.customer?.name || 'N/A'}</TableCell>
-                          <TableCell>{formatDate(order.created_at)}</TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(order.total_price)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {shopifyData.orders.length > 5 && (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center text-muted-foreground">
-                            And {shopifyData.orders.length - 5} more orders...
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <p>No new Shopify orders found for this camp.</p>
-              </div>
-            )}
-          </div>
-          
-          <DialogFooter>
+      <ScrollableDialog 
+        open={isMergingShopify} 
+        onOpenChange={setIsMergingShopify}
+        title="Import from Shopify"
+        description="Import registration and merchandise revenue from Shopify orders."
+        className="sm:max-w-[500px]"
+        maxHeight="80vh"
+        footer={
+          <div className="flex justify-end space-x-2 w-full">
             <Button variant="outline" onClick={() => setIsMergingShopify(false)}>
               Cancel
             </Button>
@@ -1622,9 +1571,60 @@ function BudgetTracker() {
                 <>Import Orders</>
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        }
+      >
+        <div className="py-4">
+          {isLoadingShopify ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : shopifyData?.orders?.length ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span>Found {shopifyData.orders.length} Shopify orders</span>
+                <Badge>{formatCurrency(shopifyData.totalAmount || 0)}</Badge>
+              </div>
+              
+              <div className="border rounded-md overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Order ID</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {shopifyData.orders.slice(0, 5).map((order: any) => (
+                      <TableRow key={order.id}>
+                        <TableCell>#{order.name}</TableCell>
+                        <TableCell>{order.customer?.name || 'N/A'}</TableCell>
+                        <TableCell>{formatDate(order.created_at)}</TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(order.total_price)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {shopifyData.orders.length > 5 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground">
+                          And {shopifyData.orders.length - 5} more orders...
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p>No new Shopify orders found for this camp.</p>
+            </div>
+          )}
+        </div>
+      </ScrollableDialog>
     </div>
   );
 }

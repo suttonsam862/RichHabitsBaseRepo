@@ -5834,5 +5834,549 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Camp Templates API Routes
+  app.get("/api/camp-templates", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Fetch all camp templates
+      const templates = await db.query.camps.findMany({
+        where: eq(camps.type, 'template')
+      });
+      
+      res.json({ data: templates });
+    } catch (error) {
+      console.error("Error fetching camp templates:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/camp-templates/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const templateId = parseInt(req.params.id);
+      
+      // Fetch template details
+      const template = await db.query.camps.findFirst({
+        where: and(
+          eq(camps.id, templateId),
+          eq(camps.type, 'template')
+        )
+      });
+      
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      
+      res.json({ data: template });
+    } catch (error) {
+      console.error("Error fetching template:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/camp-templates", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const templateData = {
+        ...req.body,
+        type: 'template',
+        createdBy: req.user.id
+      };
+      
+      // Create new template
+      const result = await db.insert(camps).values(templateData).returning();
+      
+      res.status(201).json({ data: result[0] });
+    } catch (error) {
+      console.error("Error creating template:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Clinicians/Staff API Routes
+  app.get("/api/camps/:id/clinicians", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      
+      // Fetch camp to verify it exists
+      const camp = await db.query.camps.findFirst({
+        where: eq(camps.id, campId)
+      });
+      
+      if (!camp) {
+        return res.status(404).json({ error: "Camp not found" });
+      }
+      
+      // Fetch all assigned clinicians for this camp
+      const assignments = await db.query.campStaffAssignments.findMany({
+        where: and(
+          eq(campStaffAssignments.campId, campId),
+          eq(campStaffAssignments.role, 'clinician')
+        )
+      });
+      
+      // Get the staff IDs from assignments
+      const staffIds = assignments.map(a => a.staffId);
+      
+      // Fetch detailed clinician information
+      let clinicians = [];
+      if (staffIds.length > 0) {
+        clinicians = await db.query.staffMembers.findMany({
+          where: sql`${staffMembers.id} IN (${staffIds.join(',')})`
+        });
+        
+        // Merge assignment data with clinician data
+        clinicians = clinicians.map(clinician => {
+          const assignment = assignments.find(a => a.staffId === clinician.id);
+          return {
+            ...clinician,
+            payAmount: assignment?.payAmount || 0
+          };
+        });
+      }
+      
+      res.json({ data: clinicians });
+    } catch (error) {
+      console.error("Error fetching clinicians:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/camps/:id/clinicians", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      
+      // Verify camp exists
+      const camp = await db.query.camps.findFirst({
+        where: eq(camps.id, campId)
+      });
+      
+      if (!camp) {
+        return res.status(404).json({ error: "Camp not found" });
+      }
+      
+      // First create the staff member
+      const staffData = {
+        ...req.body,
+        type: 'camp',
+        specialty: 'clinician',
+        status: req.body.status || 'pending'
+      };
+      
+      const staffResult = await db.insert(staffMembers).values(staffData).returning();
+      const newStaff = staffResult[0];
+      
+      // Then create the assignment
+      const assignmentResult = await db.insert(campStaffAssignments).values({
+        campId,
+        staffId: newStaff.id,
+        role: 'clinician',
+        payAmount: req.body.hourlyRate || 0
+      }).returning();
+      
+      // Return the combined data
+      res.status(201).json({
+        ...newStaff,
+        assignment: assignmentResult[0]
+      });
+    } catch (error) {
+      console.error("Error adding clinician:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.put("/api/camps/:campId/clinicians/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      const clinicianId = parseInt(req.params.id);
+      
+      // Update clinician data
+      await db.update(staffMembers)
+        .set(req.body)
+        .where(eq(staffMembers.id, clinicianId));
+      
+      // If hourlyRate is provided, update the assignment as well
+      if (req.body.hourlyRate !== undefined) {
+        await db.update(campStaffAssignments)
+          .set({ payAmount: req.body.hourlyRate })
+          .where(and(
+            eq(campStaffAssignments.campId, campId),
+            eq(campStaffAssignments.staffId, clinicianId)
+          ));
+      }
+      
+      // Fetch updated clinician data
+      const updatedClinician = await db.query.staffMembers.findFirst({
+        where: eq(staffMembers.id, clinicianId)
+      });
+      
+      res.json({ data: updatedClinician });
+    } catch (error) {
+      console.error("Error updating clinician:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/camps/:campId/clinicians/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      const clinicianId = parseInt(req.params.id);
+      
+      // First delete the assignment
+      await db.delete(campStaffAssignments)
+        .where(and(
+          eq(campStaffAssignments.campId, campId),
+          eq(campStaffAssignments.staffId, clinicianId)
+        ));
+      
+      // Then delete the clinician
+      await db.delete(staffMembers)
+        .where(eq(staffMembers.id, clinicianId));
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting clinician:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Clinician availability and contract endpoints
+  app.put("/api/camps/:campId/clinicians/:id/availability", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const clinicianId = parseInt(req.params.id);
+      const { availability } = req.body;
+      
+      // Update clinician with new availability data
+      await db.update(staffMembers)
+        .set({ 
+          availability: JSON.stringify(availability),
+          updatedAt: new Date()
+        })
+        .where(eq(staffMembers.id, clinicianId));
+      
+      // Get updated clinician data
+      const updatedClinician = await db.query.staffMembers.findFirst({
+        where: eq(staffMembers.id, clinicianId)
+      });
+      
+      res.json({ data: updatedClinician });
+    } catch (error) {
+      console.error("Error updating clinician availability:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.put("/api/camps/:campId/clinicians/:id/contract", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      const clinicianId = parseInt(req.params.id);
+      const contractData = req.body;
+      
+      // Update the clinician contract info
+      await db.update(staffMembers)
+        .set({ 
+          contractDetails: JSON.stringify(contractData),
+          contractStatus: 'sent',
+          contractDate: new Date().toISOString(),
+          hourlyRate: contractData.hourlyRate,
+          updatedAt: new Date()
+        })
+        .where(eq(staffMembers.id, clinicianId));
+      
+      // Update the assignment with new pay amount
+      await db.update(campStaffAssignments)
+        .set({ payAmount: contractData.hourlyRate })
+        .where(and(
+          eq(campStaffAssignments.campId, campId),
+          eq(campStaffAssignments.staffId, clinicianId)
+        ));
+      
+      // Get updated clinician data
+      const updatedClinician = await db.query.staffMembers.findFirst({
+        where: eq(staffMembers.id, clinicianId)
+      });
+      
+      res.json({ data: updatedClinician });
+    } catch (error) {
+      console.error("Error updating clinician contract:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Agenda API Routes
+  app.get("/api/camps/:id/agenda", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      
+      // Fetch camp to verify it exists and get date information
+      const camp = await db.query.camps.findFirst({
+        where: eq(camps.id, campId)
+      });
+      
+      if (!camp) {
+        return res.status(404).json({ error: "Camp not found" });
+      }
+      
+      // Parse start and end dates
+      const startDate = new Date(camp.startDate);
+      const endDate = new Date(camp.endDate);
+      const totalDays = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      
+      // Fetch schedule items grouped by day
+      const scheduleItems = await db.query.campScheduleItems.findMany({
+        where: eq(campScheduleItems.campId, campId),
+        orderBy: [asc(campScheduleItems.dayNumber), asc(campScheduleItems.startTime)]
+      });
+      
+      // Create a structure for each day
+      const agenda = [];
+      for (let i = 0; i < totalDays; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+        
+        const dayNumber = i + 1;
+        const dayItems = scheduleItems.filter(item => item.dayNumber === dayNumber);
+        
+        agenda.push({
+          day: dayNumber,
+          date: currentDate.toISOString().split('T')[0],
+          title: `Day ${dayNumber}`,
+          items: dayItems.map(item => ({
+            id: item.id,
+            title: item.activity,
+            description: item.notes || '',
+            startTime: item.startTime,
+            endTime: item.endTime,
+            day: item.dayNumber,
+            location: item.location || '',
+            locationId: null, // Would need a locations table for this
+            clinicianId: item.staffId || null,
+            sessionType: 'instruction', // Default type
+            status: 'scheduled',
+          }))
+        });
+      }
+      
+      res.json({ data: agenda });
+    } catch (error) {
+      console.error("Error fetching agenda:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/camps/:id/agenda", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      const sessionData = req.body;
+      
+      // Verify camp exists
+      const camp = await db.query.camps.findFirst({
+        where: eq(camps.id, campId)
+      });
+      
+      if (!camp) {
+        return res.status(404).json({ error: "Camp not found" });
+      }
+      
+      // Create schedule item
+      const result = await db.insert(campScheduleItems).values({
+        campId,
+        dayNumber: sessionData.day,
+        startTime: sessionData.startTime,
+        endTime: sessionData.endTime,
+        activity: sessionData.title,
+        location: sessionData.location || null,
+        staffId: sessionData.clinicianId || null,
+        notes: sessionData.description || null,
+      }).returning();
+      
+      const newSession = result[0];
+      
+      // Return formatted session
+      res.status(201).json({
+        id: newSession.id,
+        title: newSession.activity,
+        description: newSession.notes || '',
+        startTime: newSession.startTime,
+        endTime: newSession.endTime,
+        day: newSession.dayNumber,
+        location: newSession.location || '',
+        locationId: null,
+        clinicianId: newSession.staffId || null,
+        sessionType: sessionData.sessionType || 'instruction',
+        status: sessionData.status || 'scheduled',
+      });
+    } catch (error) {
+      console.error("Error creating session:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.put("/api/camps/:campId/agenda/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const sessionId = parseInt(req.params.id);
+      const sessionData = req.body.data; // The updated session data
+      
+      // Update schedule item
+      await db.update(campScheduleItems)
+        .set({
+          dayNumber: sessionData.day,
+          startTime: sessionData.startTime,
+          endTime: sessionData.endTime,
+          activity: sessionData.title,
+          location: sessionData.location || null,
+          staffId: sessionData.clinicianId || null,
+          notes: sessionData.description || null,
+          updatedAt: new Date()
+        })
+        .where(eq(campScheduleItems.id, sessionId));
+      
+      // Fetch updated item
+      const updatedSession = await db.query.campScheduleItems.findFirst({
+        where: eq(campScheduleItems.id, sessionId)
+      });
+      
+      if (!updatedSession) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      
+      // Return formatted session
+      res.json({
+        id: updatedSession.id,
+        title: updatedSession.activity,
+        description: updatedSession.notes || '',
+        startTime: updatedSession.startTime,
+        endTime: updatedSession.endTime,
+        day: updatedSession.dayNumber,
+        location: updatedSession.location || '',
+        locationId: null,
+        clinicianId: updatedSession.staffId || null,
+        sessionType: sessionData.sessionType || 'instruction',
+        status: sessionData.status || 'scheduled',
+      });
+    } catch (error) {
+      console.error("Error updating session:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/camps/:campId/agenda/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const sessionId = parseInt(req.params.id);
+      
+      // Delete the session
+      await db.delete(campScheduleItems)
+        .where(eq(campScheduleItems.id, sessionId));
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting session:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/camps/:campId/agenda/:id/copy", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      const sessionId = parseInt(req.params.id);
+      const { days } = req.body; // Array of day numbers to copy to
+      
+      // Find the source session
+      const sourceSession = await db.query.campScheduleItems.findFirst({
+        where: and(
+          eq(campScheduleItems.id, sessionId),
+          eq(campScheduleItems.campId, campId)
+        )
+      });
+      
+      if (!sourceSession) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      
+      // Create copies for each target day
+      const newSessions = [];
+      
+      for (const day of days) {
+        // Skip if trying to copy to the same day
+        if (day === sourceSession.dayNumber) continue;
+        
+        const result = await db.insert(campScheduleItems).values({
+          campId,
+          dayNumber: day,
+          startTime: sourceSession.startTime,
+          endTime: sourceSession.endTime,
+          activity: sourceSession.activity,
+          location: sourceSession.location,
+          staffId: sourceSession.staffId,
+          notes: sourceSession.notes
+        }).returning();
+        
+        newSessions.push(result[0]);
+      }
+      
+      res.json({ 
+        success: true,
+        count: newSessions.length,
+        sessions: newSessions
+      });
+    } catch (error) {
+      console.error("Error copying session:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   return httpServer;
 }

@@ -142,6 +142,7 @@ interface Camp {
   endDate: string;
   location?: string;
   venue?: string;
+  address?: string;
   city?: string;
   state?: string;
   type: CampType;
@@ -348,10 +349,10 @@ function CampPlanning() {
   
   // Create new camp
   const handleCreateCamp = () => {
-    if (!newCamp.name || !newCamp.startDate || !newCamp.endDate) {
+    if (!newCamp.name || !newCamp.startDate || !newCamp.endDate || !newCamp.venue || !newCamp.address) {
       toast({
         title: "Missing information",
-        description: "Please provide a name, start date, and end date for the camp.",
+        description: "Please provide a name, start date, end date, venue, and address for the camp.",
         variant: "destructive"
       });
       return;
@@ -362,10 +363,10 @@ function CampPlanning() {
   
   // Create camp from template
   const handleCreateFromTemplate = () => {
-    if (!selectedTemplateId || !newCamp.name || !newCamp.startDate || !newCamp.endDate) {
+    if (!selectedTemplateId || !newCamp.name || !newCamp.startDate || !newCamp.endDate || !newCamp.venue || !newCamp.address) {
       toast({
         title: "Missing information",
-        description: "Please provide a name, start date, end date, and select a template.",
+        description: "Please provide a name, start date, end date, venue, address, and select a template.",
         variant: "destructive"
       });
       return;
@@ -912,6 +913,16 @@ function CampPlanning() {
             </div>
           </div>
           
+          <div className="grid grid-cols-1 gap-2">
+            <Label htmlFor="address">Address*</Label>
+            <Input
+              id="address"
+              value={newCamp.address || ''}
+              onChange={(e) => setNewCamp({...newCamp, address: e.target.value})}
+              placeholder="Street Address"
+            />
+          </div>
+          
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="city">City</Label>
@@ -1162,6 +1173,16 @@ function CampPlanning() {
                     placeholder="Venue name"
                   />
                 </div>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-2">
+                <Label htmlFor="templateAddress">Address*</Label>
+                <Input
+                  id="templateAddress"
+                  value={newCamp.address || ''}
+                  onChange={(e) => setNewCamp({...newCamp, address: e.target.value})}
+                  placeholder="Street Address"
+                />
               </div>
               
               <div className="grid grid-cols-2 gap-4">

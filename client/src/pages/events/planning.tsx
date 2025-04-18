@@ -67,6 +67,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ScrollableDialog } from "@/components/ui/scrollable-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -811,194 +812,15 @@ function CampPlanning() {
       </Tabs>
       
       {/* New Camp Dialog */}
-      <Dialog open={showNewCampDialog} onOpenChange={setShowNewCampDialog}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Create New Camp</DialogTitle>
-            <DialogDescription>
-              Enter the details for your new camp.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-1 gap-2">
-              <Label htmlFor="campName">Camp Name*</Label>
-              <Input
-                id="campName"
-                value={newCamp.name}
-                onChange={(e) => setNewCamp({...newCamp, name: e.target.value})}
-                placeholder="Enter camp name"
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 gap-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={newCamp.description || ''}
-                onChange={(e) => setNewCamp({...newCamp, description: e.target.value})}
-                placeholder="Enter camp description"
-                rows={3}
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="startDate">Start Date*</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={newCamp.startDate}
-                  onChange={(e) => setNewCamp({...newCamp, startDate: e.target.value})}
-                />
-              </div>
-              <div>
-                <Label htmlFor="endDate">End Date*</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={newCamp.endDate}
-                  onChange={(e) => setNewCamp({...newCamp, endDate: e.target.value})}
-                />
-              </div>
-            </div>
-            
-            {newCamp.startDate && newCamp.endDate && (
-              <div className="bg-blue-50 p-2 rounded-md text-sm text-blue-800 flex items-center">
-                <Info className="h-4 w-4 mr-2" />
-                <span>Duration: {calculateDuration(newCamp.startDate, newCamp.endDate)} days</span>
-              </div>
-            )}
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  value={newCamp.location || ''}
-                  onChange={(e) => setNewCamp({...newCamp, location: e.target.value})}
-                  placeholder="Location name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="venue">Venue</Label>
-                <Input
-                  id="venue"
-                  value={newCamp.venue || ''}
-                  onChange={(e) => setNewCamp({...newCamp, venue: e.target.value})}
-                  placeholder="Venue name"
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  value={newCamp.city || ''}
-                  onChange={(e) => setNewCamp({...newCamp, city: e.target.value})}
-                  placeholder="City"
-                />
-              </div>
-              <div>
-                <Label htmlFor="state">State</Label>
-                <Input
-                  id="state"
-                  value={newCamp.state || ''}
-                  onChange={(e) => setNewCamp({...newCamp, state: e.target.value})}
-                  placeholder="State/Province"
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="type">Camp Type</Label>
-                <Select
-                  value={newCamp.type}
-                  onValueChange={(value) => setNewCamp({...newCamp, type: value as CampType})}
-                >
-                  <SelectTrigger id="type">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="camp">Camp</SelectItem>
-                    <SelectItem value="clinic">Clinic</SelectItem>
-                    <SelectItem value="tournament">Tournament</SelectItem>
-                    <SelectItem value="retreat">Retreat</SelectItem>
-                    <SelectItem value="workshop">Workshop</SelectItem>
-                    <SelectItem value="seminar">Seminar</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="category">Category</Label>
-                <Select
-                  value={newCamp.category}
-                  onValueChange={(value) => setNewCamp({...newCamp, category: value as CampCategory})}
-                >
-                  <SelectTrigger id="category">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="youth">Youth</SelectItem>
-                    <SelectItem value="highschool">High School</SelectItem>
-                    <SelectItem value="college">College</SelectItem>
-                    <SelectItem value="elite">Elite</SelectItem>
-                    <SelectItem value="professional">Professional</SelectItem>
-                    <SelectItem value="recreational">Recreational</SelectItem>
-                    <SelectItem value="mixed">Mixed</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="targetParticipants">Target Participants</Label>
-                <Input
-                  id="targetParticipants"
-                  type="number"
-                  value={newCamp.targetParticipants || ''}
-                  onChange={(e) => setNewCamp({
-                    ...newCamp, 
-                    targetParticipants: e.target.value ? parseInt(e.target.value) : undefined
-                  })}
-                  placeholder="Number of participants"
-                />
-              </div>
-              <div>
-                <Label htmlFor="registrationPrice">Registration Price ($)</Label>
-                <Input
-                  id="registrationPrice"
-                  type="number"
-                  value={newCamp.registrationPrice || ''}
-                  onChange={(e) => setNewCamp({
-                    ...newCamp, 
-                    registrationPrice: e.target.value ? parseInt(e.target.value) : undefined
-                  })}
-                  placeholder="Price per participant"
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="includesSwag"
-                checked={newCamp.includesSwag}
-                onCheckedChange={(checked) => setNewCamp({
-                  ...newCamp,
-                  includesSwag: !!checked
-                })}
-              />
-              <Label htmlFor="includesSwag">Includes swag pack for participants</Label>
-            </div>
-          </div>
-          
-          <DialogFooter>
+      <ScrollableDialog 
+        open={showNewCampDialog} 
+        onOpenChange={setShowNewCampDialog}
+        title="Create New Camp"
+        description="Enter the details for your new camp."
+        className="sm:max-w-[600px]"
+        maxHeight="80vh"
+        footer={
+          <>
             <Button variant="outline" onClick={() => setShowNewCampDialog(false)}>
               Cancel
             </Button>
@@ -1015,186 +837,198 @@ function CampPlanning() {
                 </>
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Create from Template Dialog */}
-      <Dialog open={showFromTemplateDialog} onOpenChange={setShowFromTemplateDialog}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Create Camp from Template</DialogTitle>
-            <DialogDescription>
-              Customize the details for your new camp.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            {!selectedTemplateId ? (
-              <div className="bg-amber-50 p-3 rounded-md flex items-start">
-                <AlertCircle className="h-5 w-5 mr-2 text-amber-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-amber-800">No Template Selected</h4>
-                  <p className="text-sm text-amber-700">
-                    Please select a template first or go back to choose one.
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-2"
-                    onClick={() => {
-                      setShowFromTemplateDialog(false);
-                      setActiveTab("templates");
-                    }}
-                  >
-                    View Templates
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="bg-blue-50 p-3 rounded-md flex items-start">
-                  <Info className="h-5 w-5 mr-2 text-blue-500 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-blue-800">Using Template</h4>
-                    <p className="text-sm text-blue-700">
-                      {templates?.data?.find((t: CampTemplate) => t.id === selectedTemplateId)?.name}
-                    </p>
-                    <Button 
-                      variant="link" 
-                      size="sm" 
-                      className="px-0 text-blue-600"
-                      onClick={() => openTemplateDetails(selectedTemplateId)}
-                    >
-                      View Template Details
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 gap-2">
-                  <Label htmlFor="templateCampName">Camp Name*</Label>
-                  <Input
-                    id="templateCampName"
-                    value={newCamp.name}
-                    onChange={(e) => setNewCamp({...newCamp, name: e.target.value})}
-                    placeholder="Enter camp name"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 gap-2">
-                  <Label htmlFor="templateDescription">Description</Label>
-                  <Textarea
-                    id="templateDescription"
-                    value={newCamp.description || ''}
-                    onChange={(e) => setNewCamp({...newCamp, description: e.target.value})}
-                    placeholder="Enter camp description"
-                    rows={3}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="templateStartDate">Start Date*</Label>
-                    <Input
-                      id="templateStartDate"
-                      type="date"
-                      value={newCamp.startDate}
-                      onChange={(e) => setNewCamp({...newCamp, startDate: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="templateEndDate">End Date*</Label>
-                    <Input
-                      id="templateEndDate"
-                      type="date"
-                      value={newCamp.endDate}
-                      onChange={(e) => setNewCamp({...newCamp, endDate: e.target.value})}
-                    />
-                  </div>
-                </div>
-                
-                {newCamp.startDate && newCamp.endDate && (
-                  <div className="bg-blue-50 p-2 rounded-md text-sm text-blue-800 flex items-center">
-                    <Info className="h-4 w-4 mr-2" />
-                    <span>Duration: {calculateDuration(newCamp.startDate, newCamp.endDate)} days</span>
-                  </div>
-                )}
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="templateLocation">Location</Label>
-                    <Input
-                      id="templateLocation"
-                      value={newCamp.location || ''}
-                      onChange={(e) => setNewCamp({...newCamp, location: e.target.value})}
-                      placeholder="Location name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="templateVenue">Venue</Label>
-                    <Input
-                      id="templateVenue"
-                      value={newCamp.venue || ''}
-                      onChange={(e) => setNewCamp({...newCamp, venue: e.target.value})}
-                      placeholder="Venue name"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="templateCity">City</Label>
-                    <Input
-                      id="templateCity"
-                      value={newCamp.city || ''}
-                      onChange={(e) => setNewCamp({...newCamp, city: e.target.value})}
-                      placeholder="City"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="templateState">State</Label>
-                    <Input
-                      id="templateState"
-                      value={newCamp.state || ''}
-                      onChange={(e) => setNewCamp({...newCamp, state: e.target.value})}
-                      placeholder="State/Province"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="templateParticipants">Target Participants</Label>
-                    <Input
-                      id="templateParticipants"
-                      type="number"
-                      value={newCamp.targetParticipants || ''}
-                      onChange={(e) => setNewCamp({
-                        ...newCamp, 
-                        targetParticipants: e.target.value ? parseInt(e.target.value) : undefined
-                      })}
-                      placeholder="Number of participants"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="templatePrice">Registration Price ($)</Label>
-                    <Input
-                      id="templatePrice"
-                      type="number"
-                      value={newCamp.registrationPrice || ''}
-                      onChange={(e) => setNewCamp({
-                        ...newCamp, 
-                        registrationPrice: e.target.value ? parseInt(e.target.value) : undefined
-                      })}
-                      placeholder="Price per participant"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
+          </>
+        }
+      >
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-1 gap-2">
+            <Label htmlFor="campName">Camp Name*</Label>
+            <Input
+              id="campName"
+              value={newCamp.name}
+              onChange={(e) => setNewCamp({...newCamp, name: e.target.value})}
+              placeholder="Enter camp name"
+            />
           </div>
           
-          <DialogFooter>
+          <div className="grid grid-cols-1 gap-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={newCamp.description || ''}
+              onChange={(e) => setNewCamp({...newCamp, description: e.target.value})}
+              placeholder="Enter camp description"
+              rows={3}
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="startDate">Start Date*</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={newCamp.startDate}
+                onChange={(e) => setNewCamp({...newCamp, startDate: e.target.value})}
+              />
+            </div>
+            <div>
+              <Label htmlFor="endDate">End Date*</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={newCamp.endDate}
+                onChange={(e) => setNewCamp({...newCamp, endDate: e.target.value})}
+              />
+            </div>
+          </div>
+          
+          {newCamp.startDate && newCamp.endDate && (
+            <div className="bg-blue-50 p-2 rounded-md text-sm text-blue-800 flex items-center">
+              <Info className="h-4 w-4 mr-2" />
+              <span>Duration: {calculateDuration(newCamp.startDate, newCamp.endDate)} days</span>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                value={newCamp.location || ''}
+                onChange={(e) => setNewCamp({...newCamp, location: e.target.value})}
+                placeholder="Location name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="venue">Venue</Label>
+              <Input
+                id="venue"
+                value={newCamp.venue || ''}
+                onChange={(e) => setNewCamp({...newCamp, venue: e.target.value})}
+                placeholder="Venue name"
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="city">City</Label>
+              <Input
+                id="city"
+                value={newCamp.city || ''}
+                onChange={(e) => setNewCamp({...newCamp, city: e.target.value})}
+                placeholder="City"
+              />
+            </div>
+            <div>
+              <Label htmlFor="state">State</Label>
+              <Input
+                id="state"
+                value={newCamp.state || ''}
+                onChange={(e) => setNewCamp({...newCamp, state: e.target.value})}
+                placeholder="State/Province"
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="type">Camp Type</Label>
+              <Select
+                value={newCamp.type}
+                onValueChange={(value) => setNewCamp({...newCamp, type: value as CampType})}
+              >
+                <SelectTrigger id="type">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="camp">Camp</SelectItem>
+                  <SelectItem value="clinic">Clinic</SelectItem>
+                  <SelectItem value="tournament">Tournament</SelectItem>
+                  <SelectItem value="retreat">Retreat</SelectItem>
+                  <SelectItem value="workshop">Workshop</SelectItem>
+                  <SelectItem value="seminar">Seminar</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="category">Category</Label>
+              <Select
+                value={newCamp.category}
+                onValueChange={(value) => setNewCamp({...newCamp, category: value as CampCategory})}
+              >
+                <SelectTrigger id="category">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="youth">Youth</SelectItem>
+                  <SelectItem value="highschool">High School</SelectItem>
+                  <SelectItem value="college">College</SelectItem>
+                  <SelectItem value="elite">Elite</SelectItem>
+                  <SelectItem value="professional">Professional</SelectItem>
+                  <SelectItem value="recreational">Recreational</SelectItem>
+                  <SelectItem value="mixed">Mixed</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="targetParticipants">Target Participants</Label>
+              <Input
+                id="targetParticipants"
+                type="number"
+                value={newCamp.targetParticipants || ''}
+                onChange={(e) => setNewCamp({
+                  ...newCamp, 
+                  targetParticipants: e.target.value ? parseInt(e.target.value) : undefined
+                })}
+                placeholder="Number of participants"
+              />
+            </div>
+            <div>
+              <Label htmlFor="registrationPrice">Registration Price ($)</Label>
+              <Input
+                id="registrationPrice"
+                type="number"
+                value={newCamp.registrationPrice || ''}
+                onChange={(e) => setNewCamp({
+                  ...newCamp, 
+                  registrationPrice: e.target.value ? parseInt(e.target.value) : undefined
+                })}
+                placeholder="Price per participant"
+              />
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="includesSwag"
+              checked={newCamp.includesSwag}
+              onCheckedChange={(checked) => setNewCamp({
+                ...newCamp,
+                includesSwag: !!checked
+              })}
+            />
+            <Label htmlFor="includesSwag">Includes swag pack for participants</Label>
+          </div>
+        </div>
+      </ScrollableDialog>
+      
+      {/* Create from Template Dialog */}
+      <ScrollableDialog 
+        open={showFromTemplateDialog} 
+        onOpenChange={setShowFromTemplateDialog}
+        title="Create Camp from Template"
+        description="Customize the details for your new camp."
+        className="sm:max-w-[600px]"
+        maxHeight="80vh"
+        footer={
+          <>
             <Button variant="outline" onClick={() => setShowFromTemplateDialog(false)}>
               Cancel
             </Button>
@@ -1214,185 +1048,345 @@ function CampPlanning() {
                 </>
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Template Details Dialog */}
-      <Dialog open={showTemplateDetailsDialog} onOpenChange={setShowTemplateDetailsDialog}>
-        <DialogContent className="sm:max-w-[800px]">
-          <DialogHeader>
-            <DialogTitle>Template Details</DialogTitle>
-            <DialogDescription>
-              View details of this camp template.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedTemplateId && templates?.data && (
-            <ScrollArea className="h-[70vh] pr-4">
-              <div className="pb-4">
-                {(() => {
-                  const template = templates.data.find((t: CampTemplate) => t.id === selectedTemplateId);
-                  if (!template) return <p>Template not found</p>;
-                  
-                  return (
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="text-xl font-bold">{template.name}</h3>
-                        <p className="text-gray-600 mt-1">{template.description}</p>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <h4 className="font-medium text-gray-700">Basic Info</h4>
-                          <div className="mt-2 space-y-2">
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">Type:</span>
-                              <span className="font-medium">{template.type}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">Category:</span>
-                              <span className="font-medium">{template.category}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">Duration:</span>
-                              <span className="font-medium">{template.duration} days</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">Target Age Group:</span>
-                              <span className="font-medium">{template.targetAgeGroup || 'All Ages'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">Target Participants:</span>
-                              <span className="font-medium">{template.targetParticipants || 'Not specified'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">Registration Price:</span>
-                              <span className="font-medium">${template.registrationPrice?.toLocaleString() || 'Not set'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">Includes Swag:</span>
-                              <span className="font-medium">{template.includesSwag ? 'Yes' : 'No'}</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h4 className="font-medium text-gray-700">Usage Info</h4>
-                          <div className="mt-2 space-y-2">
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">Created:</span>
-                              <span className="font-medium">{template.created ? formatDate(template.created) : 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">Last Used:</span>
-                              <span className="font-medium">{template.lastUsed ? formatDate(template.lastUsed) : 'Never'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">Use Count:</span>
-                              <span className="font-medium">{template.useCount || 0} times</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {template.staffingRequirements && template.staffingRequirements.length > 0 && (
-                        <div>
-                          <h4 className="font-medium text-gray-700">Staffing Requirements</h4>
-                          <Table className="mt-2">
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Role</TableHead>
-                                <TableHead className="text-center">Count</TableHead>
-                                <TableHead>Skills Required</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {template.staffingRequirements.map((req, index) => (
-                                <TableRow key={index}>
-                                  <TableCell className="font-medium">{req.role}</TableCell>
-                                  <TableCell className="text-center">{req.count}</TableCell>
-                                  <TableCell>
-                                    {req.skillsRequired?.join(', ') || 'None specified'}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      )}
-                      
-                      {template.agendaTemplate && template.agendaTemplate.length > 0 && (
-                        <div>
-                          <h4 className="font-medium text-gray-700">Agenda Template</h4>
-                          <Table className="mt-2">
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Day</TableHead>
-                                <TableHead>Time</TableHead>
-                                <TableHead>Title</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Description</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {template.agendaTemplate.map((item, index) => (
-                                <TableRow key={index}>
-                                  <TableCell>{item.day}</TableCell>
-                                  <TableCell>{item.startTime} - {item.endTime}</TableCell>
-                                  <TableCell className="font-medium">{item.title}</TableCell>
-                                  <TableCell>{item.type}</TableCell>
-                                  <TableCell className="max-w-xs truncate">
-                                    {item.description || 'No description'}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      )}
-                      
-                      {template.facilities && template.facilities.length > 0 && (
-                        <div>
-                          <h4 className="font-medium text-gray-700">Facility Requirements</h4>
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {template.facilities.map((facility, index) => (
-                              <Badge key={index} variant="outline" className="bg-gray-100">
-                                {facility}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
-            </ScrollArea>
-          )}
-          
-          <DialogFooter>
-            <div className="flex justify-between w-full">
+          </>
+        }
+      >
+        <div className="grid gap-4 py-4">
+          {!selectedTemplateId ? (
+            <div className="bg-amber-50 p-3 rounded-md flex items-start">
+              <AlertCircle className="h-5 w-5 mr-2 text-amber-500 flex-shrink-0 mt-0.5" />
               <div>
-                <Button variant="outline" onClick={() => setShowTemplateDetailsDialog(false)}>
-                  Close
-                </Button>
-              </div>
-              <div>
+                <h4 className="font-medium text-amber-800">No Template Selected</h4>
+                <p className="text-sm text-amber-700">
+                  Please select a template first or go back to choose one.
+                </p>
                 <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2"
                   onClick={() => {
-                    setShowTemplateDetailsDialog(false);
-                    selectTemplateForCamp(selectedTemplateId!);
+                    setShowFromTemplateDialog(false);
+                    setActiveTab("templates");
                   }}
-                  disabled={!selectedTemplateId}
                 >
-                  Use This Template
+                  View Templates
                 </Button>
               </div>
             </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          ) : (
+            <>
+              <div className="bg-blue-50 p-3 rounded-md flex items-start">
+                <Info className="h-5 w-5 mr-2 text-blue-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-medium text-blue-800">Using Template</h4>
+                  <p className="text-sm text-blue-700">
+                    {templates?.data?.find((t: CampTemplate) => t.id === selectedTemplateId)?.name}
+                  </p>
+                  <Button 
+                    variant="link" 
+                    size="sm" 
+                    className="px-0 text-blue-600"
+                    onClick={() => openTemplateDetails(selectedTemplateId)}
+                  >
+                    View Template Details
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-2">
+                <Label htmlFor="templateCampName">Camp Name*</Label>
+                <Input
+                  id="templateCampName"
+                  value={newCamp.name}
+                  onChange={(e) => setNewCamp({...newCamp, name: e.target.value})}
+                  placeholder="Enter camp name"
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 gap-2">
+                <Label htmlFor="templateDescription">Description</Label>
+                <Textarea
+                  id="templateDescription"
+                  value={newCamp.description || ''}
+                  onChange={(e) => setNewCamp({...newCamp, description: e.target.value})}
+                  placeholder="Enter camp description"
+                  rows={3}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="templateStartDate">Start Date*</Label>
+                  <Input
+                    id="templateStartDate"
+                    type="date"
+                    value={newCamp.startDate}
+                    onChange={(e) => setNewCamp({...newCamp, startDate: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="templateEndDate">End Date*</Label>
+                  <Input
+                    id="templateEndDate"
+                    type="date"
+                    value={newCamp.endDate}
+                    onChange={(e) => setNewCamp({...newCamp, endDate: e.target.value})}
+                  />
+                </div>
+              </div>
+              
+              {newCamp.startDate && newCamp.endDate && (
+                <div className="bg-blue-50 p-2 rounded-md text-sm text-blue-800 flex items-center">
+                  <Info className="h-4 w-4 mr-2" />
+                  <span>Duration: {calculateDuration(newCamp.startDate, newCamp.endDate)} days</span>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="templateLocation">Location</Label>
+                  <Input
+                    id="templateLocation"
+                    value={newCamp.location || ''}
+                    onChange={(e) => setNewCamp({...newCamp, location: e.target.value})}
+                    placeholder="Location name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="templateVenue">Venue</Label>
+                  <Input
+                    id="templateVenue"
+                    value={newCamp.venue || ''}
+                    onChange={(e) => setNewCamp({...newCamp, venue: e.target.value})}
+                    placeholder="Venue name"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="templateCity">City</Label>
+                  <Input
+                    id="templateCity"
+                    value={newCamp.city || ''}
+                    onChange={(e) => setNewCamp({...newCamp, city: e.target.value})}
+                    placeholder="City"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="templateState">State</Label>
+                  <Input
+                    id="templateState"
+                    value={newCamp.state || ''}
+                    onChange={(e) => setNewCamp({...newCamp, state: e.target.value})}
+                    placeholder="State/Province"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="templateParticipants">Target Participants</Label>
+                  <Input
+                    id="templateParticipants"
+                    type="number"
+                    value={newCamp.targetParticipants || ''}
+                    onChange={(e) => setNewCamp({
+                      ...newCamp, 
+                      targetParticipants: e.target.value ? parseInt(e.target.value) : undefined
+                    })}
+                    placeholder="Number of participants"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="templatePrice">Registration Price ($)</Label>
+                  <Input
+                    id="templatePrice"
+                    type="number"
+                    value={newCamp.registrationPrice || ''}
+                    onChange={(e) => setNewCamp({
+                      ...newCamp, 
+                      registrationPrice: e.target.value ? parseInt(e.target.value) : undefined
+                    })}
+                    placeholder="Price per participant"
+                  />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </ScrollableDialog>
+      
+      {/* Template Details Dialog */}
+      <ScrollableDialog 
+        open={showTemplateDetailsDialog} 
+        onOpenChange={setShowTemplateDetailsDialog}
+        title="Template Details"
+        description="View details of this camp template."
+        className="sm:max-w-[800px]"
+        maxHeight="80vh"
+        footer={
+          <div className="flex justify-between w-full">
+            <div>
+              <Button variant="outline" onClick={() => setShowTemplateDetailsDialog(false)}>
+                Close
+              </Button>
+            </div>
+            <div>
+              <Button 
+                onClick={() => {
+                  setShowTemplateDetailsDialog(false);
+                  selectTemplateForCamp(selectedTemplateId!);
+                }}
+                disabled={!selectedTemplateId}
+              >
+                Use This Template
+              </Button>
+            </div>
+          </div>
+        }
+      >
+        {selectedTemplateId && templates?.data && (
+          <div className="py-4">
+            {(() => {
+              const template = templates.data.find((t: CampTemplate) => t.id === selectedTemplateId);
+              if (!template) return <p>Template not found</p>;
+              
+              return (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-xl font-bold">{template.name}</h3>
+                    <p className="text-gray-600 mt-1">{template.description}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="font-medium text-gray-700">Basic Info</h4>
+                      <div className="mt-2 space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Type:</span>
+                          <span className="font-medium">{template.type}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Category:</span>
+                          <span className="font-medium">{template.category}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Duration:</span>
+                          <span className="font-medium">{template.duration} days</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Target Age Group:</span>
+                          <span className="font-medium">{template.targetAgeGroup || 'All Ages'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Target Participants:</span>
+                          <span className="font-medium">{template.targetParticipants || 'Not specified'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Registration Price:</span>
+                          <span className="font-medium">${template.registrationPrice?.toLocaleString() || 'Not set'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Includes Swag:</span>
+                          <span className="font-medium">{template.includesSwag ? 'Yes' : 'No'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-medium text-gray-700">Usage Info</h4>
+                      <div className="mt-2 space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Created:</span>
+                          <span className="font-medium">{template.created ? formatDate(template.created) : 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Last Used:</span>
+                          <span className="font-medium">{template.lastUsed ? formatDate(template.lastUsed) : 'Never'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Use Count:</span>
+                          <span className="font-medium">{template.useCount || 0} times</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {template.staffingRequirements && template.staffingRequirements.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-700">Staffing Requirements</h4>
+                      <Table className="mt-2">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Role</TableHead>
+                            <TableHead className="text-center">Count</TableHead>
+                            <TableHead>Skills Required</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {template.staffingRequirements.map((req, index) => (
+                            <TableRow key={index}>
+                              <TableCell className="font-medium">{req.role}</TableCell>
+                              <TableCell className="text-center">{req.count}</TableCell>
+                              <TableCell>
+                                {req.skillsRequired?.join(', ') || 'None specified'}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                  
+                  {template.agendaTemplate && template.agendaTemplate.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-700">Agenda Template</h4>
+                      <Table className="mt-2">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Day</TableHead>
+                            <TableHead>Time</TableHead>
+                            <TableHead>Title</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Description</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {template.agendaTemplate.map((item, index) => (
+                            <TableRow key={index}>
+                              <TableCell>{item.day}</TableCell>
+                              <TableCell>{item.startTime} - {item.endTime}</TableCell>
+                              <TableCell className="font-medium">{item.title}</TableCell>
+                              <TableCell>{item.type}</TableCell>
+                              <TableCell className="max-w-xs truncate">
+                                {item.description || 'No description'}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                  
+                  {template.facilities && template.facilities.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-700">Facility Requirements</h4>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {template.facilities.map((facility, index) => (
+                          <Badge key={index} variant="outline" className="bg-gray-100">
+                            {facility}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+      </ScrollableDialog>
     </div>
   );
 }

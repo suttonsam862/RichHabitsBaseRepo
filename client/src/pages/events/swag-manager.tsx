@@ -142,8 +142,9 @@ interface SizeDistribution {
 }
 
 function SwagManager() {
-  const { campId } = useParams();
   const [location, setLocation] = useLocation();
+  const searchParams = new URLSearchParams(window.location.search);
+  const campId = searchParams.get('campId');
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedSwagItem, setSelectedSwagItem] = useState<SwagItem | null>(null);
@@ -506,7 +507,7 @@ function SwagManager() {
   
   // Go back to camp project
   const handleBackToCamp = () => {
-    setLocation(`/events/camp-project/${campId}`);
+    window.location.href = `/events/camp-project?campId=${campId}`;
   };
   
   // Generate packing status label
@@ -571,7 +572,7 @@ function SwagManager() {
             </CardDescription>
           </CardHeader>
           <CardFooter className="flex justify-center">
-            <Button onClick={() => setLocation('/events/overview')}>
+            <Button onClick={() => window.location.href = '/events/overview'}>
               View All Camps
             </Button>
           </CardFooter>

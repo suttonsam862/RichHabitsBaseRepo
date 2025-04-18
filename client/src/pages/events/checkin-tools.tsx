@@ -155,8 +155,9 @@ interface ActivityLog {
 }
 
 function CheckInTools() {
-  const { campId } = useParams();
   const [location, setLocation] = useLocation();
+  const searchParams = new URLSearchParams(window.location.search);
+  const campId = searchParams.get('campId');
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("participants");
   const [searchTerm, setSearchTerm] = useState('');
@@ -463,7 +464,7 @@ function CheckInTools() {
   
   // Go back to camp project
   const handleBackToCamp = () => {
-    setLocation(`/events/camp-project/${campId}`);
+    window.location.href = `/events/camp-project?campId=${campId}`;
   };
   
   // Get check-in status badge
@@ -550,7 +551,7 @@ function CheckInTools() {
             </CardDescription>
           </CardHeader>
           <CardFooter className="flex justify-center">
-            <Button onClick={() => setLocation('/events/overview')}>
+            <Button onClick={() => window.location.href = '/events/overview'}>
               View All Camps
             </Button>
           </CardFooter>

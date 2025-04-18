@@ -136,8 +136,9 @@ interface VendorRequest {
 }
 
 function VenuePlanner() {
-  const { campId } = useParams();
   const [location, setLocation] = useLocation();
+  const searchParams = new URLSearchParams(window.location.search);
+  const campId = searchParams.get('campId');
   const { toast } = useToast();
   const canvasRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState("layout");

@@ -155,8 +155,9 @@ type SessionType =
   | 'other';
 
 function AgendaBuilder() {
-  const { campId } = useParams();
   const [location, setLocation] = useLocation();
+  const searchParams = new URLSearchParams(window.location.search);
+  const campId = searchParams.get('campId');
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("0"); // Default to first day
   const [activeViewMode, setActiveViewMode] = useState<'timeline' | 'list'>('timeline');

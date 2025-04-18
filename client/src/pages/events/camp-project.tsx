@@ -71,8 +71,9 @@ interface Task {
 }
 
 function CampProject() {
-  const { campId } = useParams();
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
+  const searchParams = new URLSearchParams(window.location.search);
+  const campId = searchParams.get('id');
   
   // Fetch camp details
   const { 
@@ -127,7 +128,7 @@ function CampProject() {
   
   // Navigate to a module
   const navigateToModule = (module: string) => {
-    setLocation(`/events/${module}/${campId}`);
+    window.location.href = `/events/${module}?campId=${campId}`;
   };
   
   // Loading state

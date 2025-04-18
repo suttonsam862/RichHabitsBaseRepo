@@ -1340,48 +1340,15 @@ function AgendaBuilder() {
       </ScrollableDialog>
       
       {/* Copy Session Dialog */}
-      <Dialog open={showCopyOptions} onOpenChange={setShowCopyOptions}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Copy Session to Other Days</DialogTitle>
-            <DialogDescription>
-              Select which days you want to copy this session to.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            <div className="mb-4">
-              <p className="font-medium text-sm text-gray-700">
-                Session: {selectedSession?.title}
-              </p>
-              <p className="text-sm text-gray-500">
-                {selectedSession?.startTime} - {selectedSession?.endTime} • {getSessionTypeDisplayName(selectedSession?.sessionType as SessionType)}
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Select Days to Copy To:</Label>
-              {agendaData.map((day: AgendaDay) => (
-                day.day !== parseInt(activeTab, 10) + 1 && (
-                  <div key={day.day} className="flex items-center space-x-2">
-                    <Checkbox 
-                      id={`day-${day.day}`}
-                      checked={copyToDays.includes(day.day)}
-                      onCheckedChange={() => toggleDaySelection(day.day)}
-                    />
-                    <Label 
-                      htmlFor={`day-${day.day}`}
-                      className="cursor-pointer"
-                    >
-                      Day {day.day} ({formatDate(day.date)})
-                    </Label>
-                  </div>
-                )
-              ))}
-            </div>
-          </div>
-          
-          <DialogFooter>
+      <ScrollableDialog
+        open={showCopyOptions}
+        onOpenChange={setShowCopyOptions}
+        title="Copy Session to Other Days"
+        description="Select which days you want to copy this session to."
+        className="sm:max-w-md"
+        maxHeight="60vh"
+        footer={
+          <>
             <Button variant="outline" onClick={() => setShowCopyOptions(false)}>
               Cancel
             </Button>
@@ -1401,9 +1368,41 @@ function AgendaBuilder() {
                 </>
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        <div className="py-4">
+          <div className="mb-4">
+            <p className="font-medium text-sm text-gray-700">
+              Session: {selectedSession?.title}
+            </p>
+            <p className="text-sm text-gray-500">
+              {selectedSession?.startTime} - {selectedSession?.endTime} • {getSessionTypeDisplayName(selectedSession?.sessionType as SessionType)}
+            </p>
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Select Days to Copy To:</Label>
+            {agendaData.map((day: AgendaDay) => (
+              day.day !== parseInt(activeTab, 10) + 1 && (
+                <div key={day.day} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={`day-${day.day}`}
+                    checked={copyToDays.includes(day.day)}
+                    onCheckedChange={() => toggleDaySelection(day.day)}
+                  />
+                  <Label 
+                    htmlFor={`day-${day.day}`}
+                    className="cursor-pointer"
+                  >
+                    Day {day.day} ({formatDate(day.date)})
+                  </Label>
+                </div>
+              )
+            ))}
+          </div>
+        </div>
+      </ScrollableDialog>
     </div>
   );
 }

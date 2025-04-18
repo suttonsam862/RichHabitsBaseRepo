@@ -1167,7 +1167,7 @@ export default function CampOverview() {
         <div className="mt-4 md:mt-0 flex gap-2">
           <Button 
             variant="outline" 
-            onClick={() => { window.location.href = '/events/admin-dashboard'; }}
+            onClick={() => { window.location.href = '/admin/events/admin-dashboard'; }}
             className="flex items-center"
           >
             <BarChart3 className="mr-2 h-4 w-4" />

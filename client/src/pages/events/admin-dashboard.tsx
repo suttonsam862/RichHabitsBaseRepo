@@ -234,7 +234,7 @@ function AdminDashboard() {
   
   // Navigate to camp detail page
   const navigateToCamp = (campId: number) => {
-    setLocation(`/events/camp-project/${campId}`);
+    window.location.href = `/events/camp-project?id=${campId}`;
   };
   
   // Export camp data (CSV)
@@ -416,7 +416,7 @@ function AdminDashboard() {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <Button onClick={() => setLocation('/events/overview')}>
+          <Button onClick={() => { window.location.href = '/events/overview'; }}>
             <Calendar className="mr-2 h-4 w-4" />
             Camp Overview
           </Button>

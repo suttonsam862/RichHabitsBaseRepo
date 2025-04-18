@@ -65,6 +65,18 @@ import StaffManagement from "./pages/events/staff-new";
 import VendorsServices from "./pages/events/vendors";
 import Camps from "./pages/events/camps";
 import CampDetail from "./pages/events/camp/[id]";
+import CampProject from "./pages/events/camp-project";
+import Agenda from "./pages/events/agenda";
+import Clinicians from "./pages/events/clinicians";
+import Planning from "./pages/events/planning";
+import Registration from "./pages/events/registration";
+import SwagManager from "./pages/events/swag-manager";
+import MediaPanel from "./pages/events/media-panel";
+import TeamPortal from "./pages/events/team-portal";
+import CheckinTools from "./pages/events/checkin-tools";
+import VenuePlanner from "./pages/events/venue-planner";
+import BudgetTracker from "./pages/events/budget-tracker";
+import AdminDashboard from "./pages/events/admin-dashboard";
 
 // Admin pages
 import SalesTeam from "./pages/admin/sales-team";
@@ -197,6 +209,42 @@ function DashboardLayout() {
         </Route>
         <Route path="/events/camp/:id">
           <ProtectedPageLoader pageId="events/camp"><CampDetail /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/camp-project">
+          <ProtectedPageLoader pageId="events/camp-project"><CampProject /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/agenda">
+          <ProtectedPageLoader pageId="events/agenda"><Agenda /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/clinicians">
+          <ProtectedPageLoader pageId="events/clinicians"><Clinicians /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/planning">
+          <ProtectedPageLoader pageId="events/planning"><Planning /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/registration">
+          <ProtectedPageLoader pageId="events/registration"><Registration /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/swag-manager">
+          <ProtectedPageLoader pageId="events/swag-manager"><SwagManager /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/media-panel">
+          <ProtectedPageLoader pageId="events/media-panel"><MediaPanel /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/team-portal">
+          <ProtectedPageLoader pageId="events/team-portal"><TeamPortal /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/checkin-tools">
+          <ProtectedPageLoader pageId="events/checkin-tools"><CheckinTools /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/venue-planner">
+          <ProtectedPageLoader pageId="events/venue-planner"><VenuePlanner /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/budget-tracker">
+          <ProtectedPageLoader pageId="events/budget-tracker"><BudgetTracker /></ProtectedPageLoader>
+        </Route>
+        <Route path="/events/admin-dashboard">
+          <ProtectedPageLoader pageId="events/admin-dashboard"><AdminDashboard /></ProtectedPageLoader>
         </Route>
         
         {/* Admin Routes */}

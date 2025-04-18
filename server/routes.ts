@@ -3823,11 +3823,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log the camp creation activity
       await storage.createActivity({
         userId: user.id,
-        username: user.fullName || user.username,
-        action: 'CREATE',
-        resourceType: 'CAMP',
-        resourceId: newCamp.id,
-        details: `Created new camp: ${newCamp.name}`
+        type: 'camp_management',
+        content: `Created new camp: ${newCamp.name}`,
+        relatedId: newCamp.id,
+        relatedType: 'CAMP'
       });
       
       // Get the updated camp with its staff to return in the response

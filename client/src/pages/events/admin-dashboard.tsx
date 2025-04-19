@@ -311,13 +311,12 @@ function AdminDashboard() {
   };
   
   // Filter camps based on search, date range, location, and status
-  const filteredCamps = camps?.data?.filter((camp: Camp) => {
+  const filteredCamps = camps?.data?.filter((camp: any) => {
     // Search term filter
     const matchesSearch = 
-      camp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      camp.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      camp.venue.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      camp.type.toLowerCase().includes(searchTerm.toLowerCase());
+      (camp.name && camp.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (camp.venue && camp.venue.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (camp.type && camp.type.toLowerCase().includes(searchTerm.toLowerCase()));
     
     // Date range filter
     let matchesDateRange = true;
@@ -335,23 +334,26 @@ function AdminDashboard() {
     }
     
     // Location filter
-    const matchesLocation = locationFilter === 'all' || camp.location === locationFilter;
+    const matchesLocation = locationFilter === 'all' || (camp.venue && camp.venue === locationFilter);
     
     // Status filter
-    const matchesStatus = statusFilter === 'all' || camp.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || (camp.status && camp.status === statusFilter);
     
     return matchesSearch && matchesDateRange && matchesLocation && matchesStatus;
   }) || [];
   
   // Get unique locations for filter
   const uniqueLocations = camps?.data ? 
-    Array.from(new Set(camps.data.map((camp: Camp) => camp.location)))
+    Array.from(new Set(camps.data.map((camp: any) => camp.venue).filter(Boolean)))
     : [];
   
   // Extract stats for display
   const stats = globalStats?.data || {
-    totalCamps: 0,
-    upcomingCamps: 0,
+    totalCamps: camps?.data?.length || 0,
+    upcomingCamps: camps?.data?.filter((camp: any) => {
+      const startDate = new Date(camp.startDate);
+      return startDate > new Date();
+    }).length || 0,
     totalRevenue: 0,
     totalProfit: 0,
     totalRegistrations: 0,
@@ -359,7 +361,7 @@ function AdminDashboard() {
     occupancyRate: 0,
     avgCampSize: 0,
     avgTeamSize: 0,
-    topLocation: '',
+    topLocation: camps?.data?.length > 0 ? camps.data[0].venue : '',
     inventoryStatus: {
       lowStock: 0,
       reorderNeeded: 0,

@@ -96,7 +96,7 @@ function CampProject() {
     isLoading: isLoadingCamp,
     isError: isCampError
   } = useQuery({
-    queryKey: ['/api/camps', campId],
+    queryKey: [`/api/camps/${campId}`],
     enabled: !!campId,
   });
   
@@ -105,7 +105,7 @@ function CampProject() {
     data: tasks,
     isLoading: isLoadingTasks
   } = useQuery({
-    queryKey: ['/api/camps', campId, 'tasks'],
+    queryKey: [`/api/camps/${campId}/tasks`],
     enabled: !!campId,
   });
   
@@ -114,7 +114,7 @@ function CampProject() {
     data: staff,
     isLoading: isLoadingStaff
   } = useQuery({
-    queryKey: ['/api/camps', campId, 'staff'],
+    queryKey: [`/api/camps/${campId}/staff`],
     enabled: !!campId,
   });
   
@@ -123,7 +123,7 @@ function CampProject() {
     data: registrationStats,
     isLoading: isLoadingRegistrationStats
   } = useQuery({
-    queryKey: ['/api/camps', campId, 'registration-stats'],
+    queryKey: [`/api/camps/${campId}/registration-stats`],
     enabled: !!campId,
   });
   
@@ -132,7 +132,7 @@ function CampProject() {
     data: budgetSummary,
     isLoading: isLoadingBudget
   } = useQuery({
-    queryKey: ['/api/camps', campId, 'budget-summary'],
+    queryKey: [`/api/camps/${campId}/budget-summary`],
     enabled: !!campId,
   });
   

@@ -138,7 +138,7 @@ interface VendorRequest {
 function VenuePlanner() {
   const [location, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
-  const campId = searchParams.get('campId');
+  const campId = searchParams.get('id');
   const { toast } = useToast();
   const canvasRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState("layout");
@@ -313,7 +313,7 @@ function VenuePlanner() {
   
   // Back to camp page
   const handleBackToCamp = () => {
-    setLocation(`/events/camp-project/${campId}`);
+    window.location.href = `/events/camp-project?id=${campId}`;
   };
   
   // Generate a unique element ID

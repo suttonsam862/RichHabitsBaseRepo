@@ -674,7 +674,7 @@ function AgendaBuilder() {
                   <div className="p-2">
                     <Label className="text-xs">Clinician</Label>
                     <Select
-                      value={filterClinician?.toString() || ''}
+                      value={filterClinician?.toString() || 'all'}
                       onValueChange={(val) => setFilterClinician(val && val !== 'all' ? parseInt(val, 10) : null)}
                     >
                       <SelectTrigger className="mt-1">
@@ -694,7 +694,7 @@ function AgendaBuilder() {
                   <div className="p-2">
                     <Label className="text-xs">Location</Label>
                     <Select
-                      value={filterLocation?.toString() || ''}
+                      value={filterLocation?.toString() || 'all'}
                       onValueChange={(val) => setFilterLocation(val && val !== 'all' ? parseInt(val, 10) : null)}
                     >
                       <SelectTrigger className="mt-1">
@@ -1284,7 +1284,7 @@ function AgendaBuilder() {
               <div>
                 <Label htmlFor="edit-location">Location</Label>
                 <Select
-                  value={selectedSession.locationId?.toString() || ''}
+                  value={selectedSession.locationId?.toString() || 'none'}
                   onValueChange={(value) => setSelectedSession({...selectedSession, locationId: value && value !== 'none' ? parseInt(value, 10) : undefined})}
                 >
                   <SelectTrigger>
@@ -1303,7 +1303,7 @@ function AgendaBuilder() {
               <div>
                 <Label htmlFor="edit-clinician">Clinician</Label>
                 <Select
-                  value={selectedSession.clinicianId?.toString() || ''}
+                  value={selectedSession.clinicianId?.toString() || 'none'}
                   onValueChange={(value) => setSelectedSession({...selectedSession, clinicianId: value && value !== 'none' ? parseInt(value, 10) : undefined})}
                 >
                   <SelectTrigger>

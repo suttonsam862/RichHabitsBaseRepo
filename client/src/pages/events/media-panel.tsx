@@ -553,7 +553,7 @@ function MediaPanel() {
   
   // Go back to camp project
   const handleBackToCamp = () => {
-    window.location.href = `/events/camp-project?campId=${campId}`;
+    window.location.href = `/events/camp-project?id=${campId}`;
   };
   
   // Format file size

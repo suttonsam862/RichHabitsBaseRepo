@@ -569,7 +569,7 @@ function BudgetTracker() {
   
   // Back to camp page
   const handleBackToCamp = () => {
-    setLocation(`/events/camp-project/${campId}`);
+    window.location.href = `/events/camp-project?id=${campId}`;
   };
   
   // Import from Shopify

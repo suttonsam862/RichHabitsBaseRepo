@@ -401,10 +401,49 @@ function AgendaBuilder() {
   
   // Handle adding session
   const handleAddSession = () => {
-    if (!newSession.title || !newSession.startTime || !newSession.endTime) {
+    // Validate required fields
+    if (!newSession.title || !newSession.title.trim() === '') {
       toast({
         title: "Missing information",
-        description: "Please provide a title, start time, and end time for the session.",
+        description: "Please provide a title for the session.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!newSession.startTime) {
+      toast({
+        title: "Missing information",
+        description: "Please provide a start time for the session.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!newSession.endTime) {
+      toast({
+        title: "Missing information",
+        description: "Please provide an end time for the session.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Validate that endTime is after startTime
+    if (newSession.startTime >= newSession.endTime) {
+      toast({
+        title: "Invalid time range",
+        description: "End time must be after start time.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Validate that sessionType is valid
+    if (!newSession.sessionType) {
+      toast({
+        title: "Missing information",
+        description: "Please select a session type.",
         variant: "destructive"
       });
       return;
@@ -432,6 +471,24 @@ function AgendaBuilder() {
   
   // Handle edit session click
   const handleEditSession = (session: AgendaItem) => {
+    if (!session) {
+      toast({
+        title: "Error editing session",
+        description: "Invalid session data.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!session.id) {
+      toast({
+        title: "Error editing session",
+        description: "Session ID is missing.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setSelectedSession(session);
     setEditingItemId(session.id);
     setShowEditSession(true);
@@ -439,13 +496,50 @@ function AgendaBuilder() {
   
   // Handle copy session
   const handleCopySession = (session: AgendaItem) => {
+    if (!session) {
+      toast({
+        title: "Error preparing copy",
+        description: "Invalid session data.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Reset the copy days selection when opening the dialog
+    setCopyToDays([]);
     setSelectedSession(session);
     setShowCopyOptions(true);
   };
   
   // Handle copy session to days
   const handleCopyToDays = () => {
-    if (!selectedSession || !selectedSession.id || copyToDays.length === 0) return;
+    // Validate that we have all the required data before proceeding
+    if (!selectedSession) {
+      toast({
+        title: "Error copying session",
+        description: "No session selected to copy.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!selectedSession.id) {
+      toast({
+        title: "Error copying session",
+        description: "Session ID is missing.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (copyToDays.length === 0) {
+      toast({
+        title: "Error copying session",
+        description: "Please select at least one day to copy to.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     copySessionMutation.mutate({
       id: selectedSession.id,

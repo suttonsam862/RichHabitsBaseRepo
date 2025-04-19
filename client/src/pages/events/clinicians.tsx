@@ -161,7 +161,7 @@ type ClinicianSpecialty =
 function ClinicianModule() {
   const [location, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
-  const campId = searchParams.get('campId');
+  const campId = searchParams.get('id');
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("roster");
   const [searchTerm, setSearchTerm] = useState('');

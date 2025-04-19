@@ -128,7 +128,7 @@ function CampProject() {
   
   // Navigate to a module
   const navigateToModule = (module: string) => {
-    window.location.href = `/events/${module}?campId=${campId}`;
+    window.location.href = `/events/${module}?id=${campId}`;
   };
   
   // Loading state

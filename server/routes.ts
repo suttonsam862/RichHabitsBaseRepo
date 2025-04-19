@@ -5898,6 +5898,233 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Internal server error" });
     }
   });
+  
+  // Convert an existing camp to a template
+  app.post("/api/camp-templates/from-camp/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const campId = parseInt(req.params.id);
+      
+      // Get the source camp
+      const sourceCamp = await db.query.camps.findFirst({
+        where: eq(camps.id, campId)
+      });
+      
+      if (!sourceCamp) {
+        return res.status(404).json({ error: "Camp not found" });
+      }
+      
+      // Create template data from the camp
+      const templateData = {
+        name: req.body.name || `${sourceCamp.name} Template`,
+        description: sourceCamp.description,
+        type: 'template',
+        category: sourceCamp.category,
+        targetAgeGroup: sourceCamp.targetAgeGroup,
+        targetParticipants: sourceCamp.targetParticipants,
+        registrationPrice: sourceCamp.registrationPrice,
+        includesSwag: sourceCamp.includesSwag,
+        duration: req.body.duration || calculateDuration(sourceCamp.startDate, sourceCamp.endDate),
+        requiresMeals: sourceCamp.requiresMeals,
+        requiresAccommodation: sourceCamp.requiresAccommodation,
+        requiresTransportation: sourceCamp.requiresTransportation,
+        specialRequirements: sourceCamp.specialRequirements,
+        notes: sourceCamp.notes,
+        createdBy: req.user.id
+      };
+      
+      // Create the template
+      const result = await db.insert(camps).values(templateData).returning();
+      const newTemplateId = result[0].id;
+      
+      // Copy agenda items if they exist
+      try {
+        const agendaItems = await db.query.campAgendaItems.findMany({
+          where: eq(campAgendaItems.campId, campId)
+        });
+        
+        if (agendaItems.length > 0) {
+          const templateAgendaItems = agendaItems.map(item => ({
+            campId: newTemplateId,
+            day: item.day,
+            title: item.title,
+            startTime: item.startTime,
+            endTime: item.endTime,
+            description: item.description,
+            location: item.location,
+            type: item.type,
+            staffAssigned: item.staffAssigned
+          }));
+          
+          await db.insert(campAgendaItems).values(templateAgendaItems);
+        }
+      } catch (err) {
+        console.error("Error copying agenda items:", err);
+        // Continue with template creation even if agenda copy fails
+      }
+      
+      // Copy staff requirements if they exist
+      try {
+        const staffAssignments = await db.query.campStaff.findMany({
+          where: eq(campStaff.campId, campId)
+        });
+        
+        if (staffAssignments.length > 0) {
+          const templateStaffRequirements = staffAssignments.map(staff => ({
+            campId: newTemplateId,
+            role: staff.role,
+            count: 1, // Default to 1 for each role
+            name: null, // Don't copy specific names
+            email: null,
+            phone: null,
+            notes: staff.notes,
+            required: true
+          }));
+          
+          await db.insert(campStaff).values(templateStaffRequirements);
+        }
+      } catch (err) {
+        console.error("Error copying staff requirements:", err);
+        // Continue with template creation even if staff copy fails
+      }
+      
+      res.status(201).json({ data: result[0] });
+    } catch (error) {
+      console.error("Error creating template from camp:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+  
+  // Create a camp from a template
+  app.post("/api/camps/from-template/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const templateId = parseInt(req.params.id);
+      
+      // Get the template
+      const template = await db.query.camps.findFirst({
+        where: and(
+          eq(camps.id, templateId),
+          eq(camps.type, 'template')
+        )
+      });
+      
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      
+      // Create new camp data from template and request body
+      const campData = {
+        ...req.body,
+        type: req.body.type || template.category === 'tournament' ? 'tournament' : 'camp',
+        category: req.body.category || template.category,
+        targetAgeGroup: req.body.targetAgeGroup || template.targetAgeGroup,
+        targetParticipants: req.body.targetParticipants || template.targetParticipants,
+        registrationPrice: req.body.registrationPrice || template.registrationPrice,
+        includesSwag: req.body.includesSwag !== undefined ? req.body.includesSwag : template.includesSwag,
+        requiresMeals: req.body.requiresMeals !== undefined ? req.body.requiresMeals : template.requiresMeals,
+        requiresAccommodation: req.body.requiresAccommodation !== undefined ? req.body.requiresAccommodation : template.requiresAccommodation,
+        requiresTransportation: req.body.requiresTransportation !== undefined ? req.body.requiresTransportation : template.requiresTransportation,
+        specialRequirements: req.body.specialRequirements || template.specialRequirements,
+        notes: req.body.notes || template.notes,
+        createdBy: req.user.id,
+        status: 'planning'
+      };
+      
+      // Create the new camp
+      const result = await db.insert(camps).values(campData).returning();
+      const newCampId = result[0].id;
+      
+      // Copy agenda template items if they exist
+      try {
+        const agendaItems = await db.query.campAgendaItems.findMany({
+          where: eq(campAgendaItems.campId, templateId)
+        });
+        
+        if (agendaItems.length > 0) {
+          const newAgendaItems = agendaItems.map(item => ({
+            campId: newCampId,
+            day: item.day,
+            title: item.title,
+            startTime: item.startTime,
+            endTime: item.endTime,
+            description: item.description,
+            location: item.location,
+            type: item.type,
+            staffAssigned: item.staffAssigned
+          }));
+          
+          await db.insert(campAgendaItems).values(newAgendaItems);
+        }
+      } catch (err) {
+        console.error("Error copying agenda items from template:", err);
+        // Continue with camp creation even if agenda copy fails
+      }
+      
+      // Copy staff requirements if they exist
+      try {
+        const staffRequirements = await db.query.campStaff.findMany({
+          where: eq(campStaff.campId, templateId)
+        });
+        
+        if (staffRequirements.length > 0) {
+          const newStaffRequirements = staffRequirements.map(req => ({
+            campId: newCampId,
+            role: req.role,
+            count: req.count || 1,
+            name: null, // Don't copy specific names
+            email: null,
+            phone: null,
+            notes: req.notes,
+            required: true
+          }));
+          
+          await db.insert(campStaff).values(newStaffRequirements);
+        }
+      } catch (err) {
+        console.error("Error copying staff requirements from template:", err);
+        // Continue with camp creation even if staff copy fails
+      }
+      
+      // Update template usage statistics
+      try {
+        await db.update(camps)
+          .set({ 
+            useCount: (template.useCount || 0) + 1,
+            lastUsed: new Date().toISOString()
+          })
+          .where(eq(camps.id, templateId));
+      } catch (err) {
+        console.error("Error updating template usage stats:", err);
+        // Continue even if stats update fails
+      }
+      
+      // Create an activity record for the camp creation
+      try {
+        await createActivity({
+          userId: req.user.id,
+          type: 'camp_created',
+          content: `Created camp "${campData.name}" from template "${template.name}"`,
+          objectType: 'camp',
+          objectId: newCampId
+        });
+      } catch (err) {
+        console.error("Error creating activity record:", err);
+        // Continue even if activity creation fails
+      }
+      
+      res.status(201).json({ data: result[0] });
+    } catch (error) {
+      console.error("Error creating camp from template:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
 
   // Clinicians/Staff API Routes
   app.get("/api/camps/:id/clinicians", async (req, res) => {

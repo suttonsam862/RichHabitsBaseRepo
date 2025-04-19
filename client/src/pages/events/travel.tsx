@@ -253,24 +253,26 @@ const getStatusColor = (status: string) => {
 };
 
 export default function TravelAccommodations() {
+  const searchParams = new URLSearchParams(window.location.search);
+  const campId = searchParams.get('id');
   const [searchTerm, setSearchTerm] = useState("");
   const [campFilter, setCampFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   
   // In a real app, you would fetch travel arrangements from the server
   const { data: travelArrangements = sampleTravelArrangements } = useQuery({
-    queryKey: ['/api/travel-arrangements'],
-    enabled: false, // Disabled for now as we're using sample data
+    queryKey: ['/api/camps', campId, 'travel-arrangements'],
+    enabled: !!campId && false, // Disabled for now as we're using sample data
   });
   
   const { data: accommodations = sampleAccommodations } = useQuery({
-    queryKey: ['/api/accommodations'],
-    enabled: false, // Disabled for now as we're using sample data
+    queryKey: ['/api/camps', campId, 'accommodations'],
+    enabled: !!campId && false, // Disabled for now as we're using sample data
   });
   
   const { data: mealArrangements = sampleMealArrangements } = useQuery({
-    queryKey: ['/api/meal-arrangements'],
-    enabled: false, // Disabled for now as we're using sample data
+    queryKey: ['/api/camps', campId, 'meal-arrangements'],
+    enabled: !!campId && false, // Disabled for now as we're using sample data
   });
   
   // Helper function to filter items based on search and filters

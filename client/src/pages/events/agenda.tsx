@@ -1227,15 +1227,157 @@ function AgendaBuilder() {
       </Card>
       
       {/* Add Session Dialog */}
-      <ScrollableDialog
-        open={showAddSession}
+      <Dialog 
+        open={showAddSession} 
         onOpenChange={setShowAddSession}
-        className="sm:max-w-xl"
-        maxHeight="70vh"
-        title="Add New Session"
-        description={`Add a new session to Day ${parseInt(activeTab, 10) + 1} of the agenda.`}
-        footer={
-          <>
+      >
+        <ScrollableDialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Add New Session</DialogTitle>
+            <DialogDescription>{`Add a new session to Day ${parseInt(activeTab, 10) + 1} of the agenda.`}</DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-1 gap-2">
+              <Label htmlFor="title">Session Title*</Label>
+              <Input
+                id="title"
+                value={newSession.title}
+                onChange={(e) => setNewSession({...newSession, title: e.target.value})}
+                placeholder="Enter session title"
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 gap-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={newSession.description || ''}
+                onChange={(e) => setNewSession({...newSession, description: e.target.value})}
+                placeholder="Enter session description"
+                rows={3}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="startTime">Start Time*</Label>
+                <Input
+                  id="startTime"
+                  type="time"
+                  value={newSession.startTime}
+                  onChange={(e) => setNewSession({...newSession, startTime: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="endTime">End Time*</Label>
+                <Input
+                  id="endTime"
+                  type="time"
+                  value={newSession.endTime}
+                  onChange={(e) => setNewSession({...newSession, endTime: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="sessionType">Session Type*</Label>
+                <Select
+                  value={newSession.sessionType}
+                  onValueChange={(value) => setNewSession({...newSession, sessionType: value as SessionType})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="opening">Opening Session</SelectItem>
+                    <SelectItem value="instruction">Instruction</SelectItem>
+                    <SelectItem value="drill">Drill</SelectItem>
+                    <SelectItem value="scrimmage">Scrimmage</SelectItem>
+                    <SelectItem value="evaluation">Evaluation</SelectItem>
+                    <SelectItem value="break">Break</SelectItem>
+                    <SelectItem value="meal">Meal</SelectItem>
+                    <SelectItem value="lecture">Lecture</SelectItem>
+                    <SelectItem value="activity">Activity</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={newSession.status}
+                  onValueChange={(value) => setNewSession({...newSession, status: value as 'draft' | 'scheduled' | 'completed' | 'cancelled'})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="location">Location</Label>
+                <Select
+                  value={newSession.locationId?.toString() || 'none'}
+                  onValueChange={(value) => setNewSession({...newSession, locationId: value && value !== 'none' ? parseInt(value, 10) : undefined})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No location</SelectItem>
+                    {locations?.data?.map((location: Location) => (
+                      <SelectItem key={location.id} value={location.id.toString()}>
+                        {location.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <StaffSelector
+                  label="Clinician"
+                  selectedStaffId={newSession.clinicianId || null}
+                  onStaffSelect={(staffId) => setNewSession({...newSession, clinicianId: staffId || undefined})}
+                  allowCreate={true}
+                  placeholder="Search clinicians..."
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-2">
+              <Label htmlFor="materials">Materials Needed</Label>
+              <Textarea
+                id="materials"
+                value={newSession.materials || ''}
+                onChange={(e) => setNewSession({...newSession, materials: e.target.value})}
+                placeholder="List any required materials"
+                rows={2}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 gap-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                value={newSession.notes || ''}
+                onChange={(e) => setNewSession({...newSession, notes: e.target.value})}
+                placeholder="Additional notes"
+                rows={2}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddSession(false)}>
               Cancel
             </Button>
@@ -1252,190 +1394,22 @@ function AgendaBuilder() {
                 </>
               )}
             </Button>
-          </>
-        }
-      >
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-1 gap-2">
-            <Label htmlFor="title">Session Title*</Label>
-            <Input
-              id="title"
-              value={newSession.title}
-              onChange={(e) => setNewSession({...newSession, title: e.target.value})}
-              placeholder="Enter session title"
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 gap-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={newSession.description || ''}
-              onChange={(e) => setNewSession({...newSession, description: e.target.value})}
-              placeholder="Enter session description"
-              rows={3}
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="startTime">Start Time*</Label>
-              <Input
-                id="startTime"
-                type="time"
-                value={newSession.startTime}
-                onChange={(e) => setNewSession({...newSession, startTime: e.target.value})}
-              />
-            </div>
-            <div>
-              <Label htmlFor="endTime">End Time*</Label>
-              <Input
-                id="endTime"
-                type="time"
-                value={newSession.endTime}
-                onChange={(e) => setNewSession({...newSession, endTime: e.target.value})}
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="sessionType">Session Type*</Label>
-              <Select
-                value={newSession.sessionType}
-                onValueChange={(value) => setNewSession({...newSession, sessionType: value as SessionType})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="opening">Opening Session</SelectItem>
-                  <SelectItem value="instruction">Instruction</SelectItem>
-                  <SelectItem value="drill">Drill</SelectItem>
-                  <SelectItem value="scrimmage">Scrimmage</SelectItem>
-                  <SelectItem value="evaluation">Evaluation</SelectItem>
-                  <SelectItem value="break">Break</SelectItem>
-                  <SelectItem value="meal">Meal</SelectItem>
-                  <SelectItem value="lecture">Lecture</SelectItem>
-                  <SelectItem value="activity">Activity</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={newSession.status}
-                onValueChange={(value) => setNewSession({...newSession, status: value as 'draft' | 'scheduled' | 'completed' | 'cancelled'})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="scheduled">Scheduled</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="location">Location</Label>
-              <Select
-                value={newSession.locationId?.toString() || 'none'}
-                onValueChange={(value) => setNewSession({...newSession, locationId: value && value !== 'none' ? parseInt(value, 10) : undefined})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select location" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No location</SelectItem>
-                  {locations?.data?.map((location: Location) => (
-                    <SelectItem key={location.id} value={location.id.toString()}>
-                      {location.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="clinician">Clinician</Label>
-              <Select
-                value={newSession.clinicianId?.toString() || 'none'}
-                onValueChange={(value) => setNewSession({...newSession, clinicianId: value && value !== 'none' ? parseInt(value, 10) : undefined})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select clinician" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No clinician</SelectItem>
-                  {clinicians?.data?.map((clinician: Clinician) => (
-                    <SelectItem key={clinician.id} value={clinician.id.toString()}>
-                      {clinician.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 gap-2">
-            <Label htmlFor="materials">Materials Needed</Label>
-            <Textarea
-              id="materials"
-              value={newSession.materials || ''}
-              onChange={(e) => setNewSession({...newSession, materials: e.target.value})}
-              placeholder="List any required materials"
-              rows={2}
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 gap-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={newSession.notes || ''}
-              onChange={(e) => setNewSession({...newSession, notes: e.target.value})}
-              placeholder="Additional notes"
-              rows={2}
-            />
-          </div>
-        </div>
-      </ScrollableDialog>
+          </DialogFooter>
+        </ScrollableDialogContent>
+      </Dialog>
       
       {/* Edit Session Dialog */}
-      <ScrollableDialog
+      <Dialog
         open={showEditSession}
         onOpenChange={setShowEditSession}
-        title="Edit Session"
-        description="Edit the details of this session."
-        className="sm:max-w-xl"
-        maxHeight="70vh"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setShowEditSession(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpdateSession} disabled={updateSessionMutation.isPending}>
-              {updateSessionMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Changes
-                </>
-              )}
-            </Button>
-          </>
-        }
       >
-        {selectedSession && (
+        <ScrollableDialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Edit Session</DialogTitle>
+            <DialogDescription>Edit the details of this session.</DialogDescription>
+          </DialogHeader>
+          
+          {selectedSession && (
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-1 gap-2">
               <Label htmlFor="edit-title">Session Title*</Label>
@@ -1543,23 +1517,13 @@ function AgendaBuilder() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="edit-clinician">Clinician</Label>
-                <Select
-                  value={selectedSession.clinicianId?.toString() || 'none'}
-                  onValueChange={(value) => setSelectedSession({...selectedSession, clinicianId: value && value !== 'none' ? parseInt(value, 10) : undefined})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select clinician" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No clinician</SelectItem>
-                    {clinicians?.data?.map((clinician: Clinician) => (
-                      <SelectItem key={clinician.id} value={clinician.id.toString()}>
-                        {clinician.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <StaffSelector
+                  label="Clinician"
+                  selectedStaffId={selectedSession.clinicianId || null}
+                  onStaffSelect={(staffId) => setSelectedSession({...selectedSession, clinicianId: staffId || undefined})}
+                  allowCreate={true}
+                  placeholder="Search clinicians..."
+                />
               </div>
             </div>
             
@@ -1586,7 +1550,27 @@ function AgendaBuilder() {
             </div>
           </div>
         )}
-      </ScrollableDialog>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditSession(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateSession} disabled={updateSessionMutation.isPending}>
+              {updateSessionMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Changes
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </ScrollableDialogContent>
+      </Dialog>
       
       {/* Copy Session Dialog */}
       <ScrollableDialog

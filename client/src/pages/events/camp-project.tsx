@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import {
   ChevronLeft,
   Calendar,
@@ -31,6 +33,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Card,
   CardContent,
@@ -72,8 +84,11 @@ interface Task {
 
 function CampProject() {
   const [location] = useLocation();
+  const { toast } = useToast();
   const searchParams = new URLSearchParams(window.location.search);
   const campId = searchParams.get('id');
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [templateName, setTemplateName] = useState("");
   
   // Fetch camp details
   const { 
@@ -120,6 +135,46 @@ function CampProject() {
     queryKey: ['/api/camps', campId, 'budget-summary'],
     enabled: !!campId,
   });
+  
+  // Create template from camp mutation
+  const createTemplateMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest(
+        "POST", 
+        `/api/camp-templates/from-camp/${campId}`,
+        { name: templateName || `${campData?.name} Template` }
+      );
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Template created",
+        description: "The camp has been successfully converted to a template."
+      });
+      setShowTemplateDialog(false);
+      setTemplateName("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error creating template",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Handle template creation
+  const handleCreateTemplate = () => {
+    if (!templateName) {
+      toast({
+        title: "Template name required",
+        description: "Please provide a name for the template.",
+        variant: "destructive"
+      });
+      return;
+    }
+    createTemplateMutation.mutate();
+  };
   
   // Go back to planning (camp list)
   const handleBackToOverview = () => {
@@ -265,6 +320,50 @@ function CampProject() {
   
   return (
     <div className="container mx-auto py-6">
+      {/* Template Creation Dialog */}
+      <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Template</DialogTitle>
+            <DialogDescription>
+              Create a reusable template from this camp. This will copy camp details, agenda, staff requirements, and other associated data.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="template-name">Template Name</Label>
+              <Input
+                id="template-name"
+                placeholder="Enter template name..."
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowTemplateDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateTemplate}
+              disabled={createTemplateMutation.isPending}
+            >
+              {createTemplateMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Template"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <div>
           <div className="flex items-center gap-2">
@@ -291,6 +390,14 @@ function CampProject() {
           </p>
         </div>
         <div className="mt-4 md:mt-0 flex gap-2">
+          <Button 
+            variant="outline" 
+            className="hidden md:flex"
+            onClick={() => setShowTemplateDialog(true)}
+          >
+            <Share2 className="mr-2 h-4 w-4" />
+            Save as Template
+          </Button>
           <Button variant="outline" className="hidden md:flex">
             <Settings className="mr-2 h-4 w-4" />
             Settings

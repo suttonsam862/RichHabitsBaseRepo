@@ -118,6 +118,15 @@ interface AgendaItem {
   notes?: string;
   status: 'draft' | 'scheduled' | 'completed' | 'cancelled';
   color?: string;
+  staffAssignments?: StaffMember[];
+}
+
+interface StaffMember {
+  id: number;
+  name: string;
+  role?: string;
+  email?: string;
+  phone?: string;
 }
 
 interface AgendaDay {
@@ -439,7 +448,8 @@ function AgendaBuilder() {
       endTime: '09:00',
       day: parseInt(activeTab, 10) + 1,
       sessionType: 'instruction',
-      status: 'draft'
+      status: 'draft',
+      staffAssignments: [] // Initialize with an empty array for staff assignments
     });
   };
   
@@ -1355,6 +1365,20 @@ function AgendaBuilder() {
             </div>
             
             <div className="grid grid-cols-1 gap-2">
+              <Label htmlFor="staffAssignments">Additional Staff Assignments</Label>
+              <div className="border rounded-md p-3">
+                <StaffSelector 
+                  campId={campId ? parseInt(campId, 10) : undefined}
+                  mode="multiple"
+                  selectedStaff={newSession.staffAssignments || []}
+                  onStaffChange={(staff) => setNewSession({...newSession, staffAssignments: staff})}
+                  placeholder="Search and add staff members..."
+                  allowCreate={true}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-2">
               <Label htmlFor="materials">Materials Needed</Label>
               <Textarea
                 id="materials"
@@ -1523,6 +1547,20 @@ function AgendaBuilder() {
                   onStaffSelect={(staffId) => setSelectedSession({...selectedSession, clinicianId: staffId || undefined})}
                   allowCreate={true}
                   placeholder="Search clinicians..."
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-2">
+              <Label htmlFor="edit-staffAssignments">Additional Staff Assignments</Label>
+              <div className="border rounded-md p-3">
+                <StaffSelector 
+                  campId={campId ? parseInt(campId, 10) : undefined}
+                  mode="multiple"
+                  selectedStaff={selectedSession.staffAssignments || []}
+                  onStaffChange={(staff) => setSelectedSession({...selectedSession, staffAssignments: staff})}
+                  placeholder="Search and add staff members..."
+                  allowCreate={true}
                 />
               </div>
             </div>

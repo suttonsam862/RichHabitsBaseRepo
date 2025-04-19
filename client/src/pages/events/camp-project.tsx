@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   ChevronLeft,
   Calendar,
@@ -90,6 +90,14 @@ function CampProject() {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [templateName, setTemplateName] = useState("");
   
+  // Camp edit dialog states
+  const [showEditCapacityDialog, setShowEditCapacityDialog] = useState(false);
+  const [showEditDirectorDialog, setShowEditDirectorDialog] = useState(false);
+  const [showEditDescriptionDialog, setShowEditDescriptionDialog] = useState(false);
+  const [capacityValue, setCapacityValue] = useState<number | "">("");
+  const [directorValue, setDirectorValue] = useState("");
+  const [descriptionValue, setDescriptionValue] = useState("");
+  
   // Fetch camp details
   const { 
     data: camp, 
@@ -157,6 +165,39 @@ function CampProject() {
     onError: (error: Error) => {
       toast({
         title: "Error creating template",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Update camp mutation
+  const updateCampMutation = useMutation({
+    mutationFn: async (updateData: Partial<any>) => {
+      const response = await apiRequest(
+        "PUT",
+        `/api/camps/${campId}`,
+        updateData
+      );
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Camp updated",
+        description: "Camp details have been successfully updated."
+      });
+      
+      // Close all dialogs
+      setShowEditCapacityDialog(false);
+      setShowEditDirectorDialog(false);
+      setShowEditDescriptionDialog(false);
+      
+      // Invalidate camp query to refresh data
+      queryClient.invalidateQueries({ queryKey: [`/api/camps/${campId}`] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating camp",
         description: error.message,
         variant: "destructive"
       });
@@ -364,6 +405,143 @@ function CampProject() {
         </DialogContent>
       </Dialog>
       
+      {/* Edit Capacity Dialog */}
+      <Dialog open={showEditCapacityDialog} onOpenChange={setShowEditCapacityDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Camp Capacity</DialogTitle>
+            <DialogDescription>
+              Set the maximum number of participants for this camp.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="capacity">Capacity</Label>
+              <Input
+                id="capacity"
+                type="number"
+                placeholder="Enter participant capacity..."
+                value={capacityValue}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setCapacityValue(value === "" ? "" : parseInt(value));
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowEditCapacityDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => updateCampMutation.mutate({ participants: capacityValue })}
+              disabled={updateCampMutation.isPending}
+            >
+              {updateCampMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Director Dialog */}
+      <Dialog open={showEditDirectorDialog} onOpenChange={setShowEditDirectorDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Camp Director</DialogTitle>
+            <DialogDescription>
+              Set the camp director who will be responsible for overseeing this event.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="director">Director Name</Label>
+              <Input
+                id="director"
+                placeholder="Enter director name..."
+                value={directorValue}
+                onChange={(e) => setDirectorValue(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowEditDirectorDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => updateCampMutation.mutate({ clinician: directorValue })}
+              disabled={updateCampMutation.isPending}
+            >
+              {updateCampMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Description Dialog */}
+      <Dialog open={showEditDescriptionDialog} onOpenChange={setShowEditDescriptionDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Camp Description</DialogTitle>
+            <DialogDescription>
+              Update the description for this camp.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                placeholder="Enter camp description..."
+                value={descriptionValue}
+                onChange={(e) => setDescriptionValue(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowEditDescriptionDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => updateCampMutation.mutate({ notes: descriptionValue })}
+              disabled={updateCampMutation.isPending}
+            >
+              {updateCampMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <div>
           <div className="flex items-center gap-2">
@@ -447,9 +625,23 @@ function CampProject() {
                   <Users className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">Capacity</span>
                 </div>
-                <span className="text-sm font-medium">
-                  {campData.participants || 'Not set'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">
+                    {campData.participants || 'Not set'}
+                  </span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 w-6 p-0 rounded-full"
+                    onClick={() => {
+                      setCapacityValue(campData.participants || "");
+                      setShowEditCapacityDialog(true);
+                    }}
+                  >
+                    <Edit className="h-3 w-3" />
+                    <span className="sr-only">Edit Capacity</span>
+                  </Button>
+                </div>
               </div>
               
               <div className="flex justify-between">
@@ -457,15 +649,43 @@ function CampProject() {
                   <UserCircle className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">Director</span>
                 </div>
-                <span className="text-sm font-medium">
-                  {campData.clinician || 'Not assigned'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">
+                    {campData.clinician || 'Not assigned'}
+                  </span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 w-6 p-0 rounded-full"
+                    onClick={() => {
+                      setDirectorValue(campData.clinician || "");
+                      setShowEditDirectorDialog(true);
+                    }}
+                  >
+                    <Edit className="h-3 w-3" />
+                    <span className="sr-only">Edit Director</span>
+                  </Button>
+                </div>
               </div>
               
               <Separator />
               
               <div>
-                <h4 className="text-sm font-medium mb-2">Description</h4>
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="text-sm font-medium">Description</h4>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 w-6 p-0 rounded-full"
+                    onClick={() => {
+                      setDescriptionValue(campData.notes || "");
+                      setShowEditDescriptionDialog(true);
+                    }}
+                  >
+                    <Edit className="h-3 w-3" />
+                    <span className="sr-only">Edit Description</span>
+                  </Button>
+                </div>
                 <p className="text-sm text-muted-foreground">
                   {campData.notes || 'No description available.'}
                 </p>
@@ -607,7 +827,7 @@ function CampProject() {
               <CardFooter>
                 <Button 
                   className="w-full group-hover:bg-primary/90"
-                  onClick={() => navigateToModule('agenda-builder')}
+                  onClick={() => navigateToModule('agenda')}
                 >
                   Open Agenda
                 </Button>
@@ -653,7 +873,7 @@ function CampProject() {
               <CardFooter>
                 <Button 
                   className="w-full group-hover:bg-primary/90"
-                  onClick={() => navigateToModule('venue-planner')}
+                  onClick={() => navigateToModule('venue')}
                 >
                   Plan Venue
                 </Button>

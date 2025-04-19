@@ -1,25 +1,31 @@
-import React from 'react';
-import { cn } from '@/lib/utils';
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import { DialogContent } from "@/components/ui/dialog";
 
-interface ScrollableDialogContentProps extends React.HTMLAttributes<HTMLDivElement> {
-  children: React.ReactNode;
-  className?: string;
+export interface ScrollableDialogContentProps extends React.ComponentPropsWithoutRef<typeof DialogContent> {
+  maxHeight?: string;
 }
 
-export function ScrollableDialogContent({
-  children,
-  className,
-  ...props
-}: ScrollableDialogContentProps) {
+const ScrollableDialogContent = React.forwardRef<
+  HTMLDivElement,
+  ScrollableDialogContentProps
+>(({ className, maxHeight = "calc(80vh - 160px)", children, ...props }, ref) => {
   return (
-    <div
-      className={cn(
-        'relative rounded-md border overflow-auto',
-        className
-      )}
+    <DialogContent
+      ref={ref}
+      className={cn("max-h-screen overflow-hidden flex flex-col", className)}
       {...props}
     >
-      {children}
-    </div>
+      <div 
+        className="overflow-y-auto pr-1 -mr-1"
+        style={{ maxHeight }}
+      >
+        {children}
+      </div>
+    </DialogContent>
   );
-}
+});
+
+ScrollableDialogContent.displayName = "ScrollableDialogContent";
+
+export { ScrollableDialogContent };

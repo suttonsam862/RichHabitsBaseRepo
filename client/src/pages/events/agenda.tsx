@@ -60,7 +60,6 @@ import {
 } from "@/components/ui/table";
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -68,6 +67,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollableDialog } from "@/components/ui/scrollable-dialog";
+import { ScrollableDialogContent } from "@/components/ui/scrollable-dialog-content";
+import { StaffSelector } from "@/components/staff-selector";
 import {
   DropdownMenu,
   DropdownMenuContent,

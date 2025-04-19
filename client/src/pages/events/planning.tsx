@@ -276,8 +276,25 @@ function CampPlanning() {
       });
       setShowNewCampDialog(false);
       
-      // Navigate to the new camp's project page using direct URL change for consistent behavior
-      window.location.href = `/events/camp-project?id=${data.id}`;
+      // Extract the camp ID from the response
+      // If data is wrapped in a data property, we need to extract it
+      const campId = data.data?.id || data.id;
+      
+      if (!campId) {
+        console.error("Camp created but ID is missing from response:", data);
+        toast({
+          title: "Warning",
+          description: "Camp was created but there was an issue with the redirection.",
+          variant: "warning"
+        });
+        return;
+      }
+      
+      // Add a small delay to ensure the database has time to fully process
+      setTimeout(() => {
+        // Navigate to the new camp's project page using direct URL change for consistent behavior
+        window.location.href = `/events/camp-project?id=${campId}`;
+      }, 300);
     },
     onError: (error: Error) => {
       toast({
@@ -308,8 +325,25 @@ function CampPlanning() {
       });
       setShowFromTemplateDialog(false);
       
-      // Navigate to the new camp's project page using direct URL change for consistent behavior
-      window.location.href = `/events/camp-project?id=${data.id}`;
+      // Extract the camp ID from the response
+      // If data is wrapped in a data property, we need to extract it
+      const campId = data.data?.id || data.id;
+      
+      if (!campId) {
+        console.error("Camp created but ID is missing from response:", data);
+        toast({
+          title: "Warning",
+          description: "Camp was created but there was an issue with the redirection.",
+          variant: "warning"
+        });
+        return;
+      }
+      
+      // Add a small delay to ensure the database has time to fully process
+      setTimeout(() => {
+        // Navigate to the new camp's project page using direct URL change for consistent behavior
+        window.location.href = `/events/camp-project?id=${campId}`;
+      }, 300);
     },
     onError: (error: Error) => {
       toast({

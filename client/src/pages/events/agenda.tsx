@@ -354,28 +354,71 @@ function AgendaBuilder() {
         description: "The agenda has been exported successfully."
       });
       
-      // Create a simple export
-      let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += "Day,Date,Start Time,End Time,Title,Type,Location,Clinician,Status\n";
-      
-      agenda?.data?.forEach((day: AgendaDay) => {
-        if (day.items && Array.isArray(day.items)) {
-          day.items.forEach((item: AgendaItem) => {
-            const clinician = clinicians?.data?.find((c: Clinician) => c.id === item.clinicianId)?.name || '';
-            const location = locations?.data?.find((l: Location) => l.id === item.locationId)?.name || '';
-            
-            csvContent += `${day.day},${day.date},${item.startTime},${item.endTime},${item.title},${item.sessionType},${location},${clinician},${item.status}\n`;
+      try {
+        // Create a simple export
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Day,Date,Start Time,End Time,Title,Type,Location,Clinician,Status\n";
+        
+        let sessionCount = 0;
+        
+        if (agenda?.data && Array.isArray(agenda.data)) {
+          agenda.data.forEach((day: AgendaDay) => {
+            if (day && day.items && Array.isArray(day.items)) {
+              day.items.forEach((item: AgendaItem) => {
+                if (!item) return; // Skip undefined items
+                
+                const clinician = clinicians?.data?.find((c: Clinician) => c.id === item.clinicianId)?.name || '';
+                const location = locations?.data?.find((l: Location) => l.id === item.locationId)?.name || '';
+                
+                // Escape quotes in text fields to prevent CSV issues
+                const escapedTitle = item.title ? item.title.replace(/"/g, '""') : '';
+                
+                // Format each field properly for CSV
+                csvContent += `${day.day || ''},`;
+                csvContent += `"${day.date || ''}",`;
+                csvContent += `"${item.startTime || ''}",`;
+                csvContent += `"${item.endTime || ''}",`;
+                csvContent += `"${escapedTitle}",`;
+                csvContent += `"${item.sessionType || ''}",`;
+                csvContent += `"${location}",`;
+                csvContent += `"${clinician}",`;
+                csvContent += `"${item.status || ''}"\n`;
+                
+                sessionCount++;
+              });
+            }
           });
         }
-      });
-      
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `agenda_camp_${campId}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+        
+        if (sessionCount === 0) {
+          toast({
+            title: "Export failed",
+            description: "No sessions found to export.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `agenda_camp_${campId || 'unknown'}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast({
+          title: "Export successful",
+          description: `Exported ${sessionCount} sessions to CSV file.`
+        });
+      } catch (error) {
+        console.error("Export error:", error);
+        toast({
+          title: "Export failed",
+          description: error instanceof Error ? error.message : "An unknown error occurred during export.",
+          variant: "destructive"
+        });
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -402,7 +445,7 @@ function AgendaBuilder() {
   // Handle adding session
   const handleAddSession = () => {
     // Validate required fields
-    if (!newSession.title || !newSession.title.trim() === '') {
+    if (!newSession.title || newSession.title.trim() === '') {
       toast({
         title: "Missing information",
         description: "Please provide a title for the session.",
@@ -454,7 +497,62 @@ function AgendaBuilder() {
   
   // Handle updating session
   const handleUpdateSession = () => {
-    if (!selectedSession || !selectedSession.id) return;
+    // Validate all required data is present
+    if (!selectedSession) {
+      toast({
+        title: "Error updating session",
+        description: "No session data to update.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!selectedSession.id) {
+      toast({
+        title: "Error updating session",
+        description: "Session ID is missing.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Validate required fields
+    if (!selectedSession.title || selectedSession.title.trim() === '') {
+      toast({
+        title: "Error updating session",
+        description: "Session title cannot be empty.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!selectedSession.startTime) {
+      toast({
+        title: "Error updating session",
+        description: "Start time is required.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!selectedSession.endTime) {
+      toast({
+        title: "Error updating session",
+        description: "End time is required.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Validate that endTime is after startTime
+    if (selectedSession.startTime >= selectedSession.endTime) {
+      toast({
+        title: "Invalid time range",
+        description: "End time must be after start time.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     updateSessionMutation.mutate({
       id: selectedSession.id,
@@ -464,7 +562,25 @@ function AgendaBuilder() {
   
   // Handle deleting session
   const handleDeleteSession = (id: number) => {
-    if (window.confirm("Are you sure you want to delete this session?")) {
+    if (!id) {
+      toast({
+        title: "Error deleting session",
+        description: "Invalid session ID.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Find the session to include details in the confirmation message
+    const sessionToDelete = agendaData
+      .flatMap(day => day.items || [])
+      .find(item => item?.id === id);
+    
+    const confirmMessage = sessionToDelete 
+      ? `Are you sure you want to delete "${sessionToDelete.title}" (${sessionToDelete.startTime} - ${sessionToDelete.endTime})?`
+      : "Are you sure you want to delete this session?";
+    
+    if (window.confirm(confirmMessage)) {
       deleteSessionMutation.mutate(id);
     }
   };
@@ -549,6 +665,36 @@ function AgendaBuilder() {
   
   // Handle export agenda
   const handleExportAgenda = () => {
+    // Check if there's agenda data to export
+    if (!agenda?.data || agenda.data.length === 0) {
+      toast({
+        title: "Nothing to export",
+        description: "There are no agenda items to export.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Count total sessions
+    const totalSessions = agenda.data.reduce((count, day) => {
+      return count + (day.items?.length || 0);
+    }, 0);
+    
+    if (totalSessions === 0) {
+      toast({
+        title: "Nothing to export",
+        description: "There are no sessions in the agenda to export.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Proceed with export
+    toast({
+      title: "Preparing export",
+      description: `Exporting ${totalSessions} sessions from the agenda.`
+    });
+    
     exportAgendaMutation.mutate();
   };
   

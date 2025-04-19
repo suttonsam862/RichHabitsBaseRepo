@@ -277,15 +277,15 @@ function CampPlanning() {
       setShowNewCampDialog(false);
       
       // Extract the camp ID from the response
-      // If data is wrapped in a data property, we need to extract it
-      const campId = data.data?.id || data.id;
+      // Now that we've standardized API responses, camp data is always in the 'data' property
+      const campId = data.data?.id;
       
       if (!campId) {
         console.error("Camp created but ID is missing from response:", data);
         toast({
           title: "Warning",
           description: "Camp was created but there was an issue with the redirection.",
-          variant: "warning"
+          variant: "destructive"
         });
         return;
       }

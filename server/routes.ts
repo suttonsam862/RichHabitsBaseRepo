@@ -3724,7 +3724,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const camps = await storage.getCamps();
       
-      res.status(200).json(camps);
+      // Ensure consistent data structure with { data: [...] } format
+      res.status(200).json({ data: camps });
     } catch (error) {
       console.error(`Error fetching camps:`, error);
       res.status(500).json({ error: "Failed to fetch camps" });
@@ -3750,7 +3751,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Camp not found" });
       }
       
-      res.status(200).json(camp);
+      // Ensure consistent data structure with { data: {...} } format
+      res.status(200).json({ data: camp });
     } catch (error) {
       console.error(`Error fetching camp:`, error);
       res.status(500).json({ error: "Failed to fetch camp" });
@@ -3844,7 +3846,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the updated camp with its staff to return in the response
       const campWithStaff = await storage.getCampById(newCamp.id);
       
-      res.status(201).json(campWithStaff);
+      // Ensure consistent data structure with { data: {...} } format
+      res.status(201).json({ data: campWithStaff });
     } catch (error) {
       console.error(`Error creating camp:`, error);
       res.status(500).json({ error: "Failed to create camp" });

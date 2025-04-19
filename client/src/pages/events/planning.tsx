@@ -275,8 +275,8 @@ function CampPlanning() {
       });
       setShowNewCampDialog(false);
       
-      // Navigate to the new camp's project page
-      setLocation(`/events/camp-project/${data.id}`);
+      // Navigate to the new camp's project page using direct URL change for consistent behavior
+      window.location.href = `/events/camp-project?id=${data.id}`;
     },
     onError: (error: Error) => {
       toast({
@@ -307,8 +307,8 @@ function CampPlanning() {
       });
       setShowFromTemplateDialog(false);
       
-      // Navigate to the new camp's project page
-      setLocation(`/events/camp-project/${data.id}`);
+      // Navigate to the new camp's project page using direct URL change for consistent behavior
+      window.location.href = `/events/camp-project?id=${data.id}`;
     },
     onError: (error: Error) => {
       toast({
@@ -729,7 +729,7 @@ function CampPlanning() {
                   </Button>
                   <Button
                     size="sm"
-                    onClick={() => setLocation(`/events/camp-project/${camp.id}`)}
+                    onClick={() => window.location.href = `/events/camp-project?id=${camp.id}`}
                   >
                     Manage
                     <ChevronRight className="h-4 w-4 ml-1" />

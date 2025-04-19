@@ -123,7 +123,7 @@ interface AgendaDay {
   day: number;
   date: string;
   title: string;
-  items: AgendaItem[];
+  items: AgendaItem[] | undefined;
 }
 
 interface Clinician {
@@ -359,12 +359,14 @@ function AgendaBuilder() {
       csvContent += "Day,Date,Start Time,End Time,Title,Type,Location,Clinician,Status\n";
       
       agenda?.data?.forEach((day: AgendaDay) => {
-        day.items.forEach((item: AgendaItem) => {
-          const clinician = clinicians?.data?.find((c: Clinician) => c.id === item.clinicianId)?.name || '';
-          const location = locations?.data?.find((l: Location) => l.id === item.locationId)?.name || '';
-          
-          csvContent += `${day.day},${day.date},${item.startTime},${item.endTime},${item.title},${item.sessionType},${location},${clinician},${item.status}\n`;
-        });
+        if (day.items && Array.isArray(day.items)) {
+          day.items.forEach((item: AgendaItem) => {
+            const clinician = clinicians?.data?.find((c: Clinician) => c.id === item.clinicianId)?.name || '';
+            const location = locations?.data?.find((l: Location) => l.id === item.locationId)?.name || '';
+            
+            csvContent += `${day.day},${day.date},${item.startTime},${item.endTime},${item.title},${item.sessionType},${location},${clinician},${item.status}\n`;
+          });
+        }
       });
       
       const encodedUri = encodeURI(csvContent);
@@ -528,8 +530,14 @@ function AgendaBuilder() {
   };
   
   // Filter sessions by type, clinician, location
-  const filterSessions = (items: AgendaItem[]) => {
+  const filterSessions = (items: AgendaItem[] | undefined) => {
+    if (!items || !Array.isArray(items)) {
+      return [];
+    }
+    
     return items.filter(item => {
+      if (!item) return false;
+      
       const matchesType = filterSessionType === 'all' || item.sessionType === filterSessionType;
       const matchesClinician = !filterClinician || item.clinicianId === filterClinician;
       const matchesLocation = !filterLocation || item.locationId === filterLocation;

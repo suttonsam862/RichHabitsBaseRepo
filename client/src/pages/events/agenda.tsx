@@ -675,13 +675,13 @@ function AgendaBuilder() {
                     <Label className="text-xs">Clinician</Label>
                     <Select
                       value={filterClinician?.toString() || ''}
-                      onValueChange={(val) => setFilterClinician(val ? parseInt(val, 10) : null)}
+                      onValueChange={(val) => setFilterClinician(val && val !== 'all' ? parseInt(val, 10) : null)}
                     >
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder="All Clinicians" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Clinicians</SelectItem>
+                        <SelectItem value="all">All Clinicians</SelectItem>
                         {clinicians?.data?.map((clinician: Clinician) => (
                           <SelectItem key={clinician.id} value={clinician.id.toString()}>
                             {clinician.name}
@@ -695,13 +695,13 @@ function AgendaBuilder() {
                     <Label className="text-xs">Location</Label>
                     <Select
                       value={filterLocation?.toString() || ''}
-                      onValueChange={(val) => setFilterLocation(val ? parseInt(val, 10) : null)}
+                      onValueChange={(val) => setFilterLocation(val && val !== 'all' ? parseInt(val, 10) : null)}
                     >
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder="All Locations" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Locations</SelectItem>
+                        <SelectItem value="all">All Locations</SelectItem>
                         {locations?.data?.map((location: Location) => (
                           <SelectItem key={location.id} value={location.id.toString()}>
                             {location.name}
@@ -1110,7 +1110,7 @@ function AgendaBuilder() {
                   <SelectValue placeholder="Select location" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No location</SelectItem>
+                  <SelectItem value="none">No location</SelectItem>
                   {locations?.data?.map((location: Location) => (
                     <SelectItem key={location.id} value={location.id.toString()}>
                       {location.name}

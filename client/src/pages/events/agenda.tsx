@@ -538,9 +538,10 @@ function AgendaBuilder() {
     return items.filter(item => {
       if (!item) return false;
       
+      // Ensure consistent handling of 'all' values in filter criteria
       const matchesType = filterSessionType === 'all' || item.sessionType === filterSessionType;
-      const matchesClinician = !filterClinician || item.clinicianId === filterClinician;
-      const matchesLocation = !filterLocation || item.locationId === filterLocation;
+      const matchesClinician = !filterClinician || filterClinician === 0 || item.clinicianId === filterClinician;
+      const matchesLocation = !filterLocation || filterLocation === 0 || item.locationId === filterLocation;
       
       return matchesType && matchesClinician && matchesLocation;
     });

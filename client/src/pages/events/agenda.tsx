@@ -1103,8 +1103,8 @@ function AgendaBuilder() {
             <div>
               <Label htmlFor="location">Location</Label>
               <Select
-                value={newSession.locationId?.toString() || ''}
-                onValueChange={(value) => setNewSession({...newSession, locationId: value ? parseInt(value, 10) : undefined})}
+                value={newSession.locationId?.toString() || 'none'}
+                onValueChange={(value) => setNewSession({...newSession, locationId: value && value !== 'none' ? parseInt(value, 10) : undefined})}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select location" />
@@ -1122,14 +1122,14 @@ function AgendaBuilder() {
             <div>
               <Label htmlFor="clinician">Clinician</Label>
               <Select
-                value={newSession.clinicianId?.toString() || ''}
-                onValueChange={(value) => setNewSession({...newSession, clinicianId: value ? parseInt(value, 10) : undefined})}
+                value={newSession.clinicianId?.toString() || 'none'}
+                onValueChange={(value) => setNewSession({...newSession, clinicianId: value && value !== 'none' ? parseInt(value, 10) : undefined})}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select clinician" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No clinician</SelectItem>
+                  <SelectItem value="none">No clinician</SelectItem>
                   {clinicians?.data?.map((clinician: Clinician) => (
                     <SelectItem key={clinician.id} value={clinician.id.toString()}>
                       {clinician.name}
@@ -1285,13 +1285,13 @@ function AgendaBuilder() {
                 <Label htmlFor="edit-location">Location</Label>
                 <Select
                   value={selectedSession.locationId?.toString() || ''}
-                  onValueChange={(value) => setSelectedSession({...selectedSession, locationId: value ? parseInt(value, 10) : undefined})}
+                  onValueChange={(value) => setSelectedSession({...selectedSession, locationId: value && value !== 'none' ? parseInt(value, 10) : undefined})}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select location" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No location</SelectItem>
+                    <SelectItem value="none">No location</SelectItem>
                     {locations?.data?.map((location: Location) => (
                       <SelectItem key={location.id} value={location.id.toString()}>
                         {location.name}
@@ -1304,13 +1304,13 @@ function AgendaBuilder() {
                 <Label htmlFor="edit-clinician">Clinician</Label>
                 <Select
                   value={selectedSession.clinicianId?.toString() || ''}
-                  onValueChange={(value) => setSelectedSession({...selectedSession, clinicianId: value ? parseInt(value, 10) : undefined})}
+                  onValueChange={(value) => setSelectedSession({...selectedSession, clinicianId: value && value !== 'none' ? parseInt(value, 10) : undefined})}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select clinician" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No clinician</SelectItem>
+                    <SelectItem value="none">No clinician</SelectItem>
                     {clinicians?.data?.map((clinician: Clinician) => (
                       <SelectItem key={clinician.id} value={clinician.id.toString()}>
                         {clinician.name}

@@ -367,7 +367,7 @@ function AgendaBuilder() {
       try {
         // Create a simple export
         let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Day,Date,Start Time,End Time,Title,Type,Location,Clinician,Status\n";
+        csvContent += "Day,Date,Start Time,End Time,Title,Type,Location,Clinician,Additional Staff,Status\n";
         
         let sessionCount = 0;
         
@@ -380,8 +380,14 @@ function AgendaBuilder() {
                 const clinician = clinicians?.data?.find((c: Clinician) => c.id === item.clinicianId)?.name || '';
                 const location = locations?.data?.find((l: Location) => l.id === item.locationId)?.name || '';
                 
+                // Get staff assignments as comma-separated names
+                const staffNames = item.staffAssignments && item.staffAssignments.length > 0 
+                  ? item.staffAssignments.map(staff => staff.name).join(", ")
+                  : '';
+                
                 // Escape quotes in text fields to prevent CSV issues
                 const escapedTitle = item.title ? item.title.replace(/"/g, '""') : '';
+                const escapedStaffNames = staffNames.replace(/"/g, '""');
                 
                 // Format each field properly for CSV
                 csvContent += `${day.day || ''},`;
@@ -392,6 +398,7 @@ function AgendaBuilder() {
                 csvContent += `"${item.sessionType || ''}",`;
                 csvContent += `"${location}",`;
                 csvContent += `"${clinician}",`;
+                csvContent += `"${escapedStaffNames}",`;
                 csvContent += `"${item.status || ''}"\n`;
                 
                 sessionCount++;
@@ -1060,20 +1067,33 @@ function AgendaBuilder() {
                                 </div>
                                 
                                 <div className="col-span-2 flex items-center">
-                                  {session.clinicianId ? (
-                                    <div className="flex items-center">
-                                      <Avatar className="h-6 w-6 mr-2">
-                                        <AvatarFallback>
-                                          {clinicians?.data?.find((c: Clinician) => c.id === session.clinicianId)?.name?.charAt(0) || '?'}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                      <span className="text-sm">
-                                        {clinicians?.data?.find((c: Clinician) => c.id === session.clinicianId)?.name || 'Unknown'}
-                                      </span>
-                                    </div>
-                                  ) : (
-                                    <span className="text-sm text-gray-400">No clinician</span>
-                                  )}
+                                  <div className="flex flex-col">
+                                    {session.clinicianId ? (
+                                      <div className="flex items-center">
+                                        <Avatar className="h-6 w-6 mr-2">
+                                          <AvatarFallback>
+                                            {clinicians?.data?.find((c: Clinician) => c.id === session.clinicianId)?.name?.charAt(0) || '?'}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                        <span className="text-sm">
+                                          {clinicians?.data?.find((c: Clinician) => c.id === session.clinicianId)?.name || 'Unknown'}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-sm text-gray-400">No clinician</span>
+                                    )}
+                                    
+                                    {session.staffAssignments && session.staffAssignments.length > 0 && (
+                                      <div className="mt-1 pl-8">
+                                        <div className="flex items-center">
+                                          <Users className="h-3 w-3 mr-1 text-gray-400" />
+                                          <span className="text-xs text-gray-600">
+                                            +{session.staffAssignments.length} staff
+                                          </span>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                                 
                                 <div className="col-span-1 flex items-center space-x-1">
@@ -1167,11 +1187,26 @@ function AgendaBuilder() {
                                     )}
                                   </TableCell>
                                   <TableCell>
-                                    {session.clinicianId ? (
-                                      clinicians?.data?.find((c: Clinician) => c.id === session.clinicianId)?.name || 'Unknown'
-                                    ) : (
-                                      <span className="text-gray-400">-</span>
-                                    )}
+                                    <div className="flex flex-col">
+                                      {session.clinicianId ? (
+                                        <div className="text-sm font-medium">
+                                          {clinicians?.data?.find((c: Clinician) => c.id === session.clinicianId)?.name || 'Unknown'}
+                                        </div>
+                                      ) : (
+                                        <span className="text-gray-400">-</span>
+                                      )}
+                                      
+                                      {session.staffAssignments && session.staffAssignments.length > 0 && (
+                                        <div className="mt-1">
+                                          <div className="flex items-center">
+                                            <Users className="h-3 w-3 mr-1 text-gray-400" />
+                                            <span className="text-xs text-gray-600">
+                                              +{session.staffAssignments.length} staff
+                                            </span>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
                                   </TableCell>
                                   <TableCell>
                                     {getStatusBadge(session.status)}

@@ -165,7 +165,7 @@ interface RoleTemplate {
 function TeamPortal() {
   const [location, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
-  const campId = searchParams.get('campId');
+  const campId = searchParams.get('id');
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("team");
   const [searchTerm, setSearchTerm] = useState('');
@@ -589,7 +589,7 @@ function TeamPortal() {
   
   // Go back to camp project
   const handleBackToCamp = () => {
-    window.location.href = `/events/camp-project?campId=${campId}`;
+    window.location.href = `/events/camp-project?id=${campId}`;
   };
   
   // Loading state

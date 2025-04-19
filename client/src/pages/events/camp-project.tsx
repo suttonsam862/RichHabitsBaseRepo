@@ -121,9 +121,9 @@ function CampProject() {
     enabled: !!campId,
   });
   
-  // Go back to overview
+  // Go back to planning (camp list)
   const handleBackToOverview = () => {
-    window.location.href = '/events/overview';
+    window.location.href = '/events/planning';
   };
   
   // Navigate to a module
@@ -147,7 +147,7 @@ function CampProject() {
         <div className="mb-6">
           <Button variant="outline" onClick={handleBackToOverview}>
             <ChevronLeft className="mr-2 h-4 w-4" />
-            Back to Camps
+            Back to Camp Planning
           </Button>
         </div>
         
@@ -160,7 +160,7 @@ function CampProject() {
           </CardHeader>
           <CardFooter className="flex justify-center">
             <Button onClick={handleBackToOverview}>
-              View All Camps
+              Go to Camp Planning
             </Button>
           </CardFooter>
         </Card>
@@ -270,7 +270,7 @@ function CampProject() {
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={handleBackToOverview} className="mr-2">
               <ChevronLeft className="h-4 w-4" />
-              <span className="hidden sm:block ml-1">Back to Camps</span>
+              <span className="hidden sm:block ml-1">Back to Camp Planning</span>
             </Button>
             <h1 className="text-2xl font-bold md:text-3xl">{campData.name}</h1>
             <Badge

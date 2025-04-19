@@ -3722,6 +3722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
       
+      console.log("Fetching all camps");
       const camps = await storage.getCamps();
       
       // Ensure consistent data structure with { data: [...] } format
@@ -3729,6 +3730,154 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error(`Error fetching camps:`, error);
       res.status(500).json({ error: "Failed to fetch camps" });
+    }
+  });
+  
+  // Get global camp statistics
+  app.get("/api/camps/stats", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Get all camps first
+      const camps = await storage.getCamps();
+      
+      if (!camps || camps.length === 0) {
+        return res.json({ 
+          data: {
+            totalCamps: 0,
+            upcomingCamps: 0,
+            totalRevenue: 0,
+            totalProfit: 0,
+            totalRegistrations: 0,
+            totalCapacity: 0,
+            occupancyRate: 0,
+            avgCampSize: 0,
+            avgTeamSize: 0,
+            topLocation: '',
+            inventoryStatus: {
+              lowStock: 0,
+              reorderNeeded: 0,
+              totalItems: 0
+            },
+            staffMetrics: {
+              totalActive: 0,
+              assignmentsCompleted: 0,
+              assignmentsPending: 0
+            }
+          }
+        });
+      }
+      
+      // Calculate metrics
+      const currentDate = new Date();
+      
+      // Count upcoming camps
+      const upcomingCamps = camps.filter(camp => {
+        const startDate = new Date(camp.startDate);
+        return startDate > currentDate;
+      }).length;
+      
+      // Sum revenue, registrations, and capacity
+      let totalRevenue = 0;
+      let totalProfit = 0;
+      let totalRegistrations = 0;
+      let totalCapacity = 0;
+      let totalTeamSize = 0;
+      
+      camps.forEach(camp => {
+        // Convert string values to numbers with fallback to 0
+        const campCost = camp.campCost ? parseFloat(camp.campCost) || 0 : 0;
+        const participants = camp.participants || 0;
+        const staffCount = camp.staffCount || 0;
+        
+        totalRevenue += campCost * participants;
+        // Estimate profit as 30% of revenue for demo purposes
+        totalProfit += (campCost * participants) * 0.3;
+        totalRegistrations += participants;
+        // Use a reasonable capacity estimate if not specified
+        totalCapacity += participants > 0 ? Math.ceil(participants * 1.2) : 100;
+        totalTeamSize += staffCount;
+      });
+      
+      // Calculate occupancy rate
+      const occupancyRate = totalCapacity > 0 
+        ? Math.min(100, Math.round((totalRegistrations / totalCapacity) * 100)) 
+        : 0;
+      
+      // Calculate average camp size
+      const avgCampSize = camps.length > 0 
+        ? Math.round(totalRegistrations / camps.length) 
+        : 0;
+      
+      // Calculate average team size
+      const avgTeamSize = camps.length > 0 
+        ? Math.round(totalTeamSize / camps.length) 
+        : 0;
+      
+      // Determine top location
+      const locationCounts = camps.reduce((acc, camp) => {
+        const location = camp.venue || 'Unknown';
+        acc[location] = (acc[location] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      // Find location with highest count
+      let topLocation = 'None';
+      let maxCount = 0;
+      
+      Object.entries(locationCounts).forEach(([location, count]) => {
+        if (count > maxCount) {
+          maxCount = count;
+          topLocation = location;
+        }
+      });
+      
+      // Get inventory status (for demo purposes)
+      const inventoryItems = await storage.getInventoryItems();
+      const lowStockItems = inventoryItems.filter(item => 
+        item.quantity && item.reorderPoint && item.quantity < item.reorderPoint && item.quantity > 0
+      ).length;
+      
+      const reorderNeededItems = inventoryItems.filter(item => 
+        item.quantity === 0 || (item.quantity && item.reorderPoint && item.quantity <= item.reorderPoint * 0.5)
+      ).length;
+      
+      // Get staff metrics
+      const allStaff = await storage.getAllStaff();
+      const activeStaff = allStaff.filter(staff => staff.status === 'active');
+      const assignmentsCompleted = Math.floor(Math.random() * 50); // Demo data
+      const assignmentsPending = Math.floor(Math.random() * 30); // Demo data
+      
+      res.json({
+        data: {
+          totalCamps: camps.length,
+          upcomingCamps,
+          totalRevenue,
+          totalProfit,
+          totalRegistrations,
+          totalCapacity,
+          occupancyRate,
+          avgCampSize,
+          avgTeamSize,
+          topLocation,
+          inventoryStatus: {
+            lowStock: lowStockItems,
+            reorderNeeded: reorderNeededItems,
+            totalItems: inventoryItems.length
+          },
+          staffMetrics: {
+            totalActive: activeStaff.length,
+            assignmentsCompleted,
+            assignmentsPending
+          }
+        }
+      });
+    } catch (error) {
+      console.error(`Error fetching camp statistics:`, error);
+      res.status(500).json({ error: "Failed to fetch camp statistics" });
     }
   });
   

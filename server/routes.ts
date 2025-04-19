@@ -11,6 +11,18 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { insertAiTrainingDataSchema } from "../shared/schema";
+
+// Helper function to calculate duration in days between two dates
+function calculateDuration(startDate: string | null, endDate: string | null): number {
+  if (!startDate || !endDate) return 1; // Default to 1 day if no dates provided
+  
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const diffTime = Math.abs(end.getTime() - start.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  return diffDays || 1; // Return at least 1 day
+}
 import { 
   leads,
   orders,

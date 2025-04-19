@@ -171,7 +171,7 @@ interface Sponsor {
 function MediaPanel() {
   const [location, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
-  const campId = searchParams.get('campId');
+  const campId = searchParams.get('id');
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("social");
   const [searchTerm, setSearchTerm] = useState('');

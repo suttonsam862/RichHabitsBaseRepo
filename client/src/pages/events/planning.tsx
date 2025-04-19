@@ -209,8 +209,9 @@ interface ChecklistItem {
 }
 
 function CampPlanning() {
-  const { campId } = useParams();
   const [location, setLocation] = useLocation();
+  const searchParams = new URLSearchParams(window.location.search);
+  const campId = searchParams.get('id');
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("new");
   const [showNewCampDialog, setShowNewCampDialog] = useState(false);

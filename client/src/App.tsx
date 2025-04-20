@@ -77,9 +77,9 @@ import CheckinTools from "./pages/events/checkin-tools";
 import VenuePlanner from "./pages/events/venue-planner";
 import BudgetTracker from "./pages/events/budget-tracker";
 import AdminDashboard from "./pages/events/admin-dashboard";
-import ScheduleManager from "./pages/events/schedule-manager";
-import StaffAssignments from "./pages/events/staff-assignments";
-import TaskManagement from "./pages/events/task-management";
+import ScheduleManager from "./pages/events/admin-dashboard/schedule-manager";
+import StaffAssignments from "./pages/events/planning/staff-assignments";
+import TaskManagement from "./pages/events/planning/task-management";
 
 // Admin pages
 import SalesTeam from "./pages/admin/sales-team";

@@ -383,6 +383,234 @@ export async function registerRoutes(app: Express): Promise<Server> {
         relatedType: "lead"
       });
       
+  // Lead progress checklist endpoints
+  app.patch("/api/leads/:id/progress", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as User;
+      const leadId = parseInt(req.params.id);
+      
+      if (isNaN(leadId)) {
+        return res.status(400).json({ error: "Invalid lead ID" });
+      }
+      
+      // Get the lead to check permissions
+      const lead = await storage.getLeadById(leadId);
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      
+      // Check if user has permission to update this lead
+      const canUpdateAllLeads = hasPermission(
+        user.role,
+        user.permissions,
+        PERMISSIONS.MANAGE_LEADS
+      );
+      
+      if (!canUpdateAllLeads && lead.userId !== user.id) {
+        return res.status(403).json({ error: "You don't have permission to update this lead's progress" });
+      }
+      
+      // Validate progress data
+      const progressData = z.object({
+        contactComplete: z.boolean().optional(),
+        itemsConfirmed: z.boolean().optional(),
+        submittedToDesign: z.boolean().optional()
+      }).parse(req.body);
+      
+      // Update the lead progress
+      const updatedLead = await storage.updateLeadProgress(leadId, progressData);
+      
+      // Create appropriate activity based on what was updated
+      if (progressData.contactComplete !== undefined) {
+        await storage.createActivity({
+          userId: user.id,
+          type: "lead",
+          content: progressData.contactComplete 
+            ? `Initial contact with ${lead.name} marked as complete` 
+            : `Initial contact with ${lead.name} marked as incomplete`,
+          relatedId: leadId,
+          relatedType: "lead"
+        });
+      }
+      
+      if (progressData.itemsConfirmed !== undefined) {
+        await storage.createActivity({
+          userId: user.id,
+          type: "lead",
+          content: progressData.itemsConfirmed 
+            ? `Items for ${lead.name} confirmed` 
+            : `Items for ${lead.name} marked as not confirmed`,
+          relatedId: leadId,
+          relatedType: "lead"
+        });
+      }
+      
+      if (progressData.submittedToDesign !== undefined) {
+        await storage.createActivity({
+          userId: user.id,
+          type: "lead",
+          content: progressData.submittedToDesign 
+            ? `Lead ${lead.name} submitted to design team` 
+            : `Lead ${lead.name} removed from design queue`,
+          relatedId: leadId,
+          relatedType: "lead"
+        });
+      }
+      
+      res.json({ data: updatedLead });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  // Contact logs endpoints
+  app.get("/api/leads/:id/contact-logs", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as User;
+      const leadId = parseInt(req.params.id);
+      
+      if (isNaN(leadId)) {
+        return res.status(400).json({ error: "Invalid lead ID" });
+      }
+      
+      // Get the lead to check permissions
+      const lead = await storage.getLeadById(leadId);
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      
+      // Check if user has permission to view this lead's logs
+      const canViewAllLeads = hasPermission(
+        user.role,
+        user.permissions,
+        PERMISSIONS.VIEW_ALL_LEADS
+      );
+      
+      if (!canViewAllLeads && lead.userId !== user.id) {
+        return res.status(403).json({ error: "You don't have permission to view this lead's contact logs" });
+      }
+      
+      // Get contact logs for this lead
+      const contactLogs = await storage.getContactLogs(leadId);
+      
+      res.json({ data: contactLogs });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/leads/:id/contact-logs", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as User;
+      const leadId = parseInt(req.params.id);
+      
+      if (isNaN(leadId)) {
+        return res.status(400).json({ error: "Invalid lead ID" });
+      }
+      
+      // Get the lead to check permissions
+      const lead = await storage.getLeadById(leadId);
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      
+      // Check if user has permission to add logs to this lead
+      const canManageAllLeads = hasPermission(
+        user.role,
+        user.permissions,
+        PERMISSIONS.MANAGE_LEADS
+      );
+      
+      if (!canManageAllLeads && lead.userId !== user.id) {
+        return res.status(403).json({ error: "You don't have permission to add contact logs to this lead" });
+      }
+      
+      // Validate contact log data
+      const contactLogData = z.object({
+        leadId: z.number(),
+        contactMethod: z.string(),
+        notes: z.string()
+      }).parse({
+        ...req.body,
+        leadId // Ensure leadId matches the URL parameter
+      });
+      
+      // Create the contact log
+      const newContactLog = await storage.createContactLog({
+        ...contactLogData,
+        userId: user.id,
+        timestamp: new Date()
+      });
+      
+      // Create an activity for the new contact log
+      await storage.createActivity({
+        userId: user.id,
+        type: "lead",
+        content: `Contact made with ${lead.name} via ${contactLogData.contactMethod}`,
+        relatedId: leadId,
+        relatedType: "lead"
+      });
+      
+      res.status(201).json({ data: newContactLog });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+  
+  app.delete("/api/leads/:leadId/contact-logs/:logId", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as User;
+      const leadId = parseInt(req.params.leadId);
+      const logId = parseInt(req.params.logId);
+      
+      if (isNaN(leadId) || isNaN(logId)) {
+        return res.status(400).json({ error: "Invalid lead ID or log ID" });
+      }
+      
+      // Verify user has admin permissions - only admins can delete logs
+      const canManageLeads = hasPermission(
+        user.role,
+        user.permissions,
+        PERMISSIONS.MANAGE_LEADS
+      );
+      
+      if (!canManageLeads) {
+        return res.status(403).json({ error: "You don't have permission to delete contact logs" });
+      }
+      
+      // Delete the contact log
+      await storage.deleteContactLog(logId);
+      
+      res.status(200).json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+      
       res.status(200).json({ 
         success: true,
         remainingCount: updatedLeads.length

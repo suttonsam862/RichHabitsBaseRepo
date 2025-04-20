@@ -215,19 +215,19 @@ export const AVAILABLE_PAGES = [
     category: "Events",
   },
   {
-    id: "events/schedule-manager",
+    id: "events/admin-dashboard/schedule-manager",
     name: "Manage Schedule",
-    description: "Detailed schedule planning and management for camps",
+    description: "Global view of all camp schedules",
     category: "Events",
   },
   {
-    id: "events/staff-assignments",
+    id: "events/planning/staff-assignments",
     name: "Staff Assignments",
     description: "Assign and manage staff roles and responsibilities for camps",
     category: "Events",
   },
   {
-    id: "events/task-management",
+    id: "events/planning/task-management",
     name: "Task Management",
     description: "Track and manage tasks for camp preparation and execution",
     category: "Events",

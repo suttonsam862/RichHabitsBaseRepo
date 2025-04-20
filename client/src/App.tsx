@@ -249,14 +249,14 @@ function DashboardLayout() {
         <Route path="/events/admin-dashboard">
           <ProtectedPageLoader pageId="events/admin-dashboard"><AdminDashboard /></ProtectedPageLoader>
         </Route>
-        <Route path="/events/schedule-manager">
-          <ProtectedPageLoader pageId="events/schedule-manager"><ScheduleManager /></ProtectedPageLoader>
+        <Route path="/events/admin-dashboard/schedule-manager">
+          <ProtectedPageLoader pageId="events/admin-dashboard/schedule-manager"><ScheduleManager /></ProtectedPageLoader>
         </Route>
-        <Route path="/events/staff-assignments">
-          <ProtectedPageLoader pageId="events/staff-assignments"><StaffAssignments /></ProtectedPageLoader>
+        <Route path="/events/planning/staff-assignments">
+          <ProtectedPageLoader pageId="events/planning/staff-assignments"><StaffAssignments /></ProtectedPageLoader>
         </Route>
-        <Route path="/events/task-management">
-          <ProtectedPageLoader pageId="events/task-management"><TaskManagement /></ProtectedPageLoader>
+        <Route path="/events/planning/task-management">
+          <ProtectedPageLoader pageId="events/planning/task-management"><TaskManagement /></ProtectedPageLoader>
         </Route>
         
         {/* Admin Routes */}

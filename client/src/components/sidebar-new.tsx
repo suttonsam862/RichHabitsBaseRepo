@@ -181,6 +181,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           'MAIN': [
             { id: 'dashboard', name: 'Dashboard' },
             { id: 'leads', name: 'Leads' },
+            { id: 'leads-whiteboard', name: 'Leads Whiteboard' },
             { id: 'orders', name: 'Orders' },
             { id: 'design', name: 'Design' },
             { id: 'manufacturing', name: 'Manufacturing' },

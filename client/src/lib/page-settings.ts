@@ -16,6 +16,12 @@ export const AVAILABLE_PAGES = [
     category: "Sales",
   },
   {
+    id: "leads-whiteboard",
+    name: "Leads Whiteboard",
+    description: "Visual lead management with drag-and-drop interface",
+    category: "Sales",
+  },
+  {
     id: "orders",
     name: "Orders",
     description: "Order management and processing",
@@ -284,14 +290,14 @@ export const PAGE_ACCESS_TEMPLATES = {
   ADMIN: AVAILABLE_PAGES.map(page => page.id),
   MANAGER: [
     "dashboard", "messages", "profile", "settings",
-    "leads", "orders", "design", "manufacturing",
+    "leads", "leads-whiteboard", "orders", "design", "manufacturing",
     "catalog", "analytics", "reports", "user-management", "outlook",
     "design-communication", "production-communication", "feedback",
     "admin/product-management", "admin/product-creation", "sales-process"
   ],
   SALES: [
     "dashboard", "messages", "profile", 
-    "leads", "orders", "catalog", "analytics", "outlook",
+    "leads", "leads-whiteboard", "orders", "catalog", "analytics", "outlook",
     "feedback", "sales-process"
   ],
   DESIGNER: [

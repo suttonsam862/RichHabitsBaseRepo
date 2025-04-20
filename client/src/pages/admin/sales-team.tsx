@@ -300,6 +300,12 @@ export default function SalesTeamPage() {
     select: (data: any) => data.data || [],
     refetchInterval: 5000, // Auto-refresh every 5 seconds
   });
+  
+  // Get all leads for Leads By Salesperson view
+  const { data: allLeads = [], isLoading: isLoadingAllLeads } = useQuery({
+    queryKey: ["/api/leads"],
+    select: (data: any) => data.data || [],
+  });
 
   // Add new team member mutation
   const addMemberMutation = useMutation({
@@ -555,6 +561,7 @@ export default function SalesTeamPage() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="team-members">Team Members</TabsTrigger>
           <TabsTrigger value="lead-assignments">Lead Assignments</TabsTrigger>
+          <TabsTrigger value="leads-by-salesperson">Leads By Salesperson</TabsTrigger>
           <TabsTrigger value="performance">Performance</TabsTrigger>
         </TabsList>
 

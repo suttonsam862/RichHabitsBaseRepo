@@ -45,6 +45,6 @@ export interface ActivityItem extends Activity {
   iconColor: string;
 }
 
-export type LeadStatus = "new" | "contacted" | "qualified" | "proposal" | "negotiation" | "closed" | "lost";
+export type LeadStatus = "new" | "claimed" | "contacted" | "qualified" | "proposal" | "negotiation" | "closed" | "lost";
 export type OrderStatus = "pending" | "processing" | "paid" | "shipped" | "delivered" | "cancelled" | "refunded";
 export type MessageStatus = "read" | "unread";

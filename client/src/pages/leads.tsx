@@ -208,6 +208,8 @@ export default function Leads() {
     switch (status) {
       case "new":
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+      case "claimed":
+        return "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300";
       case "contacted":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
       case "qualified":
@@ -253,7 +255,8 @@ export default function Leads() {
               claimed: true,
               claimedById: user.id,
               claimedAt: new Date().toISOString(),
-              salesRepId: user.id
+              salesRepId: user.id,
+              status: "claimed"
             };
           }
           return lead;
@@ -352,6 +355,8 @@ export default function Leads() {
     switch (status) {
       case "new":
         return "green";
+      case "claimed":
+        return "teal";
       case "contacted":
         return "blue";
       case "qualified":
@@ -423,11 +428,17 @@ export default function Leads() {
       return matchesSearch;
     });
   
-  const myLeads = leads.filter(lead => 
-      // Include leads directly assigned to user OR claimed by the user
-      lead.salesRepId === user?.id || 
-      (lead.claimed === true && lead.claimedById === user?.id)
-    )
+  const myLeads = leads.filter(lead => {
+      // Include leads that meet any of these conditions:
+      // 1. Directly assigned to the user via salesRepId
+      // 2. Claimed by the user (claimed === true AND claimedById === user.id)
+      // 3. Has status "claimed" and was claimed by this user
+      return (
+        lead.salesRepId === user?.id || 
+        (lead.claimed === true && lead.claimedById === user?.id) ||
+        (lead.status === "claimed" && lead.claimedById === user?.id)
+      );
+    })
     .filter(lead => {
       const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            lead.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -875,6 +886,7 @@ export default function Leads() {
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="claimed">Claimed</SelectItem>
                     <SelectItem value="contacted">Contacted</SelectItem>
                     <SelectItem value="qualified">Qualified</SelectItem>
                     <SelectItem value="proposal">Proposal</SelectItem>
@@ -890,6 +902,7 @@ export default function Leads() {
                       <p>Filter leads by their current status in your sales pipeline:</p>
                       <ul className="list-disc pl-4 mt-2 space-y-1">
                         <li><span className="font-semibold">New:</span> Recently added, not yet contacted</li>
+                        <li><span className="font-semibold">Claimed:</span> Lead claimed by a sales rep in the 3-day verification period</li>
                         <li><span className="font-semibold">Contacted:</span> Initial outreach has been made</li>
                         <li><span className="font-semibold">Qualified:</span> Confirmed interest and fit for your products</li>
                         <li><span className="font-semibold">Proposal:</span> Formal quote/proposal has been sent</li>

@@ -223,8 +223,27 @@ function CampProject() {
   };
   
   // Navigate to a module
-  const navigateToModule = (module: string) => {
-    window.location.href = `/events/${module}?id=${campId}`;
+  // Enhanced navigation function with better route handling and back navigation options
+  const navigateToModule = (module: string, options: { withBackOptions?: boolean, additionalParams?: Record<string, string> } = {}) => {
+    const { withBackOptions = false, additionalParams = {} } = options;
+    
+    // Build the query parameters
+    const params = new URLSearchParams();
+    params.append('id', campId || '');
+    
+    // Add return path for back navigation if requested
+    if (withBackOptions) {
+      params.append('returnPath', `/events/camp-project?id=${campId}`);
+      params.append('campName', campData?.name || 'Camp');
+    }
+    
+    // Add any additional parameters
+    Object.entries(additionalParams).forEach(([key, value]) => {
+      params.append(key, value);
+    });
+    
+    // Navigate to the module
+    window.location.href = `/events/${module}?${params.toString()}`;
   };
   
   // Loading state

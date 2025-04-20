@@ -411,14 +411,21 @@ export default function Leads() {
   }
 
   // Create filtered lists for unclaimed and user's leads
-  const unclaimedLeads = leads.filter(lead => lead.status === "new" && !lead.salesRepId)
+  const unclaimedLeads = leads.filter(lead => 
+      // Only show leads that are not claimed by anyone
+      !lead.claimed && !lead.salesRepId && lead.status === "new"
+    )
     .filter(lead => {
       const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            lead.email.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesSearch;
     });
   
-  const myLeads = leads.filter(lead => lead.salesRepId === user?.id)
+  const myLeads = leads.filter(lead => 
+      // Include leads directly assigned to user OR claimed by the user
+      lead.salesRepId === user?.id || 
+      (lead.claimed === true && lead.claimedById === user?.id)
+    )
     .filter(lead => {
       const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            lead.email.toLowerCase().includes(searchTerm.toLowerCase());

@@ -147,9 +147,9 @@ export async function getShopifyProducts(req: Request, res: Response) {
     
     const products = await makeShopifyApiRequest('/products.json');
     return res.json(products);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error getting Shopify products:', error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message || 'Error retrieving Shopify products' });
   }
 }
 

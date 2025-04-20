@@ -39,6 +39,7 @@ import {
   campFinancials,
   campVendorAssignments,
   aiTrainingData,
+  contactLogs,
   ROLES,
   type User, 
   type InsertUser, 
@@ -57,6 +58,8 @@ import {
   type InsertMessage, 
   type Activity, 
   type InsertActivity,
+  type ContactLog,
+  type InsertContactLog,
   type Product,
   type InsertProduct,
   type FabricOption,
@@ -156,6 +159,21 @@ export interface IStorage {
   getUnassignedLeads(): Promise<Lead[]>;
   getLeadAssignments(): Promise<any[]>;
   assignLeadToSalesRep(leadId: number, salesRepId: number): Promise<any>;
+  
+  // Lead progress checklist methods
+  updateLeadProgress(
+    leadId: number, 
+    progress: { 
+      contactComplete?: boolean; 
+      itemsConfirmed?: boolean; 
+      submittedToDesign?: boolean;
+    }
+  ): Promise<Lead>;
+  
+  // Contact log methods
+  getContactLogs(leadId: number): Promise<ContactLog[]>;
+  createContactLog(contactLog: InsertContactLog): Promise<ContactLog>;
+  deleteContactLog(id: number): Promise<void>;
   
   // Order methods
   getOrders(): Promise<Order[]>;
@@ -382,6 +400,69 @@ export class DatabaseStorage implements IStorage {
       pool,
       createTableIfMissing: true
     });
+  }
+  
+  // Lead progress checklist methods
+  async updateLeadProgress(
+    leadId: number, 
+    progress: { 
+      contactComplete?: boolean; 
+      itemsConfirmed?: boolean; 
+      submittedToDesign?: boolean;
+    }
+  ): Promise<Lead> {
+    try {
+      const [updatedLead] = await db
+        .update(leads)
+        .set({
+          ...progress,
+          updatedAt: new Date()
+        })
+        .where(eq(leads.id, leadId))
+        .returning();
+      return updatedLead;
+    } catch (error) {
+      console.error(`Error updating lead progress for lead ${leadId}:`, error);
+      throw error;
+    }
+  }
+  
+  // Contact log methods
+  async getContactLogs(leadId: number): Promise<ContactLog[]> {
+    try {
+      return await db
+        .select()
+        .from(contactLogs)
+        .where(eq(contactLogs.leadId, leadId))
+        .orderBy(desc(contactLogs.timestamp));
+    } catch (error) {
+      console.error(`Error getting contact logs for lead ${leadId}:`, error);
+      throw error;
+    }
+  }
+  
+  async createContactLog(contactLog: InsertContactLog): Promise<ContactLog> {
+    try {
+      const [newLog] = await db
+        .insert(contactLogs)
+        .values(contactLog)
+        .returning();
+      return newLog;
+    } catch (error) {
+      console.error('Error creating contact log:', error);
+      throw error;
+    }
+  }
+  
+  async deleteContactLog(id: number): Promise<void> {
+    try {
+      await db
+        .delete(contactLogs)
+        .where(eq(contactLogs.id, id));
+    } catch (error) {
+      console.error(`Error deleting contact log ${id}:`, error);
+      throw error;
+    }
   }
   
   // Camp Registration Tier methods

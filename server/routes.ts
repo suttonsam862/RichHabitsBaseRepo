@@ -48,6 +48,7 @@ import {
   campRegistrationTiers,
   campRegistrations,
   registrationCommunications,
+  contactLogs,
   travelArrangements,
   accommodations,
   fabricTypes,

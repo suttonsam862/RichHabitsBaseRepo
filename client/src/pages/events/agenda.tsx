@@ -240,16 +240,27 @@ function AgendaBuilder() {
       );
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Session added",
         description: "The session has been added to the agenda."
       });
+      
+      // Force a complete refetch of the agenda data
       queryClient.invalidateQueries({
         queryKey: ['/api/camps', campId, 'agenda']
       });
-      setShowAddSession(false);
-      resetNewSession();
+      
+      // Also invalidate the related queries to ensure all data is fresh
+      queryClient.invalidateQueries({
+        queryKey: ['/api/camps', campId]
+      });
+      
+      // Wait a moment for the backend to process before closing the dialog
+      setTimeout(() => {
+        setShowAddSession(false);
+        resetNewSession();
+      }, 300);
     },
     onError: (error: Error) => {
       toast({
@@ -275,11 +286,22 @@ function AgendaBuilder() {
         title: "Session updated",
         description: "The session has been updated successfully."
       });
+      
+      // Force a complete refetch of the agenda data
       queryClient.invalidateQueries({
         queryKey: ['/api/camps', campId, 'agenda']
       });
-      setShowEditSession(false);
-      setEditingItemId(null);
+      
+      // Also invalidate the related queries to ensure all data is fresh
+      queryClient.invalidateQueries({
+        queryKey: ['/api/camps', campId]
+      });
+      
+      // Short timeout to ensure state updates after data refetch
+      setTimeout(() => {
+        setShowEditSession(false);
+        setEditingItemId(null);
+      }, 300);
     },
     onError: (error: Error) => {
       toast({
@@ -305,8 +327,15 @@ function AgendaBuilder() {
         title: "Session deleted",
         description: "The session has been removed from the agenda."
       });
+      
+      // Force a complete refetch of the agenda data
       queryClient.invalidateQueries({
         queryKey: ['/api/camps', campId, 'agenda']
+      });
+      
+      // Also invalidate the related queries to ensure all data is fresh
+      queryClient.invalidateQueries({
+        queryKey: ['/api/camps', campId]
       });
     },
     onError: (error: Error) => {
@@ -333,11 +362,22 @@ function AgendaBuilder() {
         title: "Session copied",
         description: "The session has been copied to selected days."
       });
+      
+      // Force a complete refetch of the agenda data
       queryClient.invalidateQueries({
         queryKey: ['/api/camps', campId, 'agenda']
       });
-      setShowCopyOptions(false);
-      setCopyToDays([]);
+      
+      // Also invalidate the related queries to ensure all data is fresh
+      queryClient.invalidateQueries({
+        queryKey: ['/api/camps', campId]
+      });
+      
+      // Short timeout to ensure UI updates after data refetch
+      setTimeout(() => {
+        setShowCopyOptions(false);
+        setCopyToDays([]);
+      }, 300);
     },
     onError: (error: Error) => {
       toast({

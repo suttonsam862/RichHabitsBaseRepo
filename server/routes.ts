@@ -7,6 +7,7 @@ import { sql, eq, or, and, asc, desc } from "drizzle-orm";
 import { setupAuth, hashPassword, isAuthenticated } from "./auth";
 import { hasPermission } from '../shared/permissions';
 import anthropicService from "./services/anthropic-service";
+import shopifyService from "./services/shopify-service";
 import multer from "multer";
 import path from "path";
 import fs from "fs";

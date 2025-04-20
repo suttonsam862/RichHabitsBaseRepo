@@ -13,7 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, Search, Filter, Inbox, UserCircle, Archive, Plus, Users, Calendar as CalendarIcon, Tag as TagIcon } from "lucide-react";
+import { PlusCircle, Search, Filter, Inbox, UserCircle, Archive, Plus, Users, Calendar as CalendarIcon, Tag as TagIcon, DollarSign } from "lucide-react";
+import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
+import { StickyNote } from "@/components/ui/sticky-note";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -314,6 +316,55 @@ export default function Leads() {
     },
   });
 
+  // Handle drag end event for drag and drop functionality
+  const handleDragEnd = (result: DropResult) => {
+    const { source, destination, draggableId } = result;
+    
+    // Return if dropped outside a droppable area or dropped in the same place
+    if (!destination) return;
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) return;
+    
+    // Only handle drops to the claim bucket
+    if (destination.droppableId === 'claim-bucket') {
+      // Extract the lead ID from the draggableId (format: "lead-{id}")
+      const leadId = parseInt(draggableId.replace('lead-', ''), 10);
+      
+      // Claim the lead
+      claimLeadMutation.mutate(leadId);
+      
+      // Show a notification
+      toast({
+        title: "Claiming lead...",
+        description: "Processing your lead claim",
+      });
+    }
+  };
+  
+  // Helper function to get lead color for sticky notes
+  const getLeadColor = (status: LeadStatus) => {
+    switch (status) {
+      case "new":
+        return "green";
+      case "contacted":
+        return "blue";
+      case "qualified":
+        return "purple";
+      case "proposal":
+        return "orange";
+      case "negotiation":
+        return "yellow";
+      case "closed":
+        return "indigo";
+      case "lost":
+        return "red";
+      default:
+        return "gray";
+    }
+  };
+  
   // Create a mutation to delete a lead
   const deleteLeadMutation = useMutation({
     mutationFn: async (leadId: number) => {
@@ -845,10 +896,14 @@ export default function Leads() {
           </CardHeader>
           <CardContent className="bg-white">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-2'} mb-6`}>
+              <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-5' : 'grid-cols-3'} mb-6`}>
                 <TabsTrigger value="unclaimed" className="flex items-center">
                   <Inbox className="h-4 w-4 mr-2" />
                   Unclaimed Leads
+                </TabsTrigger>
+                <TabsTrigger value="whiteboard" className="flex items-center">
+                  <TagIcon className="h-4 w-4 mr-2" />
+                  Whiteboard
                 </TabsTrigger>
                 <TabsTrigger value="my-leads" className="flex items-center">
                   <UserCircle className="h-4 w-4 mr-2" />
@@ -867,6 +922,129 @@ export default function Leads() {
                   </TabsTrigger>
                 )}
               </TabsList>
+              
+              <TabsContent value="whiteboard" className="mt-2">
+                <div className="p-4 bg-gray-50 border border-gray-100 rounded-lg">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-medium">Leads Whiteboard</h3>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-500">
+                        Drag leads to the dollar sign bucket to claim them
+                      </span>
+                      <HelpIconOnly 
+                        content="This whiteboard view allows you to drag and drop leads you want to claim. Simply drag a sticky note to the dollar sign bucket on the right to claim a lead."
+                      />
+                    </div>
+                  </div>
+                  
+                  <DragDropContext onDragEnd={handleDragEnd}>
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                      <div className="lg:col-span-3 bg-white p-6 rounded-lg border border-gray-200 min-h-[500px]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'100\' viewBox=\'0 0 100 100\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z\' fill=\'%23f3f4f6\' fill-opacity=\'0.75\' fill-rule=\'evenodd\'/%3E%3C/svg%3E")' }}>
+                        <Droppable droppableId="leads-board" direction="horizontal">
+                          {(provided) => (
+                            <div 
+                              ref={provided.innerRef}
+                              {...provided.droppableProps}
+                              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                            >
+                              {unclaimedLeads.map((lead, index) => (
+                                <Draggable key={`lead-${lead.id}`} draggableId={`lead-${lead.id}`} index={index}>
+                                  {(provided, snapshot) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                      style={{
+                                        ...provided.draggableProps.style,
+                                        opacity: snapshot.isDragging ? 0.8 : 1
+                                      }}
+                                    >
+                                      <StickyNote 
+                                        color={getLeadColor(lead.status as LeadStatus)}
+                                        title={lead.name}
+                                        subtitle={lead.companyName || ""}
+                                        content={
+                                          <>
+                                            <p className="text-sm mb-1">{lead.email}</p>
+                                            {lead.phone && <p className="text-sm mb-1">{lead.phone}</p>}
+                                            {lead.notes && <p className="text-xs italic mt-2 line-clamp-2">{lead.notes}</p>}
+                                          </>
+                                        }
+                                        footer={
+                                          <div className="flex justify-between items-center w-full">
+                                            <span className="text-xs">Source: {lead.source}</span>
+                                            {lead.value && <span className="font-semibold">${lead.value}</span>}
+                                          </div>
+                                        }
+                                        onClick={() => {
+                                          setSelectedLead(lead);
+                                          setOpenViewDialog(true);
+                                        }}
+                                      />
+                                    </div>
+                                  )}
+                                </Draggable>
+                              ))}
+                              {provided.placeholder}
+                            </div>
+                          )}
+                        </Droppable>
+                      </div>
+                      
+                      <div className="bg-white p-4 rounded-lg border border-gray-200 flex flex-col items-center justify-center">
+                        <Droppable droppableId="claim-bucket">
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.droppableProps}
+                              className={`w-full h-60 border-2 border-dashed rounded-lg flex flex-col items-center justify-center transition-colors ${
+                                snapshot.isDraggingOver ? 'border-green-500 bg-green-50' : 'border-gray-300'
+                              }`}
+                            >
+                              <DollarSign className={`h-16 w-16 mb-4 ${
+                                snapshot.isDraggingOver ? 'text-green-500' : 'text-gray-400'
+                              }`} />
+                              <p className="text-center text-sm font-medium mb-2">
+                                {snapshot.isDraggingOver ? 'Release to Claim Lead' : 'Drag Leads Here to Claim'}
+                              </p>
+                              <p className="text-center text-xs text-gray-500">
+                                Claimed leads will appear in your "My Leads" tab
+                              </p>
+                              {provided.placeholder}
+                            </div>
+                          )}
+                        </Droppable>
+                        
+                        <div className="mt-6">
+                          <h4 className="font-medium text-gray-900 mb-2">Lead Status Colors</h4>
+                          <div className="space-y-2">
+                            <div className="flex items-center">
+                              <div className="w-4 h-4 bg-green-400 rounded-full mr-2"></div>
+                              <span className="text-sm">New</span>
+                            </div>
+                            <div className="flex items-center">
+                              <div className="w-4 h-4 bg-blue-400 rounded-full mr-2"></div>
+                              <span className="text-sm">Contacted</span>
+                            </div>
+                            <div className="flex items-center">
+                              <div className="w-4 h-4 bg-purple-400 rounded-full mr-2"></div>
+                              <span className="text-sm">Qualified</span>
+                            </div>
+                            <div className="flex items-center">
+                              <div className="w-4 h-4 bg-orange-400 rounded-full mr-2"></div>
+                              <span className="text-sm">Proposal</span>
+                            </div>
+                            <div className="flex items-center">
+                              <div className="w-4 h-4 bg-yellow-400 rounded-full mr-2"></div>
+                              <span className="text-sm">Negotiation</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </DragDropContext>
+                </div>
+              </TabsContent>
               
               <TabsContent value="unclaimed" className="mt-2">
                 <div className="p-4 bg-gray-50 border border-gray-100 rounded-lg">

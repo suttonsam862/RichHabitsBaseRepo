@@ -62,8 +62,11 @@ export interface StickyNoteProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'color'>,
     VariantProps<typeof stickyNoteVariants> {
   title?: string;
+  subtitle?: string;
   status?: string;
   rotation?: number;
+  content?: React.ReactNode;
+  footer?: React.ReactNode;
 }
 
 const StickyNote = React.forwardRef<HTMLDivElement, StickyNoteProps>(

@@ -542,6 +542,28 @@ export default function SalesTeamPage() {
         return <Badge>{status}</Badge>;
     }
   };
+  
+  // Get lead status color
+  const getLeadStatusColor = (status: string) => {
+    switch (status) {
+      case "new":
+        return "bg-blue-100 text-blue-800 hover:bg-blue-100";
+      case "contacted":
+        return "bg-purple-100 text-purple-800 hover:bg-purple-100";
+      case "qualified":
+        return "bg-indigo-100 text-indigo-800 hover:bg-indigo-100";
+      case "proposal":
+        return "bg-amber-100 text-amber-800 hover:bg-amber-100";
+      case "negotiation":
+        return "bg-orange-100 text-orange-800 hover:bg-orange-100";
+      case "closed":
+        return "bg-green-100 text-green-800 hover:bg-green-100";
+      case "lost":
+        return "bg-red-100 text-red-800 hover:bg-red-100";
+      default:
+        return "bg-gray-100 text-gray-800 hover:bg-gray-100";
+    }
+  };
 
   return (
     <div className="container mx-auto py-6 max-w-7xl">
@@ -1225,6 +1247,123 @@ export default function SalesTeamPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        {/* Leads By Salesperson Tab */}
+        <TabsContent value="leads-by-salesperson" className="space-y-4">
+          <div className="flex flex-col md:flex-row gap-4 md:items-center justify-between mb-4">
+            <h3 className="text-lg font-medium">Leads By Salesperson</h3>
+            <p className="text-sm text-muted-foreground">
+              Showing leads grouped by sales representative
+            </p>
+          </div>
+          
+          {isLoadingTeamMembers || isLoadingAllLeads ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {teamMembers
+                .filter((member: SalesTeamMember) => member.status === "active")
+                .map((salesperson: SalesTeamMember) => {
+                  // Filter leads assigned to this salesperson
+                  const salesPersonLeads = allLeads.filter((lead: any) => 
+                    lead.assignedToId === salesperson.id || lead.userId === salesperson.id
+                  );
+                  
+                  return (
+                    <Card key={salesperson.id} className="overflow-hidden">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center">
+                          <Avatar className="h-10 w-10 mr-4">
+                            <AvatarImage src={salesperson.avatarUrl || ""} />
+                            <AvatarFallback className="bg-brand-100 text-brand-800">
+                              {salesperson.name?.charAt(0) || salesperson.username?.charAt(0) || "?"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <CardTitle className="text-lg">{salesperson.name || salesperson.username}</CardTitle>
+                            <CardDescription>{salesperson.email}</CardDescription>
+                          </div>
+                          <div className="ml-auto">
+                            <Badge variant="outline" className="ml-2">
+                              {salesPersonLeads.length || 0} Leads
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      
+                      {salesPersonLeads && salesPersonLeads.length > 0 ? (
+                        <CardContent className="p-0">
+                          <div className="overflow-hidden border-t border-gray-100">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Lead</TableHead>
+                                  <TableHead>Status</TableHead>
+                                  <TableHead>Value</TableHead>
+                                  <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {salesPersonLeads.map((lead: any) => (
+                                  <TableRow key={lead.id} className="hover:bg-gray-50">
+                                    <TableCell>
+                                      <div className="font-medium">{lead.name}</div>
+                                      <div className="text-sm text-muted-foreground">{lead.email}</div>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge className={getLeadStatusColor(lead.status)}>
+                                        {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                      {lead.value ? (
+                                        <span className="text-sm font-medium text-green-600">
+                                          ${parseFloat(lead.value).toLocaleString()}
+                                        </span>
+                                      ) : (
+                                        <span className="text-sm text-muted-foreground">Unknown</span>
+                                      )}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="mr-2"
+                                      >
+                                        View
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </CardContent>
+                      ) : (
+                        <CardContent>
+                          <div className="text-center py-6">
+                            <UserCircle className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
+                            <h3 className="mt-2 text-sm font-medium">No leads assigned</h3>
+                            <p className="mt-1 text-sm text-muted-foreground">This salesperson has no active leads.</p>
+                          </div>
+                        </CardContent>
+                      )}
+                    </Card>
+                  );
+                })}
+                
+              {teamMembers.filter((member: SalesTeamMember) => member.status === "active").length === 0 && (
+                <div className="text-center py-8 bg-white rounded-lg border border-gray-200">
+                  <Users className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
+                  <h3 className="mt-2 text-sm font-medium">No active sales representatives found</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">Add members to your sales team to see them here.</p>
+                </div>
+              )}
+            </div>
+          )}
         </TabsContent>
 
         {/* Performance Tab */}

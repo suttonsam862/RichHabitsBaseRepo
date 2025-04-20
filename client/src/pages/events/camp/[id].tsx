@@ -99,7 +99,10 @@ export default function CampDetailPage() {
   });
   
   // Extract the camp object from the API response
-  const camp = campResponse?.data;
+  // Make sure we're getting a single object and not an array
+  const camp = campResponse?.data && (!Array.isArray(campResponse.data) 
+    ? campResponse.data 
+    : campResponse.data[0]);
   
   // Fetch available staff for selection
   const {

@@ -214,6 +214,24 @@ export const AVAILABLE_PAGES = [
     description: "Visual map layout tool for organizing event spaces",
     category: "Events",
   },
+  {
+    id: "events/schedule-manager",
+    name: "Manage Schedule",
+    description: "Detailed schedule planning and management for camps",
+    category: "Events",
+  },
+  {
+    id: "events/staff-assignments",
+    name: "Staff Assignments",
+    description: "Assign and manage staff roles and responsibilities for camps",
+    category: "Events",
+  },
+  {
+    id: "events/task-management",
+    name: "Task Management",
+    description: "Track and manage tasks for camp preparation and execution",
+    category: "Events",
+  },
   // Admin pages
   {
     id: "user-management",

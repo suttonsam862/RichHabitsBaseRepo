@@ -104,6 +104,20 @@ export const leads = pgTable("leads", {
   claimedAt: timestamp("claimed_at"),
   verifiedAt: timestamp("verified_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  // Lead processing progress steps
+  contactComplete: boolean("contact_complete").default(false),
+  itemsConfirmed: boolean("items_confirmed").default(false),
+  submittedToDesign: boolean("submitted_to_design").default(false),
+});
+
+// Contact Log model for tracking lead communications
+export const contactLogs = pgTable("contact_logs", {
+  id: serial("id").primaryKey(),
+  leadId: integer("lead_id").references(() => leads.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  contactMethod: text("contact_method").notNull(), // "email", "phone", "in-person", etc.
+  notes: text("notes"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
 // Order model
@@ -157,6 +171,7 @@ export const insertLeadSchema = createInsertSchema(leads).omit({ id: true, creat
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
 export const insertActivitySchema = createInsertSchema(activities).omit({ id: true, createdAt: true });
+export const insertContactLogSchema = createInsertSchema(contactLogs).omit({ id: true, timestamp: true });
 
 // Insert types
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -164,6 +179,7 @@ export type InsertLead = z.infer<typeof insertLeadSchema>;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
+export type InsertContactLog = z.infer<typeof insertContactLogSchema>;
 
 // Types
 // Products schema
@@ -314,6 +330,7 @@ export type Lead = typeof leads.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
+export type ContactLog = typeof contactLogs.$inferSelect;
 export type Product = typeof products.$inferSelect;
 export type FabricOption = typeof fabricOptions.$inferSelect;
 export type FabricCut = typeof fabricCuts.$inferSelect;

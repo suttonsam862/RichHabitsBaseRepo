@@ -101,7 +101,7 @@ export default function CampsPage() {
   });
   
   // Filter camps based on search term
-  const filteredCamps = camps ? camps.filter((camp: any) => {
+  const filteredCamps = camps?.data ? camps.data.filter((camp: any) => {
     const searchString = searchTerm.toLowerCase();
     return (
       camp.name?.toLowerCase().includes(searchString) ||

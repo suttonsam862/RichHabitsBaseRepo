@@ -478,6 +478,7 @@ export default function CampDetailPage() {
                               <SelectItem value="football">Football</SelectItem>
                               <SelectItem value="soccer">Soccer</SelectItem>
                               <SelectItem value="volleyball">Volleyball</SelectItem>
+                              <SelectItem value="wrestling">Wrestling</SelectItem>
                               <SelectItem value="other">Other</SelectItem>
                             </SelectContent>
                           </Select>

@@ -55,6 +55,23 @@ export default function LeadsWhiteboard() {
 
   const { user } = useAuth();
   
+  // Function to handle when a drag operation ends
+  const handleDragEnd = (result: DropResult) => {
+    const { draggableId, destination } = result;
+    
+    // If the item wasn't dropped in a droppable area, return
+    if (!destination) return;
+    
+    // If the lead was dropped in the claim bucket
+    if (destination.droppableId === 'claim-bucket') {
+      // Extract the lead ID from the draggableId (format: 'lead-{id}')
+      const leadId = parseInt(draggableId.replace('lead-', ''));
+      
+      // Claim the lead using the existing mutation
+      claimLeadMutation.mutate(leadId);
+    }
+  };
+  
   // Get user permissions
   const canViewAllLeads = user?.permissions?.includes('view_all_leads') || user?.role === 'admin';
   // Check if user is admin (for archived leads tab)
@@ -798,88 +815,141 @@ export default function LeadsWhiteboard() {
                 </p>
               </div>
               
-              {unclaimedLeads.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 p-4">
-                  {unclaimedLeads.map((lead, index) => {
-                    // Assign a color based on the lead source or status
-                    const leadColor = getLeadColor(lead.status as LeadStatus);
-                    
-                    // Random rotation between -3 and 3 degrees
-                    const rotation = Math.floor(Math.random() * 7) - 3;
-                    
-                    return (
-                      <div key={lead.id} className="flex justify-center">
-                        <StickyNote 
-                          color={leadColor} 
-                          size="md" 
-                          glow={true}
-                          title={lead.name}
-                          status={lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
-                          rotation={rotation}
-                          onClick={() => {
-                            setSelectedLead(lead);
-                            setOpenViewDialog(true);
-                          }}
-                          className="w-full"
-                        >
-                          <div className="space-y-2 mt-2">
-                            <p>{lead.email}</p>
-                            {lead.phone && <p>{lead.phone}</p>}
-                            
-                            <div className="flex items-center mt-2">
-                              <span className="text-xs font-bold mr-1">Source:</span>
-                              <span className="text-xs">{lead.source}</span>
-                            </div>
-                            
-                            {lead.notes && (
-                              <p className="mt-2 text-sm line-clamp-2 opacity-80">{lead.notes}</p>
-                            )}
-                            
-                            <div className="mt-3 pt-3 border-t border-black/10">
-                              {lead.value ? (
-                                <p className="font-bold">
-                                  Est. Value: ${parseFloat(lead.value).toLocaleString()}
-                                </p>
-                              ) : (
-                                <p className="opacity-75">
-                                  Value: Unknown
-                                </p>
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <div className="flex flex-col md:flex-row gap-6">
+                  {/* Main leads grid area */}
+                  <div className="flex-1">
+                    {unclaimedLeads.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 p-4">
+                        {unclaimedLeads.map((lead, index) => {
+                          // Assign a color based on the lead source or status
+                          const leadColor = getLeadColor(lead.status as LeadStatus);
+                          
+                          // Random rotation between -3 and 3 degrees
+                          const rotation = Math.floor(Math.random() * 7) - 3;
+                          
+                          return (
+                            <Draggable key={lead.id} draggableId={`lead-${lead.id}`} index={index}>
+                              {(provided, snapshot) => (
+                                <div 
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  className="flex justify-center"
+                                  style={{
+                                    ...provided.draggableProps.style,
+                                    opacity: snapshot.isDragging ? 0.8 : 1
+                                  }}
+                                >
+                                  <StickyNote 
+                                    color={leadColor} 
+                                    size="md" 
+                                    glow={true}
+                                    title={lead.name}
+                                    status={lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
+                                    rotation={rotation}
+                                    onClick={() => {
+                                      setSelectedLead(lead);
+                                      setOpenViewDialog(true);
+                                    }}
+                                    className="w-full"
+                                  >
+                                    <div className="space-y-2 mt-2">
+                                      <p>{lead.email}</p>
+                                      {lead.phone && <p>{lead.phone}</p>}
+                                      
+                                      <div className="flex items-center mt-2">
+                                        <span className="text-xs font-bold mr-1">Source:</span>
+                                        <span className="text-xs">{lead.source}</span>
+                                      </div>
+                                      
+                                      {lead.notes && (
+                                        <p className="mt-2 text-sm line-clamp-2 opacity-80">{lead.notes}</p>
+                                      )}
+                                      
+                                      <div className="mt-3 pt-3 border-t border-black/10">
+                                        {lead.value ? (
+                                          <p className="font-bold">
+                                            Est. Value: ${parseFloat(lead.value).toLocaleString()}
+                                          </p>
+                                        ) : (
+                                          <p className="opacity-75">
+                                            Value: Unknown
+                                          </p>
+                                        )}
+                                      </div>
+                                      
+                                      <Button
+                                        variant="default"
+                                        size="sm"
+                                        className="mt-2 w-full shadow-md"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          claimLeadMutation.mutate(lead.id);
+                                        }}
+                                        disabled={claimLeadMutation.isPending}
+                                      >
+                                        {claimLeadMutation.isPending ? "Claiming..." : "Claim Lead"}
+                                      </Button>
+                                    </div>
+                                  </StickyNote>
+                                </div>
                               )}
-                            </div>
-                            
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="mt-2 w-full shadow-md"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                claimLeadMutation.mutate(lead.id);
-                              }}
-                              disabled={claimLeadMutation.isPending}
-                            >
-                              {claimLeadMutation.isPending ? "Claiming..." : "Claim Lead"}
-                            </Button>
-                          </div>
-                        </StickyNote>
+                            </Draggable>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-10">
-                  <div className="mx-auto w-16 h-16 flex items-center justify-center rounded-full bg-gray-100">
-                    <Inbox className="h-8 w-8 text-gray-400" />
+                    ) : (
+                      <div className="text-center py-10">
+                        <div className="mx-auto w-16 h-16 flex items-center justify-center rounded-full bg-gray-100">
+                          <Inbox className="h-8 w-8 text-gray-400" />
+                        </div>
+                        <h3 className="mt-4 text-lg font-medium text-gray-900">No Unclaimed Leads</h3>
+                        <p className="mt-1 text-sm text-gray-500">
+                          There are currently no unclaimed leads available for you to claim.
+                        </p>
+                        <Button variant="outline" className="mt-6" onClick={() => setOpenAddDialog(true)}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Create New Lead
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                  <h3 className="mt-4 text-lg font-medium text-gray-900">No Unclaimed Leads</h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    There are currently no unclaimed leads available for you to claim.
-                  </p>
-                  <Button variant="outline" className="mt-6" onClick={() => setOpenAddDialog(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create New Lead
-                  </Button>
+                  
+                  {/* Claim bucket area - always displayed */}
+                  <Droppable droppableId="claim-bucket">
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`
+                          flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed
+                          ${snapshot.isDraggingOver 
+                            ? 'bg-green-50 border-green-500' 
+                            : 'bg-gray-50 border-gray-300'}
+                          transition-colors w-full md:w-72 h-72 md:h-auto
+                        `}
+                      >
+                        <div className={`
+                          rounded-full p-4 mb-4
+                          ${snapshot.isDraggingOver 
+                            ? 'bg-green-100 text-green-600' 
+                            : 'bg-gray-100 text-gray-500'}
+                        `}>
+                          <DollarSign className="h-10 w-10" />
+                        </div>
+                        <h3 className="text-lg font-semibold mb-2">
+                          {snapshot.isDraggingOver ? "Drop to Claim!" : "Claim Lead"}
+                        </h3>
+                        <p className="text-sm text-center text-gray-500 mb-4">
+                          Drag & drop leads here to claim them for yourself
+                        </p>
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
                 </div>
-              )}
+              </DragDropContext>
             </div>
           </TabsContent>
           

@@ -887,15 +887,27 @@ function AgendaBuilder() {
   
   return (
     <div className="p-4 max-w-7xl mx-auto">
-      <div className="flex items-center mb-4">
-        <Button variant="outline" onClick={() => setLocation(`/events/overview`)}>
-          <ChevronLeft className="mr-2 h-4 w-4" />
-          Back to Camps
-        </Button>
-        <h1 className="text-2xl font-bold ml-4">Agenda Builder</h1>
-        <div className="ml-auto flex items-center space-x-2">
+      {/* Camp Header with Context */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div>
+          <div className="flex items-center mb-2">
+            <Button variant="ghost" onClick={() => setLocation(`/events/camp-project?id=${campId}`)} size="sm">
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Back to Camp Dashboard
+            </Button>
+          </div>
+          <h1 className="text-2xl font-bold">{campData.name}</h1>
+          <p className="text-muted-foreground mt-1">
+            {campData.startDate && campData.endDate 
+              ? `${formatDate(campData.startDate)} to ${formatDate(campData.endDate)}`
+              : 'Dates not set'
+            }
+            {campData.location && ` • ${campData.location}`}
+          </p>
+        </div>
+        <div className="mt-4 md:mt-0 flex flex-wrap gap-2">
           <Button 
-            variant="secondary"
+            variant="outline"
             onClick={handleExportAgenda}
           >
             <Download className="h-4 w-4 mr-2" />
@@ -916,13 +928,9 @@ function AgendaBuilder() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>{campData.name} - Agenda</CardTitle>
+              <CardTitle>Camp Schedule</CardTitle>
               <CardDescription>
-                {campData.startDate && campData.endDate 
-                  ? `${formatDate(campData.startDate)} to ${formatDate(campData.endDate)}`
-                  : 'Dates not set'
-                }
-                {campData.location && ` • ${campData.location}`}
+                Plan your daily sessions and assign staff
               </CardDescription>
             </div>
             <div className="flex items-center space-x-2">

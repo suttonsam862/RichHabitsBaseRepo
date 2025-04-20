@@ -846,7 +846,14 @@ function CampProject() {
               <CardFooter>
                 <Button 
                   className="w-full group-hover:bg-primary/90"
-                  onClick={() => navigateToModule('agenda')}
+                  onClick={() => navigateToModule('agenda', { 
+                    withBackOptions: true,
+                    additionalParams: { 
+                      campId: campId || '', 
+                      contextType: 'camp',
+                      view: 'builder'
+                    }
+                  })}
                 >
                   Open Agenda
                 </Button>
@@ -869,7 +876,14 @@ function CampProject() {
               <CardFooter>
                 <Button 
                   className="w-full group-hover:bg-primary/90"
-                  onClick={() => navigateToModule('registration')}
+                  onClick={() => navigateToModule('registration', { 
+                    withBackOptions: true,
+                    additionalParams: { 
+                      campId: campId || '', 
+                      campName: campData?.name || '',
+                      shopifyEnabled: 'true'
+                    }
+                  })}
                 >
                   Manage Registrations
                 </Button>
@@ -892,7 +906,16 @@ function CampProject() {
               <CardFooter>
                 <Button 
                   className="w-full group-hover:bg-primary/90"
-                  onClick={() => navigateToModule('venue')}
+                  onClick={() => navigateToModule('venue-planner', { 
+                    withBackOptions: true,
+                    additionalParams: { 
+                      campId: campId || '', 
+                      campName: campData?.name || '',
+                      venue: campData?.venue || '',
+                      floorPlanEnabled: 'true',
+                      interactiveLayout: 'true'
+                    }
+                  })}
                 >
                   Plan Venue
                 </Button>

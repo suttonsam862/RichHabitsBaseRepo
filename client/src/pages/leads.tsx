@@ -1646,6 +1646,34 @@ export default function Leads() {
                 <p className="mt-1 text-base text-gray-900 whitespace-pre-wrap">{selectedLead.notes || "No notes available."}</p>
               </div>
               
+              {/* Only show the lead progress checklist for claimed leads */}
+              {selectedLead.claimed && (
+                <div className="col-span-2">
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">Lead Progress</h3>
+                  <LeadProgressChecklist 
+                    leadId={selectedLead.id}
+                    contactComplete={selectedLead.contactComplete || false}
+                    itemsConfirmed={selectedLead.itemsConfirmed || false}
+                    submittedToDesign={selectedLead.submittedToDesign || false}
+                    contactLogs={contactLogs}
+                    onUpdate={() => {
+                      // Refresh the lead data and contact logs
+                      queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+                      
+                      // Re-fetch contact logs
+                      apiRequest("GET", `/api/leads/${selectedLead.id}/contact-logs`)
+                        .then(res => res.json())
+                        .then(data => {
+                          setContactLogs(data.data || []);
+                        })
+                        .catch(error => {
+                          console.error("Error fetching contact logs:", error);
+                        });
+                    }}
+                  />
+                </div>
+              )}
+              
               <DialogFooter className="mt-6">
                 <div className="flex space-x-2 mr-auto">
                   {/* Admin-only Edit button */}

@@ -1,7 +1,8 @@
-import { User, Lead, Order as SchemaOrder, Message, Activity, Product as SchemaProduct } from "@shared/schema";
+import { User, Lead, Order as SchemaOrder, Message, Activity, Product as SchemaProduct, ContactLog as SchemaContactLog } from "@shared/schema";
 
 export type { Order } from "@shared/schema";
 export type { Product } from "@shared/schema";
+export type { ContactLog } from "@shared/schema";
 
 export type UserRole = 'admin' | 'sales' | 'designer' | 'manufacturing' | 'manufacturer' | 'customer' | 'user' | 'agent' | 'hybrid';
 

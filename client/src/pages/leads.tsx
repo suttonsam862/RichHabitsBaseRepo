@@ -441,34 +441,34 @@ export default function Leads() {
       return matchesSearch;
     });
     
-  // Sample sales team data (in a real app, this would come from an API)
+  // Use actual database user IDs for sales team data
   const salesTeam = [
     {
       id: 1,
+      username: "samsutton",
+      fullName: "Samuel Sutton",
+      email: "samsutton@rich-habits.com",
+      role: "admin",
+      avatarUrl: "",
+      leads: leads.filter(lead => lead.salesRepId === 1)
+    },
+    {
+      id: 6,
       username: "laird",
       fullName: "Laird Bourbon",
       email: "laird@rich-habits.com",
       role: "agent",
       avatarUrl: "",
-      leads: leads.filter(lead => lead.salesRepId === 1)
+      leads: leads.filter(lead => lead.salesRepId === 6)
     },
     {
-      id: 2,
-      username: "julia",
-      fullName: "Julia Reynolds",
-      email: "julia@rich-habits.com",
-      role: "agent",
+      id: 8,
+      username: "charliereeves",
+      fullName: "Charlie Reeves",
+      email: "charliereeves@rich-habits.com",
+      role: "manager",
       avatarUrl: "",
-      leads: leads.filter(lead => lead.salesRepId === 2)
-    },
-    {
-      id: 3,
-      username: "thomas",
-      fullName: "Thomas Ferguson",
-      email: "thomas@rich-habits.com",
-      role: "agent",
-      avatarUrl: "",
-      leads: leads.filter(lead => lead.salesRepId === 3)
+      leads: leads.filter(lead => lead.salesRepId === 8)
     }
   ];
 

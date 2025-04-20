@@ -5,6 +5,18 @@ export default {
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        handwriting: ["'Architects Daughter'", "cursive"],
+      },
+      backgroundColor: {
+        'whiteboard': '#fcfcfc',
+      },
+      backgroundImage: {
+        'whiteboard-grid': 'linear-gradient(rgba(200, 200, 200, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(200, 200, 200, 0.1) 1px, transparent 1px)',
+      },
+      backgroundSize: {
+        'grid': '20px 20px',
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

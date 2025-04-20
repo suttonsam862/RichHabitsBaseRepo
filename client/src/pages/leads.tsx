@@ -919,7 +919,7 @@ export default function Leads() {
                     Archived Leads
                   </TabsTrigger>
                 )}
-                <TabsTrigger value="unclaimed" className="flex items-center">
+                <TabsTrigger value="list-format" className="flex items-center">
                   <Inbox className="h-4 w-4 mr-2" />
                   List Format
                 </TabsTrigger>

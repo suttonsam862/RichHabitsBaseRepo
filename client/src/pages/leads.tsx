@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -22,9 +22,10 @@ import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
 import { insertLeadSchema } from "@shared/schema";
-import { Lead, LeadStatus } from "@/types";
+import { Lead, LeadStatus, ContactLog } from "@/types";
 import { HelpIconOnly } from "@/components/ui/help-tooltip";
 import { useAuth } from "@/hooks/use-auth";
+import LeadProgressChecklist from "@/components/leads/lead-progress-checklist";
 
 const formSchema = insertLeadSchema.extend({
   companyName: z.string().optional().nullable(),
@@ -50,6 +51,7 @@ export default function Leads() {
   const [openViewDialog, setOpenViewDialog] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null);
   const [selectedLead, setSelectedLead] = useState<any>(null);
+  const [contactLogs, setContactLogs] = useState<ContactLog[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -1296,6 +1298,23 @@ export default function Leads() {
                                 onClick={() => {
                                   setSelectedLead(lead);
                                   setOpenViewDialog(true);
+                                  
+                                  // Fetch contact logs for this lead when the dialog opens
+                                  if (lead && lead.id) {
+                                    apiRequest("GET", `/api/leads/${lead.id}/contact-logs`)
+                                      .then(res => res.json())
+                                      .then(data => {
+                                        setContactLogs(data.data || []);
+                                      })
+                                      .catch(error => {
+                                        console.error("Error fetching contact logs:", error);
+                                        toast({
+                                          title: "Error",
+                                          description: "Failed to load contact logs",
+                                          variant: "destructive",
+                                        });
+                                      });
+                                  }
                                 }}
                               >
                                 View

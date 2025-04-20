@@ -90,13 +90,16 @@ export default function CampDetailPage() {
 
   // Fetch camp data if editing an existing camp
   const {
-    data: camp,
+    data: campResponse,
     isLoading: isLoadingCamp,
     error: campError,
   } = useQuery({
     queryKey: ["/api/camps", id],
     enabled: !isNewCamp,
   });
+  
+  // Extract the camp object from the API response
+  const camp = campResponse?.data;
   
   // Fetch available staff for selection
   const {

@@ -899,10 +899,6 @@ export default function Leads() {
           <CardContent className="bg-white">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-5' : 'grid-cols-3'} mb-6`}>
-                <TabsTrigger value="unclaimed" className="flex items-center">
-                  <Inbox className="h-4 w-4 mr-2" />
-                  Unclaimed Leads
-                </TabsTrigger>
                 <TabsTrigger value="whiteboard" className="flex items-center">
                   <TagIcon className="h-4 w-4 mr-2" />
                   Whiteboard
@@ -923,6 +919,10 @@ export default function Leads() {
                     Archived Leads
                   </TabsTrigger>
                 )}
+                <TabsTrigger value="unclaimed" className="flex items-center">
+                  <Inbox className="h-4 w-4 mr-2" />
+                  List Format
+                </TabsTrigger>
               </TabsList>
               
               <TabsContent value="whiteboard" className="mt-2">

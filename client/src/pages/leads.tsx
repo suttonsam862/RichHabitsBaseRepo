@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, Search, Filter, Inbox, UserCircle, Archive, Plus, Users, Calendar as CalendarIcon, Tag as TagIcon, DollarSign } from "lucide-react";
+import { PlusCircle, Search, Filter, Inbox, UserCircle, Archive, Plus, Users, Calendar as CalendarIcon, Tag as TagIcon, DollarSign, Eye } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import { StickyNote } from "@/components/ui/sticky-note";
 import { z } from "zod";
@@ -226,7 +226,7 @@ export default function Leads() {
 
 
   // State to control active tab
-  const [activeTab, setActiveTab] = useState("unclaimed");
+  const [activeTab, setActiveTab] = useState("whiteboard");
   // Refresh key to force re-render when needed
   const [refreshKey, setRefreshKey] = useState(0);
   
@@ -1048,7 +1048,7 @@ export default function Leads() {
                 </div>
               </TabsContent>
               
-              <TabsContent value="unclaimed" className="mt-2">
+              <TabsContent value="list-format" className="mt-2">
                 <div className="p-4 bg-gray-50 border border-gray-100 rounded-lg">
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-lg font-medium">Available Opportunities</h3>
@@ -1058,81 +1058,159 @@ export default function Leads() {
                   </div>
                   
                   {unclaimedLeads.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {unclaimedLeads.map((lead) => (
-                        <div 
-                          key={lead.id} 
-                          className="bg-white border border-gray-200 hover:border-brand-300 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
-                        >
-                          <div className="flex justify-between items-center p-4 border-b border-gray-100">
-                            <Badge className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(lead.status as LeadStatus)}`}>
-                              {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
-                            </Badge>
-                            <div className="flex items-center">
-                              <span className="text-gray-500 text-sm mr-1">From:</span>
-                              <span className="text-gray-700 text-sm font-medium">{lead.source}</span>
-                            </div>
-                          </div>
+                    <div>
+                      {/* Group leads by sport/industry */}
+                      {(() => {
+                        // Define common sports/industries for grouping
+                        const industries = [
+                          "Wrestling", "Football", "Basketball", "Baseball", 
+                          "Soccer", "Volleyball", "Swimming", "Track & Field", 
+                          "Gymnastics", "Lacrosse", "Hockey", "Tennis",
+                          "Cheer", "Dance", "Golf", "Other"
+                        ];
+                        
+                        // Function to determine the industry for a lead
+                        const getLeadIndustry = (lead: any) => {
+                          if (lead.industry) return lead.industry;
+                          if (lead.organization?.industry) return lead.organization.industry;
                           
-                          <div className="p-4">
-                            <h4 className="text-lg font-semibold text-gray-900 truncate">{lead.name}</h4>
-                            
-                            <div className="mt-2 space-y-1">
-                              <div className="flex items-center text-sm text-gray-600">
-                                <span className="truncate">{lead.email}</span>
-                              </div>
-                              {lead.phone && (
-                                <div className="flex items-center text-sm text-gray-600">
-                                  <span>{lead.phone}</span>
+                          // Try to extract industry from company name or notes
+                          const nameAndNotes = `${lead.companyName || ''} ${lead.notes || ''}`.toLowerCase();
+                          
+                          for (const industry of industries) {
+                            if (nameAndNotes.includes(industry.toLowerCase())) {
+                              return industry;
+                            }
+                          }
+                          return "Other";
+                        };
+                        
+                        // Group leads by industry
+                        const groupedLeads = industries.map(industry => {
+                          const leadsInGroup = unclaimedLeads.filter(lead => {
+                            const leadIndustry = getLeadIndustry(lead);
+                            return leadIndustry === industry || 
+                                  (industry === "Other" && !industries.slice(0, -1).includes(leadIndustry));
+                          });
+                          
+                          return {
+                            industry,
+                            leads: leadsInGroup
+                          };
+                        }).filter(group => group.leads.length > 0);
+                        
+                        return (
+                          <div className="space-y-8">
+                            {groupedLeads.map(group => (
+                              <div key={group.industry} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                                {/* Industry header with color coding */}
+                                <div className={`py-3 px-4 ${
+                                  group.industry === "Football" ? "bg-green-100 border-l-4 border-green-500" :
+                                  group.industry === "Basketball" ? "bg-orange-100 border-l-4 border-orange-500" :
+                                  group.industry === "Baseball" ? "bg-blue-100 border-l-4 border-blue-500" :
+                                  group.industry === "Soccer" ? "bg-emerald-100 border-l-4 border-emerald-500" :
+                                  group.industry === "Volleyball" ? "bg-purple-100 border-l-4 border-purple-500" :
+                                  group.industry === "Swimming" ? "bg-cyan-100 border-l-4 border-cyan-500" :
+                                  group.industry === "Track & Field" ? "bg-amber-100 border-l-4 border-amber-500" :
+                                  group.industry === "Gymnastics" ? "bg-pink-100 border-l-4 border-pink-500" :
+                                  group.industry === "Wrestling" ? "bg-red-100 border-l-4 border-red-500" :
+                                  group.industry === "Lacrosse" ? "bg-indigo-100 border-l-4 border-indigo-500" :
+                                  group.industry === "Hockey" ? "bg-sky-100 border-l-4 border-sky-500" :
+                                  group.industry === "Tennis" ? "bg-lime-100 border-l-4 border-lime-500" :
+                                  group.industry === "Cheer" ? "bg-rose-100 border-l-4 border-rose-500" :
+                                  group.industry === "Dance" ? "bg-fuchsia-100 border-l-4 border-fuchsia-500" :
+                                  group.industry === "Golf" ? "bg-teal-100 border-l-4 border-teal-500" :
+                                  "bg-gray-100 border-l-4 border-gray-500"
+                                }`}>
+                                  <h3 className="text-lg font-semibold flex items-center">
+                                    {group.industry} 
+                                    <span className="ml-2 text-sm font-medium text-gray-600 bg-white rounded-full px-2 py-0.5">
+                                      {group.leads.length}
+                                    </span>
+                                  </h3>
                                 </div>
-                              )}
-                            </div>
-                            
-                            {lead.notes && (
-                              <div className="mt-3">
-                                <p className="text-sm text-gray-700 truncate-2-lines">{lead.notes}</p>
+                                
+                                {/* Leads table */}
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-sm">
+                                    <thead>
+                                      <tr className="border-b border-gray-200 bg-gray-50">
+                                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Name</th>
+                                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Company</th>
+                                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Contact</th>
+                                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Status</th>
+                                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Value</th>
+                                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Actions</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {group.leads.map((lead) => (
+                                        <tr key={lead.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                          <td className="px-4 py-3">
+                                            <div className="font-medium text-gray-900 truncate max-w-[200px]">{lead.name}</div>
+                                          </td>
+                                          <td className="px-4 py-3">
+                                            <div className="text-gray-600 truncate max-w-[200px]">{lead.companyName || "—"}</div>
+                                          </td>
+                                          <td className="px-4 py-3">
+                                            <div className="flex flex-col">
+                                              <span className="text-gray-600 truncate max-w-[200px]">{lead.email}</span>
+                                              {lead.phone && <span className="text-gray-500 text-xs">{lead.phone}</span>}
+                                            </div>
+                                          </td>
+                                          <td className="px-4 py-3">
+                                            <Badge className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(lead.status as LeadStatus)}`}>
+                                              {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
+                                            </Badge>
+                                          </td>
+                                          <td className="px-4 py-3">
+                                            {lead.value ? (
+                                              <div className="text-base font-medium text-green-600">
+                                                ${lead.value}
+                                              </div>
+                                            ) : (
+                                              <div className="text-sm text-gray-400">
+                                                —
+                                              </div>
+                                            )}
+                                          </td>
+                                          <td className="px-4 py-3">
+                                            <div className="flex items-center space-x-2">
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-8"
+                                                onClick={() => {
+                                                  claimLeadMutation.mutate(lead.id);
+                                                }}
+                                              >
+                                                <DollarSign className="h-3.5 w-3.5 mr-1" />
+                                                Claim
+                                              </Button>
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-8"
+                                                onClick={() => {
+                                                  setSelectedLead(lead);
+                                                  setOpenViewDialog(true);
+                                                }}
+                                              >
+                                                <Eye className="h-3.5 w-3.5" />
+                                                <span className="sr-only">View</span>
+                                              </Button>
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
                               </div>
-                            )}
+                            ))}
                           </div>
-                          
-                          <div className="bg-gray-50 p-4 flex justify-between items-center">
-                            {lead.value ? (
-                              <div className="text-base font-bold text-green-600">
-                                Est. Value: ${parseFloat(lead.value).toLocaleString()}
-                              </div>
-                            ) : (
-                              <div className="text-base text-gray-500">
-                                Value: Unknown
-                              </div>
-                            )}
-                            
-                            <div className="flex space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="flex items-center justify-center"
-                                onClick={() => {
-                                  setSelectedLead(lead);
-                                  setOpenViewDialog(true);
-                                }}
-                              >
-                                View
-                              </Button>
-                              <Button
-                                variant="default"
-                                className="flex items-center justify-center bg-brand-600 hover:bg-brand-700 text-white"
-                                size="sm"
-                                onClick={() => {
-                                  // Claim this lead with 3-day verification
-                                  claimLeadMutation.mutate(lead.id);
-                                }}
-                              >
-                                Claim Lead
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })()}
                     </div>
                   ) : (
                     <div className="p-8 text-center bg-white border border-gray-200 rounded-lg">
@@ -1243,12 +1321,12 @@ export default function Leads() {
                       <div className="text-gray-500 mb-2">
                         <UserCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
                         <h3 className="text-lg font-medium text-gray-900">No leads assigned to you</h3>
-                        <p className="mt-1 text-sm">To get started, claim some leads from the "Unclaimed Leads" tab.</p>
+                        <p className="mt-1 text-sm">To get started, claim some leads from the "List Format" tab.</p>
                       </div>
                       <Button 
                         variant="default" 
                         className="mt-4 bg-brand-600 hover:bg-brand-700 text-white"
-                        onClick={() => setActiveTab("unclaimed")}
+                        onClick={() => setActiveTab("list-format")}
                       >
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Browse Available Leads

@@ -473,14 +473,14 @@ function AdminDashboard() {
     };
   };
 
-  // Extract stats for display
-  const stats = globalStats?.data || calculateCampStats();
+  // Extract staff assignment data first to avoid initialization issues
+  const staffData = staffAssignments?.data || [];
   
   // Extract inventory data
   const inventoryData = inventory?.data || [];
   
-  // Extract staff assignment data
-  const staffData = staffAssignments?.data || [];
+  // Extract stats for display - this needs staffData to be defined first
+  const stats = globalStats?.data || calculateCampStats();
   
   // Loading state
   if (isLoadingCamps && isLoadingStats) {

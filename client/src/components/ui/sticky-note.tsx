@@ -12,6 +12,10 @@ const stickyNoteVariants = cva(
         blue: "bg-blue-300 hover:bg-blue-200 border-blue-400 border-t-2 border-l-2 border-r-4 border-b-4",
         green: "bg-green-300 hover:bg-green-200 border-green-400 border-t-2 border-l-2 border-r-4 border-b-4",
         purple: "bg-purple-300 hover:bg-purple-200 border-purple-400 border-t-2 border-l-2 border-r-4 border-b-4",
+        orange: "bg-orange-300 hover:bg-orange-200 border-orange-400 border-t-2 border-l-2 border-r-4 border-b-4",
+        indigo: "bg-indigo-300 hover:bg-indigo-200 border-indigo-400 border-t-2 border-l-2 border-r-4 border-b-4",
+        red: "bg-red-300 hover:bg-red-200 border-red-400 border-t-2 border-l-2 border-r-4 border-b-4",
+        gray: "bg-gray-300 hover:bg-gray-200 border-gray-400 border-t-2 border-l-2 border-r-4 border-b-4",
       },
       size: {
         sm: "w-40 h-40",
@@ -49,6 +53,26 @@ const stickyNoteVariants = cva(
         glow: true,
         className: "after:bg-purple-400",
       },
+      {
+        color: "orange",
+        glow: true,
+        className: "after:bg-orange-400",
+      },
+      {
+        color: "indigo",
+        glow: true,
+        className: "after:bg-indigo-400",
+      },
+      {
+        color: "red",
+        glow: true,
+        className: "after:bg-red-400",
+      },
+      {
+        color: "gray",
+        glow: true,
+        className: "after:bg-gray-400",
+      },
     ],
     defaultVariants: {
       color: "yellow",
@@ -70,13 +94,13 @@ export interface StickyNoteProps
 }
 
 const StickyNote = React.forwardRef<HTMLDivElement, StickyNoteProps>(
-  ({ className, color, size, glow, title, status, rotation, children, ...props }, ref) => {
+  ({ className, color, size, glow, title, subtitle, status, rotation, content, footer, children, ...props }, ref) => {
     // Generate random rotation between -5 and 5 degrees if not provided
     const noteRotation = rotation !== undefined ? rotation : Math.floor(Math.random() * 10) - 5;
     
     return (
       <div
-        className={cn(stickyNoteVariants({ color, size, glow, className }))}
+        className={cn(stickyNoteVariants({ color, size, glow, className }), "flex flex-col h-full")}
         ref={ref}
         style={{ 
           transform: `rotate(${noteRotation}deg)`,
@@ -85,14 +109,26 @@ const StickyNote = React.forwardRef<HTMLDivElement, StickyNoteProps>(
         {...props}
       >
         {title && (
-          <h3 className="font-handwriting text-xl mb-2 font-bold break-words">{title}</h3>
+          <h3 className="font-medium text-lg mb-1 break-words">{title}</h3>
+        )}
+        {subtitle && (
+          <h4 className="text-sm font-normal mb-2 text-gray-700">{subtitle}</h4>
         )}
         {status && (
           <div className="absolute top-2 right-2 px-2 py-1 text-xs rounded-full bg-white/70 font-bold">
             {status}
           </div>
         )}
-        <div className="font-handwriting">{children}</div>
+        <div className="flex-1">
+          {content ? content : children ? (
+            <div className="font-normal text-sm">{children}</div>
+          ) : null}
+        </div>
+        {footer && (
+          <div className="mt-auto pt-2 border-t border-black/10">
+            {footer}
+          </div>
+        )}
       </div>
     );
   }

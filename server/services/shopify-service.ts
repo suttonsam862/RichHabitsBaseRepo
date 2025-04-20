@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import crypto from 'crypto';
 import axios from 'axios';
+import { User } from '@shared/schema';
 
 // Security constants
 const SHOPIFY_API_VERSION = '2023-07';
@@ -123,9 +124,9 @@ async function makeShopifyApiRequest(endpoint: string, method = 'GET', data = nu
     }
     
     return response.data;
-  } catch (error) {
-    console.error(`Shopify API error for ${endpoint}:`, error.response?.data || error.message);
-    throw new Error(error.response?.data?.errors || 'Shopify API request failed');
+  } catch (error: any) {
+    console.error(`Shopify API error for ${endpoint}:`, error.response?.data || error.message || error);
+    throw new Error(error.response?.data?.errors || error.message || 'Shopify API request failed');
   }
 }
 
@@ -139,7 +140,8 @@ export async function getShopifyProducts(req: Request, res: Response) {
     }
     
     // Role-based access check
-    if (req.user.role !== 'admin' && req.user.role !== 'manager') {
+    const user = req.user as User;
+    if (!user || (user.role !== 'admin' && user.role !== 'manager')) {
       return res.status(403).json({ error: 'Forbidden - Insufficient permissions' });
     }
     
@@ -183,7 +185,8 @@ export async function getShopifyOrders(req: Request, res: Response) {
     }
     
     // Role-based access check
-    if (req.user.role !== 'admin' && req.user.role !== 'manager') {
+    const user = req.user as User;
+    if (!user || (user.role !== 'admin' && user.role !== 'manager')) {
       return res.status(403).json({ error: 'Forbidden - Insufficient permissions' });
     }
     
@@ -235,7 +238,8 @@ export async function linkShopifyOrderToCampRegistration(req: Request, res: Resp
     }
     
     // Role-based access check
-    if (req.user.role !== 'admin' && req.user.role !== 'manager') {
+    const user = req.user as User;
+    if (!user || (user.role !== 'admin' && user.role !== 'manager')) {
       return res.status(403).json({ error: 'Forbidden - Insufficient permissions' });
     }
     
@@ -301,7 +305,8 @@ export async function checkShopifyConnection(req: Request, res: Response) {
     }
     
     // Role-based access check
-    if (req.user.role !== 'admin' && req.user.role !== 'manager') {
+    const user = req.user as User;
+    if (!user || (user.role !== 'admin' && user.role !== 'manager')) {
       return res.status(403).json({ error: 'Forbidden - Insufficient permissions' });
     }
     

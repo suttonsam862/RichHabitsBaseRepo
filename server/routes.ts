@@ -6767,5 +6767,160 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // =====================================
+  // SHOPIFY INTEGRATION API ROUTES
+  // =====================================
+  
+  // Check Shopify connection status
+  app.get("/api/shopify/connection", isAuthenticated, shopifyService.checkShopifyConnection);
+  
+  // Get Shopify products
+  app.get("/api/shopify/products", isAuthenticated, shopifyService.getShopifyProducts);
+  
+  // Get specific Shopify product
+  app.get("/api/shopify/products/:id", isAuthenticated, shopifyService.getShopifyProduct);
+  
+  // Get Shopify orders
+  app.get("/api/shopify/orders", isAuthenticated, shopifyService.getShopifyOrders);
+  
+  // Get specific Shopify order
+  app.get("/api/shopify/orders/:id", isAuthenticated, shopifyService.getShopifyOrder);
+  
+  // Link Shopify orders to camp registrations
+  app.post("/api/shopify/link-orders-to-camp", isAuthenticated, shopifyService.linkShopifyOrderToCampRegistration);
+  
+  // Shopify webhook endpoint
+  app.post("/api/shopify/webhook", (req, res) => {
+    // Verify Shopify webhook signature
+    if (!shopifyService.validateShopifyWebhook(req)) {
+      console.error("Invalid Shopify webhook signature");
+      return res.status(401).send("Invalid signature");
+    }
+    
+    const topic = req.headers['x-shopify-topic'];
+    console.log(`Received Shopify webhook: ${topic}`);
+    
+    // Process different webhook types
+    if (topic === 'orders/create' || topic === 'orders/paid') {
+      // Handle new orders - could automatically create registrations
+      const order = req.body;
+      console.log(`New Shopify order received: ${order.id}`);
+      
+      // Here you would insert logic to:
+      // 1. Check if this order is for a camp product
+      // 2. If so, create a registration or update status
+    }
+    
+    res.status(200).send("Webhook received");
+  });
+  
+  // Update camp registration with Shopify order ID
+  app.put("/api/camp-registrations/:registrationId/shopify-order", isAuthenticated, async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const registrationId = parseInt(req.params.registrationId);
+      const { shopifyOrderId } = req.body;
+      
+      if (!shopifyOrderId) {
+        return res.status(400).json({ error: "Shopify Order ID is required" });
+      }
+      
+      // Update the registration with the Shopify order ID
+      const updated = await db.update(campRegistrations)
+        .set({ 
+          shopifyOrderId,
+          updatedAt: new Date()
+        })
+        .where(eq(campRegistrations.id, registrationId))
+        .returning();
+      
+      if (!updated.length) {
+        return res.status(404).json({ error: "Registration not found" });
+      }
+      
+      // Get the Shopify order details
+      try {
+        const orderDetails = await shopifyService.getShopifyOrder(req, res);
+        
+        // If the order is paid, update payment status
+        if (orderDetails.order && orderDetails.order.financial_status === 'paid') {
+          await db.update(campRegistrations)
+            .set({ 
+              paymentStatus: 'paid',
+              paymentDate: new Date(),
+              paymentAmount: orderDetails.order.total_price
+            })
+            .where(eq(campRegistrations.id, registrationId));
+        }
+      } catch (orderErr) {
+        console.error("Failed to fetch Shopify order details:", orderErr);
+        // Continue even if we can't get order details
+      }
+      
+      res.json({ data: updated[0] });
+    } catch (error) {
+      console.error("Error linking Shopify order to registration:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+  
+  // Get camp registrations with Shopify order data
+  app.get("/api/camps/:campId/shopify-registrations", isAuthenticated, async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const campId = parseInt(req.params.campId);
+      
+      // Get all registrations for this camp that have a Shopify order ID
+      const registrations = await db.select()
+        .from(campRegistrations)
+        .where(and(
+          eq(campRegistrations.campId, campId),
+          sql`shopify_order_id IS NOT NULL`
+        ));
+      
+      // For each registration, fetch the Shopify order details
+      const enrichedRegistrations = [];
+      
+      for (const registration of registrations) {
+        try {
+          // Create a mock request with the order ID parameter
+          const mockReq = {
+            ...req,
+            params: { id: registration.shopifyOrderId }
+          };
+          
+          // Create a mock response to capture the order data
+          const mockRes = {
+            json: (data) => data
+          };
+          
+          // Get the Shopify order details
+          const orderDetails = await shopifyService.getShopifyOrder(mockReq, mockRes);
+          
+          // Combine registration with order details
+          enrichedRegistrations.push({
+            ...registration,
+            shopifyOrder: orderDetails.order
+          });
+        } catch (orderErr) {
+          console.error(`Failed to fetch Shopify order ${registration.shopifyOrderId}:`, orderErr);
+          // Include registration even without order details
+          enrichedRegistrations.push(registration);
+        }
+      }
+      
+      res.json({ data: enrichedRegistrations });
+    } catch (error) {
+      console.error("Error fetching Shopify registrations:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   return httpServer;
 }

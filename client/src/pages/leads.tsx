@@ -604,6 +604,7 @@ export default function Leads() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="new">New</SelectItem>
+                              <SelectItem value="claimed">Claimed</SelectItem>
                               <SelectItem value="contacted">Contacted</SelectItem>
                               <SelectItem value="qualified">Qualified</SelectItem>
                               <SelectItem value="proposal">Proposal</SelectItem>
@@ -1040,6 +1041,10 @@ export default function Leads() {
                             <div className="flex items-center">
                               <div className="w-4 h-4 bg-green-400 rounded-full mr-2"></div>
                               <span className="text-sm">New</span>
+                            </div>
+                            <div className="flex items-center">
+                              <div className="w-4 h-4 bg-teal-400 rounded-full mr-2"></div>
+                              <span className="text-sm">Claimed</span>
                             </div>
                             <div className="flex items-center">
                               <div className="w-4 h-4 bg-blue-400 rounded-full mr-2"></div>
@@ -1558,6 +1563,7 @@ export default function Leads() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="new">New</SelectItem>
+                          <SelectItem value="claimed">Claimed</SelectItem>
                           <SelectItem value="contacted">Contacted</SelectItem>
                           <SelectItem value="qualified">Qualified</SelectItem>
                           <SelectItem value="proposal">Proposal</SelectItem>

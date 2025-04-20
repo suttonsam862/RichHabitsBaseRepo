@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, Search, Filter, Inbox, UserCircle, Archive, Plus, Users, Calendar as CalendarIcon, Tag as TagIcon } from "lucide-react";
+import { PlusCircle, Search, Filter, Inbox, UserCircle, Archive, Plus, Users, Calendar as CalendarIcon, Tag as TagIcon, DollarSign } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -24,6 +24,7 @@ import { Lead, LeadStatus } from "@/types";
 import { HelpIconOnly } from "@/components/ui/help-tooltip";
 import { useAuth } from "@/hooks/use-auth";
 import { StickyNote } from "@/components/ui/sticky-note";
+import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 
 const formSchema = insertLeadSchema.extend({
   companyName: z.string().optional().nullable(),

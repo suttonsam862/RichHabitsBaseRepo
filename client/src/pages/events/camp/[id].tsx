@@ -100,21 +100,27 @@ export default function CampDetailPage() {
   
   // Fetch available staff for selection
   const {
-    data: availableStaff = [],
+    data: staffData,
     isLoading: isLoadingStaff,
   } = useQuery({
     queryKey: ["/api/staff"],
   });
   
+  // Extract the staff array from the API response
+  const availableStaff = staffData?.data || [];
+  
   // Fetch staff assigned to this camp
   const {
-    data: campStaff = [],
+    data: campStaffData,
     isLoading: isLoadingCampStaff,
     refetch: refetchCampStaff,
   } = useQuery({
     queryKey: ["/api/camps", id, "staff"],
     enabled: !isNewCamp,
   });
+  
+  // Extract the camp staff array from the API response
+  const campStaff = campStaffData?.data || [];
 
   // Initialize form with default values or existing camp data
   const form = useForm<CampFormValues>({

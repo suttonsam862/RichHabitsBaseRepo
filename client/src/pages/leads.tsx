@@ -914,12 +914,7 @@ export default function Leads() {
                   <UserCircle className="h-4 w-4 mr-2" />
                   My Leads
                 </TabsTrigger>
-                {isAdmin && (
-                  <TabsTrigger value="by-salesperson" className="flex items-center">
-                    <Users className="h-4 w-4 mr-2" />
-                    Leads By Salesperson
-                  </TabsTrigger>
-                )}
+                
                 {isAdmin && (
                   <TabsTrigger value="archived-leads" className="flex items-center">
                     <Archive className="h-4 w-4 mr-2" />

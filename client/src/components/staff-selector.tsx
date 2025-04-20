@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 
 export interface StaffMember {
   id: number;
@@ -13,23 +14,33 @@ export interface StaffMember {
   email?: string;
 }
 
-interface StaffSelectorProps {
-  selectedStaffId: number | null;
-  onStaffSelect: (staffId: number | null) => void;
+// Common props for both single and multiple selection modes
+interface BaseStaffSelectorProps {
   allowCreate?: boolean;
   label?: string;
   placeholder?: string;
   className?: string;
+  campId?: number;
 }
 
-export function StaffSelector({
-  selectedStaffId,
-  onStaffSelect,
-  allowCreate = true,
-  label = "Staff Member",
-  placeholder = "Search staff...",
-  className
-}: StaffSelectorProps) {
+// Props for single staff selection
+interface SingleStaffSelectorProps extends BaseStaffSelectorProps {
+  mode?: 'single';
+  selectedStaffId: number | null;
+  onStaffSelect: (staffId: number | null) => void;
+}
+
+// Props for multiple staff selection
+interface MultipleStaffSelectorProps extends BaseStaffSelectorProps {
+  mode: 'multiple';
+  selectedStaff: StaffMember[];
+  onStaffChange: (staff: StaffMember[]) => void;
+}
+
+// Union type for the combined props
+export type StaffSelectorProps = SingleStaffSelectorProps | MultipleStaffSelectorProps;
+
+export function StaffSelector(props: StaffSelectorProps) {
   const [open, setOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState("");
   const [showCreateForm, setShowCreateForm] = React.useState(false);
@@ -37,11 +48,26 @@ export function StaffSelector({
   const [newStaffRole, setNewStaffRole] = React.useState("");
   const [newStaffEmail, setNewStaffEmail] = React.useState("");
   
-  // Fetch staff members
+  const {
+    allowCreate = true,
+    label = "Staff Member",
+    placeholder = "Search staff...",
+    className,
+    campId
+  } = props;
+  
+  // Determine if we're in single or multiple selection mode
+  const isMultipleMode = props.mode === 'multiple';
+  
+  // Setup variables based on mode
+  const selectedStaffId = isMultipleMode ? null : (props as SingleStaffSelectorProps).selectedStaffId;
+  const selectedStaffArray = isMultipleMode ? (props as MultipleStaffSelectorProps).selectedStaff : [];
+  
+  // Fetch staff members - use camp specific endpoint if campId is provided
   const { data: staffData, isLoading } = useQuery({
-    queryKey: ['/api/staff'],
+    queryKey: campId ? ['/api/camps', campId, 'staff'] : ['/api/staff'],
     queryFn: ({ signal }) => 
-      fetch('/api/staff', { signal })
+      fetch(campId ? `/api/camps/${campId}/staff` : '/api/staff', { signal })
         .then(res => {
           if (!res.ok) throw new Error('Failed to fetch staff members');
           return res.json();
@@ -50,8 +76,8 @@ export function StaffSelector({
   
   const staffMembers = staffData?.data || [];
   
-  // Find the selected staff member
-  const selectedStaff = selectedStaffId ? 
+  // Find the selected staff member for single mode
+  const selectedStaff = !isMultipleMode && selectedStaffId ? 
     staffMembers.find((staff: StaffMember) => staff.id === selectedStaffId) : 
     null;
   
@@ -66,21 +92,42 @@ export function StaffSelector({
     );
   }, [staffMembers, searchValue]);
   
+  // Filter out already selected staff in multiple mode
+  const availableStaff = isMultipleMode 
+    ? filteredStaff.filter(staff => !selectedStaffArray.some(selected => selected.id === staff.id))
+    : filteredStaff;
+  
   const handleSelectStaff = (staff: StaffMember | null) => {
-    onStaffSelect(staff?.id || null);
-    setOpen(false);
+    if (isMultipleMode) {
+      if (staff) {
+        const updatedStaff = [...selectedStaffArray, staff];
+        (props as MultipleStaffSelectorProps).onStaffChange(updatedStaff);
+      }
+    } else {
+      (props as SingleStaffSelectorProps).onStaffSelect(staff?.id || null);
+    }
+    
+    if (!isMultipleMode) {
+      setOpen(false);
+    }
     setSearchValue("");
   };
   
-  const handleClearSelection = () => {
-    onStaffSelect(null);
+  const handleRemoveStaff = (staffId: number) => {
+    if (isMultipleMode) {
+      const updatedStaff = selectedStaffArray.filter(staff => staff.id !== staffId);
+      (props as MultipleStaffSelectorProps).onStaffChange(updatedStaff);
+    } else {
+      (props as SingleStaffSelectorProps).onStaffSelect(null);
+    }
   };
   
   const handleCreateStaff = async () => {
     if (!newStaffName.trim()) return;
     
     try {
-      const response = await fetch('/api/staff', {
+      const endpoint = campId ? `/api/camps/${campId}/staff` : '/api/staff';
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -99,17 +146,28 @@ export function StaffSelector({
       const newStaff = await response.json();
       
       // Select the newly created staff member
-      onStaffSelect(newStaff.data.id);
+      if (isMultipleMode) {
+        const staffMember = newStaff.data;
+        const updatedStaff = [...selectedStaffArray, staffMember];
+        (props as MultipleStaffSelectorProps).onStaffChange(updatedStaff);
+      } else {
+        (props as SingleStaffSelectorProps).onStaffSelect(newStaff.data.id);
+      }
       
       // Reset form
       setNewStaffName("");
       setNewStaffRole("");
       setNewStaffEmail("");
       setShowCreateForm(false);
-      setOpen(false);
       
-      // Invalidate staff query to refetch the list
-      // queryClient.invalidateQueries(['/api/staff']); // Uncomment if you have access to queryClient
+      if (!isMultipleMode) {
+        setOpen(false);
+      }
+      
+      // Invalidate the appropriate query
+      queryClient.invalidateQueries({ 
+        queryKey: campId ? ['/api/camps', campId, 'staff'] : ['/api/staff']
+      });
     } catch (error) {
       console.error('Error creating staff member:', error);
       // Show error toast or message
@@ -120,7 +178,8 @@ export function StaffSelector({
     <div className={cn("space-y-2", className)}>
       {label && <div className="text-sm font-medium mb-1">{label}</div>}
       
-      {selectedStaff ? (
+      {/* Single Selection Mode */}
+      {!isMultipleMode && selectedStaff ? (
         <div className="flex items-center gap-2">
           <Badge className="px-3 py-1.5 text-sm rounded-md flex items-center gap-2">
             {selectedStaff.name}
@@ -129,13 +188,13 @@ export function StaffSelector({
               variant="ghost"
               size="icon"
               className="h-5 w-5 p-0 ml-1"
-              onClick={handleClearSelection}
+              onClick={() => handleRemoveStaff(selectedStaff.id)}
             >
               <X className="h-3 w-3" />
             </Button>
           </Badge>
         </div>
-      ) : (
+      ) : !isMultipleMode ? (
         <div>
           <Button
             variant="outline"
@@ -144,6 +203,40 @@ export function StaffSelector({
           >
             <Search className="mr-2 h-4 w-4" />
             {placeholder}
+          </Button>
+        </div>
+      ) : null}
+      
+      {/* Multiple Selection Mode */}
+      {isMultipleMode && (
+        <div>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {selectedStaffArray.map(staff => (
+              <Badge 
+                key={staff.id} 
+                className="px-3 py-1.5 text-sm rounded-md flex items-center gap-2"
+              >
+                {staff.name}
+                {staff.role && <span className="text-xs opacity-70">({staff.role})</span>}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 p-0 ml-1"
+                  onClick={() => handleRemoveStaff(staff.id)}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
+            ))}
+          </div>
+          
+          <Button
+            variant="outline"
+            className="w-full justify-start text-muted-foreground"
+            onClick={() => setOpen(true)}
+          >
+            <PlusCircle className="mr-2 h-4 w-4" />
+            {selectedStaffArray.length > 0 ? "Add more staff" : placeholder}
           </Button>
         </div>
       )}
@@ -181,17 +274,19 @@ export function StaffSelector({
                 </CommandEmpty>
                 
                 <CommandGroup>
-                  <CommandItem
-                    className="flex items-center justify-between px-2"
-                    onSelect={() => handleSelectStaff(null)}
-                  >
-                    <span>No clinician</span>
-                    {selectedStaffId === null && (
-                      <Check className="h-4 w-4" />
-                    )}
-                  </CommandItem>
+                  {!isMultipleMode && (
+                    <CommandItem
+                      className="flex items-center justify-between px-2"
+                      onSelect={() => handleSelectStaff(null)}
+                    >
+                      <span>No clinician</span>
+                      {selectedStaffId === null && (
+                        <Check className="h-4 w-4" />
+                      )}
+                    </CommandItem>
+                  )}
                   
-                  {filteredStaff.map((staff: StaffMember) => (
+                  {(isMultipleMode ? availableStaff : filteredStaff).map((staff: StaffMember) => (
                     <CommandItem
                       key={staff.id}
                       className="flex items-center justify-between px-2"
@@ -203,7 +298,10 @@ export function StaffSelector({
                           <span className="text-xs text-muted-foreground">{staff.role}</span>
                         )}
                       </div>
-                      {selectedStaffId === staff.id && (
+                      {!isMultipleMode && selectedStaffId === staff.id && (
+                        <Check className="h-4 w-4" />
+                      )}
+                      {isMultipleMode && selectedStaffArray.some(s => s.id === staff.id) && (
                         <Check className="h-4 w-4" />
                       )}
                     </CommandItem>

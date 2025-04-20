@@ -151,6 +151,10 @@ export default function CampDetailPage() {
 
   // Update form values when camp data is loaded
   useEffect(() => {
+    // Add debug logging to check what data we're receiving
+    console.log("Camp data received:", campResponse);
+    console.log("Extracted camp data:", camp);
+    
     if (camp) {
       const startDate = camp.startDate 
         ? new Date(camp.startDate).toISOString().split('T')[0]
@@ -168,10 +172,20 @@ export default function CampDetailPage() {
       const avgCost = camp.avgCost?.toString() || '';
       const totalPaid = camp.totalPaid?.toString() || '0';
       
+      console.log("Attempting to populate form with:", {
+        name: camp.name || "",
+        location: camp.venue || "", // Note: API has venue but form has location
+        sportType: camp.type || "", // Note: API has type but form has sportType
+        startDate,
+        endDate,
+        status: camp.status || "upcoming",
+        description: camp.description || "",
+      });
+      
       form.reset({
         name: camp.name || "",
-        location: camp.location || "",
-        sportType: camp.sportType || "",
+        location: camp.venue || "", // Changed to match API field name
+        sportType: camp.type || "", // Changed to match API field name
         startDate,
         endDate,
         status: camp.status || "upcoming",
@@ -188,7 +202,7 @@ export default function CampDetailPage() {
         contactPhone: camp.contactPhone || "",
       });
     }
-  }, [camp, form]);
+  }, [camp, form, campResponse]);
 
   // Create new camp mutation
   const createCampMutation = useMutation({

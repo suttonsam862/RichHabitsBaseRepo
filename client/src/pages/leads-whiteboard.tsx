@@ -318,7 +318,7 @@ export default function LeadsWhiteboard() {
     });
 
   // Get a color based on lead status
-  const getLeadColor = (status: LeadStatus) => {
+  const getLeadColor = (status: LeadStatus): "pink" | "yellow" | "blue" | "green" | "purple" => {
     switch (status) {
       case "new": return "green";
       case "contacted": return "blue";
@@ -809,7 +809,7 @@ export default function LeadsWhiteboard() {
                     return (
                       <div key={lead.id} className="flex justify-center">
                         <StickyNote 
-                          color={leadColor as any} 
+                          color={leadColor} 
                           size="md" 
                           glow={true}
                           title={lead.name}
@@ -903,7 +903,7 @@ export default function LeadsWhiteboard() {
                     return (
                       <div key={lead.id} className="flex justify-center">
                         <StickyNote 
-                          color={leadColor as any} 
+                          color={leadColor} 
                           size="md" 
                           glow={true}
                           title={lead.name}

@@ -59,7 +59,7 @@ const stickyNoteVariants = cva(
 );
 
 export interface StickyNoteProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'color'>,
     VariantProps<typeof stickyNoteVariants> {
   title?: string;
   status?: string;

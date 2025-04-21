@@ -1389,21 +1389,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(leads.createdAt));
   }
   
-  async getLeadAssignments(): Promise<any[]> {
-    // In a real implementation, we would have a lead_assignments table
-    // For now, we'll return both leads with salesRepId populated and claimed leads
-    const assignedLeads = await db.select()
-      .from(leads)
-      .where(
-        or(
-          sql`sales_rep_id IS NOT NULL`,
-          sql`claimed = true`
-        )
-      )
-      .orderBy(desc(leads.createdAt));
-    
-    return assignedLeads;
-  }
+  // This method is replaced by the implementation below
   
   async getLeadById(id: number): Promise<Lead | undefined> {
     const [lead] = await db.select().from(leads).where(eq(leads.id, id));
@@ -1413,13 +1399,6 @@ export class DatabaseStorage implements IStorage {
   async getSalesTeamMemberById(id: number): Promise<SalesTeamMember | undefined> {
     const [member] = await db.select().from(salesTeamMembers).where(eq(salesTeamMembers.id, id));
     return member;
-  }
-
-  async getUnassignedLeads(): Promise<Lead[]> {
-    return db.select()
-      .from(leads)
-      .where(isNull(leads.salesRepId))
-      .orderBy(desc(leads.createdAt));
   }
 
   async getLeadAssignments(): Promise<{
@@ -1442,21 +1421,11 @@ export class DatabaseStorage implements IStorage {
       status: leads.status,
       value: leads.value,
       notes: leads.notes,
-      createdAt: leads.createdAt,
-      updatedAt: leads.updatedAt
+      createdAt: leads.createdAt
     })
     .from(leads)
-    .where(
-      and(
-        isNotNull(leads.salesRepId),
-        notExists(
-          db.select()
-            .from(salesTeamMembers)
-            .where(eq(salesTeamMembers.id, leads.salesRepId))
-        )
-      )
-    )
-    .orderBy(desc(leads.updatedAt));
+    .where(isNotNull(leads.salesRepId))
+    .orderBy(desc(leads.createdAt));
 
     // Get the name of each sales rep
     const assignments = await Promise.all(
@@ -1471,7 +1440,7 @@ export class DatabaseStorage implements IStorage {
           leadName: lead.leadName,
           assignedToId: lead.assignedToId,
           assignedToName: salesRep ? salesRep.name : 'Unknown',
-          assignedAt: lead.updatedAt.toISOString(),
+          assignedAt: lead.createdAt.toISOString(),
           status: lead.status,
           value: lead.value || '$0',
           notes: lead.notes

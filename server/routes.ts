@@ -298,10 +298,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/leads", async (req, res) => {
     try {
+      console.log("[DEBUG] POST /api/leads with body:", req.body);
       const validatedData = insertLeadSchema.parse(req.body);
       
       // Check if we should auto-claim the lead
       const autoClaimLead = validatedData.autoClaimLead === true;
+      console.log(`[DEBUG] autoClaimLead=${autoClaimLead}, isAuthenticated=${req.isAuthenticated()}`);
       
       // If auto claiming, ensure the lead is marked as claimed on creation
       let leadData = { ...validatedData };
@@ -318,7 +320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: "claimed"
         };
         
-        console.log(`Auto-claiming lead for user ${user.id}`);
+        console.log(`[DEBUG] Auto-claiming lead for user ${user.id}, user details:`, JSON.stringify(user));
       }
       
       // Remove the autoClaimLead property as it's not part of the lead schema

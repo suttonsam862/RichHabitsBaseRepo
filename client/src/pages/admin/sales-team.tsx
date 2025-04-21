@@ -84,6 +84,7 @@ import {
   CalendarRange,
   BadgeDollarSign,
   User,
+  UserCircle,
   Loader2,
   PlusCircle,
 } from "lucide-react";

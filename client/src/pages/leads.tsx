@@ -1624,12 +1624,19 @@ export default function Leads() {
           // Only allow closing through the explicit close button
           if (!open) {
             console.log("Dialog close requested via overlay/escape");
-            // Don't auto-close - uncomment below if you want to restore this behavior
-            // setOpenViewDialog(false);
+            // Don't auto-close - we only want to close via the explicit close button
+            // which handles saving changes properly
+            return false;
           }
         }}
       >
-        <DialogContent className="bg-white max-h-[90vh] overflow-y-auto">
+        <DialogContent 
+          className="bg-white max-h-[90vh] overflow-y-auto"
+          // Prevent clicks outside from closing the dialog
+          onPointerDownOutside={(e) => e.preventDefault()}
+          // Prevent escape key from closing the dialog
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Lead Details</DialogTitle>
             <DialogDescription>

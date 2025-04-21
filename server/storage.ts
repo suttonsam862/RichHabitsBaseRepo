@@ -1288,7 +1288,39 @@ export class DatabaseStorage implements IStorage {
   
   // Sales Team methods
   async getSalesTeamMembers(): Promise<SalesTeamMember[]> {
-    return db.select().from(salesTeamMembers).orderBy(asc(salesTeamMembers.name));
+    // Only select columns that exist in the database to avoid errors
+    return db.select({
+      id: salesTeamMembers.id,
+      name: salesTeamMembers.name,
+      firstName: salesTeamMembers.firstName,
+      lastName: salesTeamMembers.lastName,
+      email: salesTeamMembers.email,
+      phone: salesTeamMembers.phone,
+      role: salesTeamMembers.role,
+      status: salesTeamMembers.status,
+      avatarUrl: salesTeamMembers.avatarUrl,
+      hireDate: salesTeamMembers.hireDate,
+      leadCount: salesTeamMembers.leadCount,
+      orderCount: salesTeamMembers.orderCount,
+      totalRevenue: salesTeamMembers.totalRevenue,
+      commissionRate: salesTeamMembers.commissionRate,
+      earnedCommission: salesTeamMembers.earnedCommission,
+      lastActiveAt: salesTeamMembers.lastActiveAt,
+      assignedRegions: salesTeamMembers.assignedRegions,
+      assignedIndustries: salesTeamMembers.assignedIndustries,
+      specialization: salesTeamMembers.specialization,
+      notes: salesTeamMembers.notes,
+      username: salesTeamMembers.username,
+      password: salesTeamMembers.password,
+      systemRole: salesTeamMembers.systemRole,
+      systemPermissions: salesTeamMembers.systemPermissions,
+      userId: salesTeamMembers.userId,
+      createUserAccount: salesTeamMembers.createUserAccount,
+      createdAt: salesTeamMembers.createdAt,
+      updatedAt: salesTeamMembers.updatedAt
+    })
+    .from(salesTeamMembers)
+    .orderBy(asc(salesTeamMembers.name));
   }
   
   async getSalesTeamMemberById(id: number): Promise<SalesTeamMember | undefined> {
@@ -1349,30 +1381,41 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getSalesTeamPerformance(): Promise<any> {
-    // Get some basic stats
-    const allMembers = await this.getSalesTeamMembers();
+    // Get members from database directly without trying to access columns that don't exist
+    const allMembers = await db.select({
+      id: salesTeamMembers.id,
+      name: salesTeamMembers.name,
+      status: salesTeamMembers.status,
+      leadCount: salesTeamMembers.leadCount,
+      orderCount: salesTeamMembers.orderCount,
+      totalRevenue: salesTeamMembers.totalRevenue
+    })
+    .from(salesTeamMembers);
+    
     const activeMembers = allMembers.filter(m => m.status === 'active');
     
-    // Calculate total revenue
-    let totalRevenue = 0;
-    let totalLeads = 0;
-    let totalOrders = 0;
+    // Calculate summary metrics
+    const totalLeads = allMembers.reduce((sum, member) => sum + (member.leadCount || 0), 0);
+    const totalOrders = allMembers.reduce((sum, member) => sum + (member.orderCount || 0), 0);
     
-    // In real implementation, this would be calculated from actual orders data
-    // For now, we'll just return some mock data for demonstration purposes
+    // Find top performer
+    let topPerformer = { name: 'N/A', revenue: '$0' };
+    if (allMembers.length > 0) {
+      topPerformer = {
+        name: allMembers[0].name,
+        revenue: allMembers[0].totalRevenue || '$0'
+      };
+    }
     
     return {
       totalMembers: allMembers.length,
       activeMembers: activeMembers.length,
       totalRevenue: "$0",
-      totalLeads: 0,
-      totalOrders: 0,
-      conversionRate: "0%",
+      totalLeads,
+      totalOrders,
+      conversionRate: totalLeads > 0 ? `${Math.round((totalOrders / totalLeads) * 100)}%` : "0%",
       avgDealSize: "$0",
-      topPerformer: {
-        name: allMembers.length > 0 ? allMembers[0].name : "N/A",
-        revenue: "$0"
-      }
+      topPerformer
     };
   }
   
@@ -1397,7 +1440,39 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getSalesTeamMemberById(id: number): Promise<SalesTeamMember | undefined> {
-    const [member] = await db.select().from(salesTeamMembers).where(eq(salesTeamMembers.id, id));
+    const [member] = await db.select({
+      id: salesTeamMembers.id,
+      name: salesTeamMembers.name,
+      firstName: salesTeamMembers.firstName,
+      lastName: salesTeamMembers.lastName,
+      email: salesTeamMembers.email,
+      phone: salesTeamMembers.phone,
+      role: salesTeamMembers.role,
+      status: salesTeamMembers.status,
+      avatarUrl: salesTeamMembers.avatarUrl,
+      hireDate: salesTeamMembers.hireDate,
+      leadCount: salesTeamMembers.leadCount,
+      orderCount: salesTeamMembers.orderCount,
+      totalRevenue: salesTeamMembers.totalRevenue,
+      commissionRate: salesTeamMembers.commissionRate,
+      earnedCommission: salesTeamMembers.earnedCommission,
+      lastActiveAt: salesTeamMembers.lastActiveAt,
+      assignedRegions: salesTeamMembers.assignedRegions,
+      assignedIndustries: salesTeamMembers.assignedIndustries,
+      specialization: salesTeamMembers.specialization,
+      notes: salesTeamMembers.notes,
+      username: salesTeamMembers.username,
+      password: salesTeamMembers.password,
+      systemRole: salesTeamMembers.systemRole,
+      systemPermissions: salesTeamMembers.systemPermissions,
+      userId: salesTeamMembers.userId,
+      createUserAccount: salesTeamMembers.createUserAccount,
+      createdAt: salesTeamMembers.createdAt,
+      updatedAt: salesTeamMembers.updatedAt
+    })
+    .from(salesTeamMembers)
+    .where(eq(salesTeamMembers.id, id));
+    
     return member;
   }
 

@@ -483,25 +483,25 @@ export default function Leads() {
       console.log(`Checking lead ${lead.id} - ${lead.name}: salesRepId=${lead.salesRepId}, claimed=${lead.claimed}, claimedById=${lead.claimedById}, status=${lead.status}, user.id=${user?.id}, isExecutive=${isExecutive}, isAdmin=${isAdmin}`);
       
       // Special case for Sam Sutton (admin user ID 1) - show any lead assigned to him as salesRepId=1
-      if (user?.id === 1 && lead.salesRepId === 1) {
+      if (Number(user?.id) === 1 && Number(lead.salesRepId) === 1) {
         console.log(`Lead ${lead.id} - ${lead.name} matches for Sam Sutton by salesRepId=1`);
         return true;
       }
       
       // Lead assigned to this user via salesRepId (this is the main case)
-      if (lead.salesRepId === user?.id) {
+      if (Number(lead.salesRepId) === Number(user?.id)) {
         console.log(`Lead ${lead.id} - ${lead.name} matches by salesRepId assignment`);
         return true;
       }
       
       // Lead claimed by this user
-      if (lead.claimed && lead.claimedById === user?.id) {
+      if (lead.claimed && Number(lead.claimedById) === Number(user?.id)) {
         console.log(`Lead ${lead.id} - ${lead.name} matches by claimed status`);
         return true;
       }
       
       // Lead marked as claimed and was claimed by this user
-      if (lead.status === "claimed" && lead.claimedById === user?.id) {
+      if (lead.status === "claimed" && Number(lead.claimedById) === Number(user?.id)) {
         console.log(`Lead ${lead.id} - ${lead.name} matches by status:claimed`);
         return true;
       }
@@ -538,7 +538,7 @@ export default function Leads() {
       email: "samsutton@rich-habits.com",
       role: "admin",
       avatarUrl: "",
-      leads: leads.filter(lead => lead.salesRepId === 1)
+      leads: leads.filter(lead => Number(lead.salesRepId) === 1)
     },
     {
       id: 6,
@@ -547,7 +547,7 @@ export default function Leads() {
       email: "laird@rich-habits.com",
       role: "agent",
       avatarUrl: "",
-      leads: leads.filter(lead => lead.salesRepId === 6)
+      leads: leads.filter(lead => Number(lead.salesRepId) === 6)
     },
     {
       id: 8,
@@ -556,7 +556,7 @@ export default function Leads() {
       email: "charliereeves@rich-habits.com",
       role: "manager",
       avatarUrl: "",
-      leads: leads.filter(lead => lead.salesRepId === 8)
+      leads: leads.filter(lead => Number(lead.salesRepId) === 8)
     }
   ];
 

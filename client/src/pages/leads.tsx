@@ -1389,10 +1389,28 @@ export default function Leads() {
                                   
                                   // Fetch contact logs for this lead when the dialog opens
                                   if (lead && lead.id) {
+                                    console.log(`Fetching contact logs for lead ${lead.id}`);
                                     apiRequest("GET", `/api/leads/${lead.id}/contact-logs`)
-                                      .then(res => res.json())
+                                      .then(res => {
+                                        // Check if response is ok before trying to parse JSON
+                                        if (!res.ok) {
+                                          console.warn(`Contact logs response not OK: ${res.status} ${res.statusText}`);
+                                          return { data: [] };
+                                        }
+                                        
+                                        // Try to parse as JSON with fallback
+                                        try {
+                                          return res.json();
+                                        } catch (e) {
+                                          console.error("Error parsing contact logs JSON:", e);
+                                          return { data: [] };
+                                        }
+                                      })
                                       .then(data => {
-                                        setContactLogs(data.data || []);
+                                        console.log("Contact logs loaded:", data);
+                                        // Make sure we have an array of logs, even if empty
+                                        const logs = Array.isArray(data.data) ? data.data : [];
+                                        setContactLogs(logs);
                                       })
                                       .catch(error => {
                                         console.error("Error fetching contact logs:", error);
@@ -1683,11 +1701,28 @@ export default function Leads() {
                       // Refresh the lead data and contact logs
                       queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
                       
-                      // Re-fetch contact logs
+                      // Re-fetch contact logs with improved error handling
                       apiRequest("GET", `/api/leads/${selectedLead.id}/contact-logs`)
-                        .then(res => res.json())
+                        .then(res => {
+                          // Check if response is ok before trying to parse JSON
+                          if (!res.ok) {
+                            console.warn(`Contact logs response not OK: ${res.status} ${res.statusText}`);
+                            return { data: [] };
+                          }
+                          
+                          // Try to parse as JSON with fallback
+                          try {
+                            return res.json();
+                          } catch (e) {
+                            console.error("Error parsing contact logs JSON:", e);
+                            return { data: [] };
+                          }
+                        })
                         .then(data => {
-                          setContactLogs(data.data || []);
+                          console.log("Contact logs loaded:", data);
+                          // Make sure we have an array of logs, even if empty
+                          const logs = Array.isArray(data.data) ? data.data : [];
+                          setContactLogs(logs);
                         })
                         .catch(error => {
                           console.error("Error fetching contact logs:", error);

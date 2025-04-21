@@ -147,7 +147,7 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
     mutationFn: async (contactLog: { 
       leadId: number; 
       contactMethod: string; 
-      notes: string; 
+      notes: string | null; 
     }) => {
       const res = await apiRequest(
         "POST", 
@@ -410,7 +410,7 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                                 {formatDate(log.timestamp)}
                               </span>
                             </div>
-                            <p className="text-sm whitespace-pre-wrap">{log.notes}</p>
+                            <p className="text-sm whitespace-pre-wrap">{log.notes || "No notes provided"}</p>
                           </div>
                         ))}
                       </div>

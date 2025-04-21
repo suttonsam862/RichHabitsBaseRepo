@@ -299,7 +299,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/leads", async (req, res) => {
     try {
       const validatedData = insertLeadSchema.parse(req.body);
-      const newLead = await storage.createLead(validatedData);
+      
+      // Check if we should auto-claim the lead
+      const autoClaimLead = validatedData.autoClaimLead === true;
+      
+      // If auto claiming, ensure the lead is marked as claimed on creation
+      let leadData = { ...validatedData };
+      if (autoClaimLead && req.isAuthenticated()) {
+        const user = req.user as User;
+        
+        // Set the appropriate properties for a claimed lead
+        leadData = {
+          ...leadData,
+          claimed: true,
+          claimedById: user.id,
+          claimedAt: new Date(),
+          salesRepId: user.id,
+          status: "claimed"
+        };
+        
+        console.log(`Auto-claiming lead for user ${user.id}`);
+      }
+      
+      // Remove the autoClaimLead property as it's not part of the lead schema
+      delete leadData.autoClaimLead;
+      
+      // Create the lead with potentially modified data
+      const newLead = await storage.createLead(leadData);
       
       // Automatically create an organization from lead data
       try {
@@ -340,10 +366,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createActivity({
         userId: validatedData.userId,
         type: "lead",
-        content: `New lead ${newLead.name} added`,
+        content: `New lead ${newLead.name} added${autoClaimLead ? " and auto-claimed" : ""}`,
         relatedId: newLead.id,
         relatedType: "lead"
       });
+      
+      // If the lead was auto-claimed, create another activity specifically for the claim
+      if (autoClaimLead && req.isAuthenticated()) {
+        const user = req.user as User;
+        await storage.createActivity({
+          userId: user.id,
+          type: "lead",
+          content: `Lead ${newLead.name} auto-claimed by ${user.fullName || user.username}`,
+          relatedId: newLead.id,
+          relatedType: "lead"
+        });
+      }
       
       res.status(201).json({ data: newLead });
     } catch (error: any) {

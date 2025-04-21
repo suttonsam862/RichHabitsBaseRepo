@@ -155,6 +155,19 @@ export default function SalesTeamPage() {
   const [isAssignLeadDialogOpen, setIsAssignLeadDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editedMember, setEditedMember] = useState<Partial<SalesTeamMember>>({});
+  const [assignmentData, setAssignmentData] = useState<{
+    leadId: number;
+    salesRepId: number;
+    leadName: string;
+    salesRepName: string;
+    notes: string;
+  }>({
+    leadId: 0,
+    salesRepId: 0,
+    leadName: '',
+    salesRepName: '',
+    notes: ''
+  });
   const [newMember, setNewMember] = useState<Partial<SalesTeamMember>>({
     name: "",
     firstName: "",
@@ -1834,22 +1847,41 @@ export default function SalesTeamPage() {
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="lead">Select Lead</Label>
-              <Select>
+              <Select
+                onValueChange={(value) => {
+                  const leadId = parseInt(value);
+                  const selectedLead = unassignedLeads.find((l: any) => l.id === leadId);
+                  setAssignmentData({ ...assignmentData, leadId, leadName: selectedLead?.name || '' });
+                }}
+              >
                 <SelectTrigger id="lead">
                   <SelectValue placeholder="Select a lead" />
                 </SelectTrigger>
                 <SelectContent>
                   {unassignedLeads.map((lead: any) => (
                     <SelectItem key={lead.id} value={lead.id.toString()}>
-                      {lead.name} - {formatCurrency(parseFloat(lead.value))}
+                      {lead.name} - {formatCurrency(parseFloat(lead.value || '0'))}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {assignmentData.leadId ? (
+                <div className="text-sm text-muted-foreground mt-1">
+                  {unassignedLeads.find((l: any) => l.id === assignmentData.leadId)?.status || 'new'} • {
+                    unassignedLeads.find((l: any) => l.id === assignmentData.leadId)?.source || 'unknown source'
+                  }
+                </div>
+              ) : null}
             </div>
             <div className="space-y-2">
               <Label htmlFor="sales-rep">Assign To</Label>
-              <Select>
+              <Select
+                onValueChange={(value) => {
+                  const salesRepId = parseInt(value);
+                  const selectedMember = teamMembers.find((m: SalesTeamMember) => m.id === salesRepId);
+                  setAssignmentData({ ...assignmentData, salesRepId, salesRepName: selectedMember?.name || '' });
+                }}
+              >
                 <SelectTrigger id="sales-rep">
                   <SelectValue placeholder="Select a sales representative" />
                 </SelectTrigger>
@@ -1863,24 +1895,59 @@ export default function SalesTeamPage() {
                     ))}
                 </SelectContent>
               </Select>
+              {assignmentData.salesRepId ? (
+                <div className="text-sm text-muted-foreground mt-1">
+                  {teamMembers.find((m: SalesTeamMember) => m.id === assignmentData.salesRepId)?.email || ''} • 
+                  Lead count: {teamMembers.find((m: SalesTeamMember) => m.id === assignmentData.salesRepId)?.leadCount || 0}
+                </div>
+              ) : null}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="assignment-notes">Notes</Label>
               <Textarea
-                id="notes"
+                id="assignment-notes"
                 placeholder="Any additional instructions for the sales rep"
+                value={assignmentData.notes}
+                onChange={(e) => setAssignmentData({ ...assignmentData, notes: e.target.value })}
               />
             </div>
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setIsAssignLeadDialogOpen(false)}
+              onClick={() => {
+                setIsAssignLeadDialogOpen(false);
+                setAssignmentData({ leadId: 0, salesRepId: 0, leadName: '', salesRepName: '', notes: '' });
+              }}
             >
               Cancel
             </Button>
-            <Button onClick={() => setIsAssignLeadDialogOpen(false)}>
-              Assign Lead
+            <Button 
+              onClick={() => {
+                if (!assignmentData.leadId || !assignmentData.salesRepId) {
+                  toast({
+                    title: "Missing information",
+                    description: "Please select both a lead and a sales representative",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                
+                assignLeadMutation.mutate({
+                  leadId: assignmentData.leadId,
+                  salesRepId: assignmentData.salesRepId
+                });
+              }}
+              disabled={assignLeadMutation.isPending || !assignmentData.leadId || !assignmentData.salesRepId}
+            >
+              {assignLeadMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Assigning...
+                </>
+              ) : (
+                "Assign Lead"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -2010,6 +2010,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get unassigned leads - Admin only
+  app.get("/api/admin/leads/unassigned", hasRequiredPermission(PERMISSIONS.MANAGE_USERS), async (req, res) => {
+    try {
+      // Get all leads that aren't assigned to a sales rep
+      const unassignedLeads = await storage.getUnassignedLeads();
+      res.json({ data: unassignedLeads });
+    } catch (error: any) {
+      console.error("Error fetching unassigned leads:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Get lead assignments - Admin only
   app.get("/api/admin/leads/assignments", hasRequiredPermission(PERMISSIONS.MANAGE_USERS), async (req, res) => {
     try {

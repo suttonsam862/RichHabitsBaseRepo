@@ -167,7 +167,14 @@ export const activities = pgTable("activities", {
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
-export const insertLeadSchema = createInsertSchema(leads).omit({ id: true, createdAt: true });
+
+// Extend the lead schema to include autoClaimLead which is used by client but not stored in DB
+export const insertLeadSchema = createInsertSchema(leads)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    autoClaimLead: z.boolean().optional()
+  });
+
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
 export const insertActivitySchema = createInsertSchema(activities).omit({ id: true, createdAt: true });

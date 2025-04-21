@@ -559,11 +559,21 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
               <div className="flex space-x-2 mt-4">
                 <Dialog 
                   open={isContactLogOpen} 
+                  modal={true}
                   onOpenChange={(open) => {
                     console.log(`Contact log dialog ${open ? 'opening' : 'closing'}`);
                     // Only allow changes we explicitly control to prevent bubbling up to parent dialog
                     if (open !== isContactLogOpen) {
+                      if (!open) {
+                        // If closing, make sure we prevent bubbling to parent dialog
+                        console.log("Preventing potential parent dialog close");
+                      }
                       setIsContactLogOpen(open);
+                    }
+                    
+                    // Return false to prevent the default behavior that might close parent dialogs
+                    if (!open) {
+                      return false;
                     }
                   }}
                 >
@@ -633,11 +643,21 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                 
                 <Dialog 
                   open={isContactLogHistoryOpen} 
+                  modal={true}
                   onOpenChange={(open) => {
                     console.log(`Contact history dialog ${open ? 'opening' : 'closing'}`);
                     // Only allow changes we explicitly control to prevent bubbling up to parent dialog
                     if (open !== isContactLogHistoryOpen) {
+                      if (!open) {
+                        // If closing, make sure we prevent bubbling to parent dialog
+                        console.log("Preventing potential parent dialog close");
+                      }
                       setIsContactLogHistoryOpen(open);
+                    }
+                    
+                    // Return false to prevent the default behavior that might close parent dialogs
+                    if (!open) {
+                      return false;
                     }
                   }}
                 >

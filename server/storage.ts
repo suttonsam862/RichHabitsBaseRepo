@@ -875,6 +875,62 @@ export class DatabaseStorage implements IStorage {
     return newLead;
   }
   
+  // Create sample leads for the whiteboard
+  async createSampleLeads(): Promise<Lead[]> {
+    // First check if we already have sample leads on the whiteboard
+    const whiteboardLeads = await db.select()
+      .from(leads)
+      .where(
+        and(
+          eq(leads.status, 'new'),
+          sql`claimed = false`
+        )
+      );
+    
+    // If we already have at least one lead on the whiteboard, return existing leads
+    if (whiteboardLeads.length > 0) {
+      return whiteboardLeads;
+    }
+    
+    // Sample leads to add
+    const sampleLeads: InsertLead[] = [
+      {
+        name: "Westwood High School",
+        email: "athletic.director@westwood.edu",
+        phone: "+1 (512) 555-7890",
+        source: "Website",
+        status: "new",
+        notes: "Looking for quotes on team uniforms for their wrestling program",
+        value: "8500",
+        claimed: false,
+        contactComplete: false,
+        itemsConfirmed: false,
+        submittedToDesign: false
+      },
+      {
+        name: "Phoenix Wrestling Academy",
+        email: "coach@phoenixwrestling.com",
+        phone: "+1 (602) 555-4321",
+        source: "Referral",
+        status: "new",
+        notes: "Needs competition gear for their youth program, approximately 30-40 wrestlers",
+        value: "6000",
+        claimed: false,
+        contactComplete: false,
+        itemsConfirmed: false,
+        submittedToDesign: false
+      }
+    ];
+    
+    // Insert all sample leads
+    const insertedLeads = await db
+      .insert(leads)
+      .values(sampleLeads)
+      .returning();
+      
+    return insertedLeads;
+  }
+  
   async getLeadById(id: number): Promise<Lead | undefined> {
     const [lead] = await db.select().from(leads).where(eq(leads.id, id));
     return lead || undefined;

@@ -1617,8 +1617,18 @@ export default function Leads() {
         </DialogContent>
       </Dialog>
 
-      {/* View Lead Dialog */}
-      <Dialog open={openViewDialog} onOpenChange={setOpenViewDialog}>
+      {/* View Lead Dialog - Using open without onOpenChange to prevent unexpected closures */}
+      <Dialog 
+        open={openViewDialog} 
+        onOpenChange={(open) => {
+          // Only allow closing through the explicit close button
+          if (!open) {
+            console.log("Dialog close requested via overlay/escape");
+            // Don't auto-close - uncomment below if you want to restore this behavior
+            // setOpenViewDialog(false);
+          }
+        }}
+      >
         <DialogContent className="bg-white max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Lead Details</DialogTitle>

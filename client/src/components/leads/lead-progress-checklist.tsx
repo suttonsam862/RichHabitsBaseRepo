@@ -457,14 +457,26 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
               Phone
             )}
             <div className="ml-12 mt-2 flex space-x-2">
-              <Dialog open={isContactLogOpen} onOpenChange={setIsContactLogOpen}>
+              <Dialog 
+                open={isContactLogOpen} 
+                onOpenChange={(open) => {
+                  console.log(`Contact log dialog ${open ? 'opening' : 'closing'}`);
+                  // Only allow changes we explicitly control to prevent bubbling up to parent dialog
+                  if (open !== isContactLogOpen) {
+                    setIsContactLogOpen(open);
+                  }
+                }}
+              >
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
                     <Phone className="mr-2 h-3.5 w-3.5" />
                     Log Contact
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent onClick={(e) => {
+                  // Prevent click events from bubbling up to parent dialog
+                  e.stopPropagation();
+                }}>
                   <DialogHeader>
                     <DialogTitle>Add Contact Log</DialogTitle>
                     <DialogDescription>
@@ -502,9 +514,13 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                     </div>
                   </div>
                   <DialogFooter>
-                    <DialogClose asChild>
-                      <Button variant="outline">Cancel</Button>
-                    </DialogClose>
+                    <Button
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setIsContactLogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
                     <Button 
                       onClick={handleAddContactLog}
                       disabled={addContactLogMutation.isPending}
@@ -515,14 +531,29 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                 </DialogContent>
               </Dialog>
               
-              <Dialog open={isContactLogHistoryOpen} onOpenChange={setIsContactLogHistoryOpen}>
+              <Dialog 
+                open={isContactLogHistoryOpen} 
+                onOpenChange={(open) => {
+                  console.log(`Contact history dialog ${open ? 'opening' : 'closing'}`);
+                  // Only allow changes we explicitly control to prevent bubbling up to parent dialog
+                  if (open !== isContactLogHistoryOpen) {
+                    setIsContactLogHistoryOpen(open);
+                  }
+                }}
+              >
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
                     <Calendar className="mr-2 h-3.5 w-3.5" />
                     View History
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[600px]">
+                <DialogContent 
+                  className="sm:max-w-[600px]" 
+                  onClick={(e) => {
+                    // Prevent click events from bubbling up to parent dialog
+                    e.stopPropagation();
+                  }}
+                >
                   <DialogHeader>
                     <DialogTitle>Contact History</DialogTitle>
                     <DialogDescription>
@@ -554,7 +585,7 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                     )}
                   </ScrollArea>
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsContactLogHistoryOpen(false)}>
+                    <Button type="button" variant="outline" onClick={() => setIsContactLogHistoryOpen(false)}>
                       Close
                     </Button>
                   </DialogFooter>

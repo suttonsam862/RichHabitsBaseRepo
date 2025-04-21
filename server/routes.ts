@@ -538,7 +538,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         PERMISSIONS.VIEW_ALL_LEADS
       );
       
-      if (!canViewAllLeads && lead.userId !== user.id) {
+      // Allow both the owner and those with admin permissions access to contact logs
+      const isLeadOwner = lead.userId === user.id || lead.salesRepId === user.id || lead.claimedById === user.id;
+      const isAdmin = user.role === 'admin' || user.role === 'executive';
+      
+      if (!canViewAllLeads && !isLeadOwner && !isAdmin) {
         return res.status(403).json({ error: "You don't have permission to view this lead's contact logs" });
       }
       
@@ -577,7 +581,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         PERMISSIONS.MANAGE_LEADS
       );
       
-      if (!canManageAllLeads && lead.userId !== user.id) {
+      // Allow both the owner and those with admin permissions to add contact logs
+      const isLeadOwner = lead.userId === user.id || lead.salesRepId === user.id || lead.claimedById === user.id;
+      const isAdmin = user.role === 'admin' || user.role === 'executive';
+      
+      if (!canManageAllLeads && !isLeadOwner && !isAdmin) {
         return res.status(403).json({ error: "You don't have permission to add contact logs to this lead" });
       }
       
@@ -591,11 +599,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         leadId // Ensure leadId matches the URL parameter
       });
       
-      // Create the contact log
+      // Create the contact log - avoid sending 'timestamp' property which will be handled by DB
       const newContactLog = await storage.createContactLog({
-        ...contactLogData,
-        userId: user.id,
-        timestamp: new Date()
+        leadId: contactLogData.leadId,
+        contactMethod: contactLogData.contactMethod,
+        notes: contactLogData.notes,
+        userId: user.id
       });
       
       // Create an activity for the new contact log

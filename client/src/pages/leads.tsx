@@ -1396,11 +1396,16 @@ export default function Leads() {
                                       })
                                       .catch(error => {
                                         console.error("Error fetching contact logs:", error);
-                                        toast({
-                                          title: "Error",
-                                          description: "Failed to load contact logs",
-                                          variant: "destructive",
-                                        });
+                                        // Set empty contact logs instead of showing error toast
+                                        setContactLogs([]);
+                                        // Only show toast if not a 404 (no logs found)
+                                        if (error.message && !error.message.includes("404")) {
+                                          toast({
+                                            title: "Note",
+                                            description: "No contact logs found for this lead",
+                                            variant: "default",
+                                          });
+                                        }
                                       });
                                   }
                                 }}
@@ -1670,6 +1675,8 @@ export default function Leads() {
                         })
                         .catch(error => {
                           console.error("Error fetching contact logs:", error);
+                          // Set empty contact logs instead of showing error
+                          setContactLogs([]);
                         });
                     }}
                   />

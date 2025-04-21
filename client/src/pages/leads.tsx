@@ -1398,14 +1398,6 @@ export default function Leads() {
                                         console.error("Error fetching contact logs:", error);
                                         // Set empty contact logs instead of showing error toast
                                         setContactLogs([]);
-                                        // Only show toast if not a 404 (no logs found)
-                                        if (error.message && !error.message.includes("404")) {
-                                          toast({
-                                            title: "Note",
-                                            description: "No contact logs found for this lead",
-                                            variant: "default",
-                                          });
-                                        }
                                       });
                                   }
                                 }}
@@ -1651,6 +1643,30 @@ export default function Leads() {
               <div className="col-span-2">
                 <h3 className="text-sm font-medium text-gray-500">Notes</h3>
                 <p className="mt-1 text-base text-gray-900 whitespace-pre-wrap">{selectedLead.notes || "No notes available."}</p>
+              </div>
+              
+              {/* Contact Logs Section */}
+              <div className="col-span-2">
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Contact Logs</h3>
+                {contactLogs.length > 0 ? (
+                  <div className="space-y-2">
+                    {contactLogs.map((log) => (
+                      <div key={log.id} className="p-3 bg-gray-50 rounded-md">
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium">{log.contactMethod}</span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(log.timestamp).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm text-gray-700">{log.notes}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-3 bg-gray-50 rounded-md text-center">
+                    <p className="text-gray-500 text-sm">No contact logs found for this lead.</p>
+                  </div>
+                )}
               </div>
               
               {/* Only show the lead progress checklist for claimed leads */}

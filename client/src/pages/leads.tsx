@@ -232,44 +232,60 @@ export default function Leads() {
   
 
 
+  // Get the tab parameter from URL if available
+  const getInitialTab = () => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam === "my-leads" || tabParam === "whiteboard" || tabParam === "archived") {
+        console.log(`[CLIENT:LEADS] Using tab from URL parameter: ${tabParam}`);
+        return tabParam;
+      }
+    }
+    return "whiteboard";
+  };
+
   // State to control active tab
-  const [activeTab, setActiveTab] = useState("whiteboard");
+  const [activeTab, setActiveTab] = useState(getInitialTab());
   
   // Create a mutation to claim a lead by the current user
   const claimLeadMutation = useMutation({
     mutationFn: async (leadId: number) => {
-      console.log(`Attempting to claim lead ID ${leadId}`);
+      console.log(`[CLIENT:LEAD CLAIM] Attempting to claim lead ID ${leadId}`);
       return await apiRequest("POST", `/api/leads/${leadId}/claim`, {});
     },
     onSuccess: (response) => {
-      console.log(`Lead claim success! Response:`, response);
+      console.log(`[CLIENT:LEAD CLAIM] Success! Full response:`, response);
       
-      // Invalidate and immediately refetch to refresh data
+      // First, immediately invalidate the cache to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
-      queryClient.refetchQueries({ queryKey: ['/api/leads'] });
       
-      // Update the local cache immediately to show the lead in My Leads tab
+      // Use the complete lead object from the server response if available
+      const updatedLeadData = response.lead || {
+        id: response.leadId,
+        claimed: true,
+        claimedById: user?.id,
+        claimedAt: new Date().toISOString(),
+        salesRepId: user?.id,
+        status: "claimed"
+      };
+      
+      console.log(`[CLIENT:LEAD CLAIM] Using lead data for cache update:`, updatedLeadData);
+      
+      // Update the local cache immediately with complete lead data from server
       queryClient.setQueryData(['/api/leads'], (oldData: any) => {
         if (!oldData) {
-          console.log('No existing lead data in cache to update');
+          console.log('[CLIENT:LEAD CLAIM] No existing lead data in cache to update');
           return oldData;
         }
         
-        console.log('Updating lead cache data with claimed lead', response.leadId);
+        console.log('[CLIENT:LEAD CLAIM] Updating lead cache data with claimed lead', updatedLeadData.id);
         
-        // Update the lead in the data to mark it as claimed by current user
+        // Update the lead in the data with the complete server response
         const updatedLeads = oldData.data.map((lead: any) => {
-          if (lead.id === response.leadId) {
-            const updatedLead = {
-              ...lead,
-              claimed: true,
-              claimedById: user?.id,
-              claimedAt: new Date().toISOString(),
-              salesRepId: user?.id,
-              status: "claimed"
-            };
-            console.log(`Updated lead ${lead.id} in cache:`, updatedLead);
-            return updatedLead;
+          if (lead.id === updatedLeadData.id) {
+            console.log(`[CLIENT:LEAD CLAIM] Updating lead ${lead.id} in cache with server data`);
+            return updatedLeadData;
           }
           return lead;
         });
@@ -277,14 +293,27 @@ export default function Leads() {
         return { ...oldData, data: updatedLeads };
       });
       
-      // Switch to My Leads tab and force refresh
-      setActiveTab("my-leads");
+      // Force an immediate refetch to ensure all components have latest data
+      queryClient.refetchQueries({ queryKey: ['/api/leads'] })
+        .then(() => {
+          console.log('[CLIENT:LEAD CLAIM] Data refetch complete after claim');
+        })
+        .catch(err => {
+          console.error('[CLIENT:LEAD CLAIM] Error refetching data after claim:', err);
+        });
       
-      // Increment the refresh key to force a re-fetch and re-render
-      setRefreshKey(prev => prev + 1);
+      // Increment the refresh key to force a re-render of components
+      setRefreshKey(prev => {
+        const newKey = prev + 1;
+        console.log(`[CLIENT:LEAD CLAIM] Incrementing refresh key from ${prev} to ${newKey}`);
+        return newKey;
+      });
       
-      // Log the update for debugging
-      console.log(`Lead ${response.leadId} claimed and marked as claimed in cache, refresh key = ${refreshKey + 1}`);
+      // Switch to My Leads tab only after data is updated
+      setTimeout(() => {
+        console.log('[CLIENT:LEAD CLAIM] Switching to My Leads tab');
+        setActiveTab("my-leads");
+      }, 100); // Small delay to ensure data is refreshed
       
       toast({
         title: "Lead claimed",

@@ -183,40 +183,41 @@ export default function LeadsWhiteboard() {
   // Create a mutation to claim a lead by the current user
   const claimLeadMutation = useMutation({
     mutationFn: async (leadId: number) => {
-      console.log(`Whiteboard - Attempting to claim lead ID ${leadId}`);
+      console.log(`[WHITEBOARD:LEAD CLAIM] Attempting to claim lead ID ${leadId}`);
       return await apiRequest("POST", `/api/leads/${leadId}/claim`, {});
     },
     onSuccess: (response) => {
-      console.log(`Whiteboard - Lead claim success! Response:`, response);
+      console.log(`[WHITEBOARD:LEAD CLAIM] Success! Full response:`, response);
       
-      // Invalidate and immediately refetch to refresh data
+      // First, immediately invalidate the cache to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
       
-      // Force an immediate refetch to update the cache with server data
-      queryClient.refetchQueries({ queryKey: ['/api/leads'] });
+      // Use the complete lead object from the server response if available
+      const updatedLeadData = response.lead || {
+        id: response.leadId,
+        claimed: true,
+        claimedById: user?.id,
+        claimedAt: new Date().toISOString(),
+        salesRepId: user?.id,
+        status: "claimed"
+      };
       
-      // Update the local cache immediately to show the lead in My Leads tab
+      console.log(`[WHITEBOARD:LEAD CLAIM] Using lead data for cache update:`, updatedLeadData);
+      
+      // Update the local cache immediately with complete lead data from server
       queryClient.setQueryData(['/api/leads'], (oldData: any) => {
         if (!oldData) {
-          console.log('Whiteboard - No existing lead data in cache to update');
+          console.log('[WHITEBOARD:LEAD CLAIM] No existing lead data in cache to update');
           return oldData;
         }
         
-        console.log('Whiteboard - Updating lead cache data with claimed lead', response.leadId);
+        console.log('[WHITEBOARD:LEAD CLAIM] Updating lead cache data with claimed lead', updatedLeadData.id);
         
-        // Update the lead in the data to mark it as claimed by current user
+        // Update the lead in the data with the complete server response
         const updatedLeads = oldData.data.map((lead: any) => {
-          if (lead.id === response.leadId) {
-            const updatedLead = {
-              ...lead,
-              claimed: true,
-              claimedById: user.id,
-              claimedAt: new Date().toISOString(),
-              salesRepId: user.id,
-              status: "claimed"
-            };
-            console.log(`Whiteboard - Updated lead ${lead.id} in cache:`, updatedLead);
-            return updatedLead;
+          if (lead.id === updatedLeadData.id) {
+            console.log(`[WHITEBOARD:LEAD CLAIM] Updating lead ${lead.id} in cache with server data`);
+            return updatedLeadData;
           }
           return lead;
         });
@@ -224,18 +225,23 @@ export default function LeadsWhiteboard() {
         return { ...oldData, data: updatedLeads };
       });
       
-      // Increment the refresh key to force a re-render
-      setRefreshKey(prev => {
-        console.log(`Whiteboard - Incrementing refresh key from ${prev} to ${prev + 1}`);
-        return prev + 1;
-      });
-      
-      // Switch to My Leads tab
-      setActiveTab("my-leads");
+      // Force an immediate refetch to ensure all components have latest data
+      queryClient.refetchQueries({ queryKey: ['/api/leads'] })
+        .then(() => {
+          console.log('[WHITEBOARD:LEAD CLAIM] Data refetch complete after claim');
+          
+          // Now navigate to leads page with my-leads tab after data is refreshed
+          window.location.href = "/leads?tab=my-leads";
+        })
+        .catch(err => {
+          console.error('[WHITEBOARD:LEAD CLAIM] Error refetching data after claim:', err);
+          // Still try to navigate even if refetch fails
+          window.location.href = "/leads?tab=my-leads";
+        });
       
       toast({
         title: "Lead claimed",
-        description: "Lead has been successfully claimed and added to your My Leads tab.",
+        description: "Lead has been successfully claimed. You'll be redirected to your My Leads tab.",
       });
     },
     onError: (error: any) => {

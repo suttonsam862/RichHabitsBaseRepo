@@ -664,30 +664,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Claim a lead - marks the lead as claimed by the current user with a 3-day verification period
   app.post("/api/leads/:id/claim", async (req, res) => {
     try {
+      console.log(`[LEAD CLAIM ATTEMPT] Processing claim request for lead ID: ${req.params.id}`);
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
+        console.log(`[LEAD CLAIM ERROR] Invalid lead ID: ${req.params.id}`);
         return res.status(400).json({ error: "Invalid lead ID" });
       }
       
       // Check if user is authenticated
       if (!req.isAuthenticated()) {
+        console.log(`[LEAD CLAIM ERROR] User not authenticated`);
         return res.status(401).json({ error: "Not authenticated" });
       }
       
       const user = req.user as User;
+      console.log(`[LEAD CLAIM] User ${user.id} (${user.username}) attempting to claim lead ${id}`);
       
       const lead = await storage.getLeadById(id);
       if (!lead) {
+        console.log(`[LEAD CLAIM ERROR] Lead ${id} not found`);
         return res.status(404).json({ error: "Lead not found" });
       }
       
       // Check if lead is already claimed
       if (lead.claimed) {
+        console.log(`[LEAD CLAIM ERROR] Lead ${id} already claimed by user ${lead.claimedById}`);
         return res.status(400).json({ 
           error: "Lead already claimed", 
           claimedById: lead.claimedById 
         });
       }
+      
+      console.log(`[LEAD CLAIM] Lead ${id} is unclaimed, proceeding with claim by user ${user.id}`);
       
       // Update lead with claim information
       const updatedLead = await storage.updateLead({
@@ -698,6 +706,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         salesRepId: user.id,
         status: "claimed"
       });
+      
+      console.log(`[LEAD CLAIM SUCCESS] Lead ${id} successfully claimed by user ${user.id}`, updatedLead);
       
       // Create activity for the lead claim
       await storage.createActivity({
@@ -711,16 +721,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Schedule verification after 3 days
       // This is where you would typically set up a cron job or scheduled task
       // For now, we'll just log that verification would be scheduled
-      console.log(`Scheduled verification for lead ${lead.id} on ${new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)}`);
+      const verificationDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+      console.log(`[LEAD CLAIM] Scheduled verification for lead ${lead.id} on ${verificationDate}`);
       
+      // Return comprehensive data about the updated lead to ensure client cache is properly updated
       return res.status(200).json({ 
         success: true,
         message: "Lead claimed successfully",
         leadId: updatedLead.id,
-        verificationDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+        lead: updatedLead, // Send the complete updated lead object
+        claimedById: user.id,
+        salesRepId: user.id,
+        claimed: true,
+        claimedAt: updatedLead.claimedAt,
+        status: "claimed",
+        verificationDate: verificationDate
       });
     } catch (error: any) {
-      console.error("Error claiming lead:", error);
+      console.error("[LEAD CLAIM ERROR] Error claiming lead:", error);
       res.status(500).json({ error: error.message });
     }
   });

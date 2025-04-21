@@ -433,11 +433,25 @@ export default function Leads() {
       // 1. Directly assigned to the user via salesRepId
       // 2. Claimed by the user (claimed === true AND claimedById === user.id)
       // 3. Has status "claimed" and was claimed by this user
-      return (
-        lead.salesRepId === user?.id || 
-        (lead.claimed === true && lead.claimedById === user?.id) ||
-        (lead.status === "claimed" && lead.claimedById === user?.id)
-      );
+      // Add debug logging to troubleshoot
+      console.log(`Checking lead ${lead.id} - ${lead.name}: salesRepId=${lead.salesRepId}, claimed=${lead.claimed}, claimedById=${lead.claimedById}, status=${lead.status}, user.id=${user?.id}`);
+      
+      if (lead.salesRepId === user?.id) {
+        console.log(`Lead ${lead.id} - ${lead.name} matches by salesRepId`);
+        return true;
+      }
+      
+      if (lead.claimed === true && lead.claimedById === user?.id) {
+        console.log(`Lead ${lead.id} - ${lead.name} matches by claimed status`);
+        return true;
+      }
+      
+      if (lead.status === "claimed" && lead.claimedById === user?.id) {
+        console.log(`Lead ${lead.id} - ${lead.name} matches by status:claimed`);
+        return true;
+      }
+      
+      return false;
     })
     .filter(lead => {
       const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 

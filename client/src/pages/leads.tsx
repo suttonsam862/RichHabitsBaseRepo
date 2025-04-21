@@ -1620,13 +1620,20 @@ export default function Leads() {
       {/* View Lead Dialog - Using open without onOpenChange to prevent unexpected closures */}
       <Dialog 
         open={openViewDialog} 
+        modal={true}
         onOpenChange={(open) => {
-          // Only allow closing through the explicit close button
+          console.log(`Dialog open state change requested: ${open ? 'open' : 'close'}`);
+          
+          // Only allow explicit closing through our Close button
+          // by always returning false when something tries to close the dialog
           if (!open) {
-            console.log("Dialog close requested via overlay/escape");
+            console.log("Dialog close requested via overlay/escape - BLOCKED");
             // Don't auto-close - we only want to close via the explicit close button
             // which handles saving changes properly
             return false;
+          } else {
+            // Allow opening the dialog
+            setOpenViewDialog(true);
           }
         }}
       >

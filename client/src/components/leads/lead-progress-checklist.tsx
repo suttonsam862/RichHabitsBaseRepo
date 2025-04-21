@@ -113,54 +113,13 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
       }
     },
     onSuccess: (data) => {
-      // Immediately update the UI state based on the mutation data
-      if (data.success) {
-        // Force the component to re-render with the new values
-        if ('contactComplete' in data.data) {
-          setContactComplete(data.data.contactComplete);
-        }
-        if ('itemsConfirmed' in data.data) {
-          setItemsConfirmed(data.data.itemsConfirmed);
-        }
-        if ('submittedToDesign' in data.data) {
-          setSubmittedToDesign(data.data.submittedToDesign);
-        }
-      }
+      console.log("Progress update success:", data);
       
-      // Update the lead data in the query cache directly
-      queryClient.setQueryData(["/api/leads"], (oldData: any) => {
-        if (!oldData || !oldData.data) return oldData;
-        
-        // Map through the leads and update the specific lead that was modified
-        const updatedLeads = oldData.data.map((lead: any) => {
-          if (lead.id === leadId) {
-            const updatedLead = {
-              ...lead,
-              contactComplete: data.data.contactComplete !== undefined 
-                ? data.data.contactComplete 
-                : lead.contactComplete,
-              itemsConfirmed: data.data.itemsConfirmed !== undefined 
-                ? data.data.itemsConfirmed 
-                : lead.itemsConfirmed,
-              submittedToDesign: data.data.submittedToDesign !== undefined 
-                ? data.data.submittedToDesign 
-                : lead.submittedToDesign
-            };
-            
-            return updatedLead;
-          }
-          return lead;
-        });
-        
-        return { ...oldData, data: updatedLeads };
-      });
-      
-      // Only call onUpdate after modifying the cache directly to avoid navigation issues
+      // We don't need to set local state here because handleToggleStep already did that
+      // But we do need to update the parent component
       onUpdate();
       
-      // No need for duplicate success messages as handleToggleStep already shows them
-      
-      // Schedule a background refetch to ensure data consistency
+      // Schedule a background refetch for data consistency without causing UI flashes
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
       }, 500);
@@ -308,79 +267,98 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
   };
 
   const handleToggleStep = (step: string, value: boolean) => {
-    // Create a progress object to track all changes we need to make
-    let progress: { 
+    // We'll track server-side progress
+    let progressUpdates: { 
       contactComplete?: boolean; 
       itemsConfirmed?: boolean; 
       submittedToDesign?: boolean; 
     } = {};
     
+    // First update the local state for immediate UI feedback
     switch (step) {
-      case 'contact':
-        // Update the contact step
-        progress.contactComplete = value;
-        setContactComplete(value); // Update local state immediately for responsive UI
+      case 'contact': {
+        // Update local state first
+        setContactComplete(value);
+        progressUpdates.contactComplete = value;
         
-        // If marking complete, make sure we update the cache properly
+        // Show appropriate success message when marking complete
         if (value) {
-          // Show a confirmation message that next step is now available
           toast({
-            title: "Step completed",
+            title: "Step 1 Completed",
             description: "You can now confirm items in Step 2.",
+            variant: "default",
           });
+          
+          // Log to console
+          console.log("Contact step completed - enabling items step");
         }
         break;
+      }
+      
+      case 'items': {
+        // Update local state first
+        setItemsConfirmed(value);
+        progressUpdates.itemsConfirmed = value;
         
-      case 'items':
-        // Update the items step
-        progress.itemsConfirmed = value;
-        setItemsConfirmed(value); // Update local state immediately for responsive UI
-        
-        // If marking complete, make sure we update the cache properly
+        // Show appropriate success message
         if (value) {
-          // Show a confirmation message that next step is now available
           toast({
-            title: "Step completed",
+            title: "Step 2 Completed",
             description: "You can now submit to design in Step 3.",
+            variant: "default",
           });
+          
+          // Log to console
+          console.log("Items step completed - enabling design step");
         }
         break;
+      }
+      
+      case 'design': {
+        // Update local state first
+        setSubmittedToDesign(value);
+        progressUpdates.submittedToDesign = value;
         
-      case 'design':
-        // Update the design step
-        progress.submittedToDesign = value;
-        setSubmittedToDesign(value); // Update local state immediately for responsive UI
-        
-        // If marking complete, show a success message
+        // Show appropriate success message
         if (value) {
           toast({
-            title: "All steps completed",
-            description: "Lead has been successfully processed through all steps.",
+            title: "Lead Process Completed!",
+            description: "This lead has completed all processing steps.",
+            variant: "default",
           });
+          
+          // Log to console
+          console.log("Design step completed - all steps now complete");
         }
         break;
+      }
     }
     
-    // Update the cache with our changes
+    // Log the update we're making
+    console.log("Updating lead progress:", progressUpdates);
+    
+    // Optimistically update the cache
     queryClient.setQueryData(["/api/leads"], (oldData: any) => {
       if (!oldData || !oldData.data) return oldData;
       
-      // Find and update the specific lead with all progress updates
+      // Find and update the specific lead
       const updatedLeads = oldData.data.map((lead: any) => {
         if (lead.id === leadId) {
+          // Create the updated lead with the new progress values
           return {
             ...lead,
-            ...progress // Apply all progress updates
+            ...progressUpdates // Apply all our updates
           };
         }
         return lead;
       });
       
+      // Return the updated data
       return { ...oldData, data: updatedLeads };
     });
     
     // Send the update to the server
-    updateProgressMutation.mutate(progress);
+    updateProgressMutation.mutate(progressUpdates);
   };
 
   const getStepIcon = (completed: boolean, Icon: React.ElementType) => {

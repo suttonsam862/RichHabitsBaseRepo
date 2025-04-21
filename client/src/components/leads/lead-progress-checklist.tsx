@@ -91,6 +91,9 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
       itemsConfirmed?: boolean; 
       submittedToDesign?: boolean; 
     }) => {
+      // Log the actual request for debugging
+      console.log(`Sending PATCH to /api/leads/${leadId}/progress with data:`, progress);
+      
       const res = await apiRequest(
         "PATCH", 
         `/api/leads/${leadId}/progress`, 
@@ -101,9 +104,12 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
       try {
         const contentType = res.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
-          return await res.json();
+          const json = await res.json();
+          console.log("Server response:", json);
+          return json;
         } else {
           // Not JSON, just return success status
+          console.log("Non-JSON response, status:", res.status);
           return { success: res.ok, data: { ...progress } };
         }
       } catch (err) {
@@ -112,18 +118,8 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
         return { success: res.ok, data: { ...progress } };
       }
     },
-    onSuccess: (data) => {
-      console.log("Progress update success:", data);
-      
-      // We don't need to set local state here because handleToggleStep already did that
-      // But we do need to update the parent component
-      onUpdate();
-      
-      // Schedule a background refetch for data consistency without causing UI flashes
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
-      }, 500);
-    },
+    // We'll handle the success case in the handleToggleStep function itself
+    // since we're using mutateAsync and await there
     onError: (error: Error) => {
       console.error('Error updating lead progress:', error);
       toast({
@@ -266,99 +262,116 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
     });
   };
 
-  const handleToggleStep = (step: string, value: boolean) => {
-    // We'll track server-side progress
-    let progressUpdates: { 
-      contactComplete?: boolean; 
-      itemsConfirmed?: boolean; 
-      submittedToDesign?: boolean; 
-    } = {};
-    
-    // First update the local state for immediate UI feedback
-    switch (step) {
-      case 'contact': {
-        // Update local state first
-        setContactComplete(value);
-        progressUpdates.contactComplete = value;
-        
-        // Show appropriate success message when marking complete
-        if (value) {
-          toast({
-            title: "Step 1 Completed",
-            description: "You can now confirm items in Step 2.",
-            variant: "default",
-          });
-          
-          // Log to console
-          console.log("Contact step completed - enabling items step");
+  // We need a more reliable function that doesn't close dialogs or cause UI jumps
+  const handleToggleStep = async (step: string, value: boolean) => {
+    try {
+      // This object will track what we're updating
+      let progressUpdates: { 
+        contactComplete?: boolean; 
+        itemsConfirmed?: boolean; 
+        submittedToDesign?: boolean; 
+      } = {};
+      
+      // First update the UI state directly for immediate feedback
+      console.log(`Updating step ${step} to ${value}`);
+      
+      switch (step) {
+        case 'contact': {
+          // Update local component state
+          setContactComplete(value);
+          progressUpdates.contactComplete = value;
+          break;
         }
-        break;
+        
+        case 'items': {
+          // Update local component state
+          setItemsConfirmed(value);
+          progressUpdates.itemsConfirmed = value;
+          break;
+        }
+        
+        case 'design': {
+          // Update local component state
+          setSubmittedToDesign(value);
+          progressUpdates.submittedToDesign = value;
+          break;
+        }
       }
       
-      case 'items': {
-        // Update local state first
-        setItemsConfirmed(value);
-        progressUpdates.itemsConfirmed = value;
+      // Apply optimistic update to the cache so UI is immediately responsive
+      queryClient.setQueryData(["/api/leads"], (oldData: any) => {
+        if (!oldData?.data) return oldData;
         
-        // Show appropriate success message
-        if (value) {
-          toast({
-            title: "Step 2 Completed",
-            description: "You can now submit to design in Step 3.",
-            variant: "default",
-          });
-          
-          // Log to console
-          console.log("Items step completed - enabling design step");
-        }
-        break;
-      }
-      
-      case 'design': {
-        // Update local state first
-        setSubmittedToDesign(value);
-        progressUpdates.submittedToDesign = value;
-        
-        // Show appropriate success message
-        if (value) {
-          toast({
-            title: "Lead Process Completed!",
-            description: "This lead has completed all processing steps.",
-            variant: "default",
-          });
-          
-          // Log to console
-          console.log("Design step completed - all steps now complete");
-        }
-        break;
-      }
-    }
-    
-    // Log the update we're making
-    console.log("Updating lead progress:", progressUpdates);
-    
-    // Optimistically update the cache
-    queryClient.setQueryData(["/api/leads"], (oldData: any) => {
-      if (!oldData || !oldData.data) return oldData;
-      
-      // Find and update the specific lead
-      const updatedLeads = oldData.data.map((lead: any) => {
-        if (lead.id === leadId) {
-          // Create the updated lead with the new progress values
-          return {
-            ...lead,
-            ...progressUpdates // Apply all our updates
-          };
-        }
-        return lead;
+        return {
+          ...oldData,
+          data: oldData.data.map((lead: any) => {
+            if (lead.id === leadId) {
+              return { ...lead, ...progressUpdates };
+            }
+            return lead;
+          })
+        };
       });
       
-      // Return the updated data
-      return { ...oldData, data: updatedLeads };
-    });
-    
-    // Send the update to the server
-    updateProgressMutation.mutate(progressUpdates);
+      // Now send the update to the server
+      console.log("Sending update to server:", progressUpdates);
+      const result = await updateProgressMutation.mutateAsync(progressUpdates);
+      
+      // Verify success and show appropriate notification
+      if (result?.success) {
+        if (value) { // Only show success message for completing a step, not undoing
+          switch (step) {
+            case 'contact':
+              toast({
+                title: "Step 1 Complete",
+                description: "You can now move on to confirming items in Step 2",
+                variant: "default",
+              });
+              break;
+            case 'items':
+              toast({
+                title: "Step 2 Complete",
+                description: "You can now submit to design in Step 3",
+                variant: "default",
+              });
+              break;
+            case 'design':
+              toast({
+                title: "Lead Process Complete!",
+                description: "All steps have been completed successfully",
+                variant: "default",
+              });
+              break;
+          }
+        }
+        
+        // Call parent's update function to refresh parent component's state
+        onUpdate();
+      }
+    } catch (error) {
+      // Handle errors and revert UI if needed
+      console.error("Error updating lead progress:", error);
+      
+      // Revert the local state changes to match server state
+      switch (step) {
+        case 'contact':
+          setContactComplete(!value);
+          break;
+        case 'items':
+          setItemsConfirmed(!value);
+          break;
+        case 'design':
+          setSubmittedToDesign(!value);
+          break;
+      }
+      
+      // Show error toast
+      toast({
+        title: "Update Failed",
+        description: "Could not update the lead progress. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStepIcon = (completed: boolean, Icon: React.ElementType) => {

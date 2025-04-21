@@ -1705,33 +1705,48 @@ export default function Leads() {
                     submittedToDesign={selectedLead.submittedToDesign || false}
                     contactLogs={contactLogs}
                     onUpdate={() => {
-                      // Refresh the lead data without triggering navigation
-                      queryClient.setQueryData(['/api/leads'], (oldData: any) => {
-                        if (!oldData || !oldData.data) return oldData;
-                        
-                        // Find and update the lead in the cache
-                        const updatedLeads = oldData.data.map((lead: any) => {
-                          if (lead.id === selectedLead.id) {
-                            // Create an updated lead with the latest progress values
-                            return {
-                              ...lead,
-                              contactComplete: lead.contactComplete,
-                              itemsConfirmed: lead.itemsConfirmed,
-                              submittedToDesign: lead.submittedToDesign
-                            };
+                      console.log("Lead progress updated, refreshing lead view");
+                      
+                      // First get the latest lead data from cache or re-fetch
+                      const getUpdatedLead = async () => {
+                        try {
+                          // Fetch the fresh lead data without closing the dialog
+                          const response = await apiRequest("GET", `/api/leads/${selectedLead.id}`);
+                          const updatedLeadData = await response.json();
+                          
+                          console.log("Fresh lead data:", updatedLeadData);
+                          
+                          if (updatedLeadData && updatedLeadData.data) {
+                            // Update the selected lead (important for the UI to show current progress)
+                            setSelectedLead(updatedLeadData.data);
                           }
-                          return lead;
-                        });
-                        
-                        return { ...oldData, data: updatedLeads };
-                      });
+                          
+                          // Also update the lead in the main leads cache
+                          queryClient.setQueryData(['/api/leads'], (oldData: any) => {
+                            if (!oldData || !oldData.data) return oldData;
+                            
+                            // Update the specific lead that was modified
+                            return {
+                              ...oldData,
+                              data: oldData.data.map((lead: any) => {
+                                if (lead.id === selectedLead.id) {
+                                  return updatedLeadData.data || lead;
+                                }
+                                return lead;
+                              })
+                            };
+                          });
+                        } catch (error) {
+                          console.error("Error fetching updated lead:", error);
+                          // Even on error, attempt to refresh leads
+                          queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+                        }
+                      };
                       
-                      // Schedule a background refetch without UI disruption
-                      setTimeout(() => {
-                        queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
-                      }, 500);
+                      // Execute the update
+                      getUpdatedLead();
                       
-                      // Re-fetch contact logs with improved error handling
+                      // Also refresh contact logs
                       apiRequest("GET", `/api/leads/${selectedLead.id}/contact-logs`)
                         .then(res => {
                           // Check if response is ok before trying to parse JSON

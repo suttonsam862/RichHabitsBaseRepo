@@ -304,12 +304,36 @@ export const salesTeamMembers = pgTable('sales_team_members', {
   status: text('status').notNull().default('active'),
   avatarUrl: text('avatar_url'),
   hireDate: text('hire_date').default(sql`CURRENT_DATE`),
+  // Lead metrics
   leadCount: integer('lead_count').default(0),
+  leadsQualifiedCount: integer('leads_qualified_count').default(0),
+  leadsDisqualifiedCount: integer('leads_disqualified_count').default(0),
+  leadConversionRate: text('lead_conversion_rate').default('0.00%'),
+  avgLeadQualificationTime: integer('avg_lead_qualification_time').default(0), // hours
+  // Order metrics
   orderCount: integer('order_count').default(0),
+  avgOrderValue: text('avg_order_value').default('$0'),
+  highestOrderValue: text('highest_order_value').default('$0'),
+  // Contact metrics
+  callsMade: integer('calls_made').default(0),
+  callsPerLead: decimal('calls_per_lead', { precision: 5, scale: 2 }).default('0.00'),
+  emailsSent: integer('emails_sent').default(0),
+  emailsPerLead: decimal('emails_per_lead', { precision: 5, scale: 2 }).default('0.00'),
+  meetingsScheduled: integer('meetings_scheduled').default(0),
+  meetingsAttended: integer('meetings_attended').default(0),
+  // Financial metrics
+  targetRevenue: text('target_revenue').default('$0'),
+  targetAttainment: text('target_attainment').default('0.00%'),
   totalRevenue: text('total_revenue').default('$0'),
+  quarterlyRevenue: text('quarterly_revenue').default('$0'),
+  monthlyRevenue: text('monthly_revenue').default('$0'),
   commissionRate: text('commission_rate').notNull().default('5.00'),
   earnedCommission: text('earned_commission').default('$0'),
+  // Activity metrics
   lastActiveAt: timestamp('last_active_at').defaultNow(),
+  daysActive: integer('days_active').default(0),
+  activitiesPerDay: decimal('activities_per_day', { precision: 5, scale: 2 }).default('0.00'),
+  responseTimeAvg: integer('response_time_avg').default(0), // minutes
   assignedRegions: text('assigned_regions').array(),
   assignedIndustries: text('assigned_industries').array(),
   specialization: text('specialization').default('General'),

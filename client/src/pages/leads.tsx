@@ -1648,7 +1648,7 @@ export default function Leads() {
               {/* Contact Logs Section */}
               <div className="col-span-2">
                 <h3 className="text-sm font-medium text-gray-500 mb-2">Contact Logs</h3>
-                {contactLogs.length > 0 ? (
+                {contactLogs && contactLogs.length > 0 ? (
                   <div className="space-y-2">
                     {contactLogs.map((log) => (
                       <div key={log.id} className="p-3 bg-gray-50 rounded-md">
@@ -1658,7 +1658,7 @@ export default function Leads() {
                             {new Date(log.timestamp).toLocaleString()}
                           </span>
                         </div>
-                        <p className="mt-1 text-sm text-gray-700">{log.notes}</p>
+                        <p className="mt-1 text-sm text-gray-700">{log.notes || ""}</p>
                       </div>
                     ))}
                   </div>

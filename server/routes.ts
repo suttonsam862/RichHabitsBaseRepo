@@ -443,14 +443,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Lead not found" });
       }
       
-      // Check if user has permission to update this lead
+      // Check if user has appropriate permissions to update this lead
+      const isLeadOwner = lead.userId === user.id || lead.salesRepId === user.id || lead.claimedById === user.id;
+      const isAdmin = user.role === 'admin' || user.role === 'executive';
       const canUpdateAllLeads = hasPermission(
         user.role,
         user.permissions,
-        PERMISSIONS.MANAGE_LEADS
+        PERMISSIONS.EDIT_LEADS
       );
       
-      if (!canUpdateAllLeads && lead.userId !== user.id) {
+      if (!canUpdateAllLeads && !isLeadOwner && !isAdmin) {
         return res.status(403).json({ error: "You don't have permission to update this lead's progress" });
       }
       
@@ -501,12 +503,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      res.json({ data: updatedLead });
+      // Always return a standard JSON format for consistency
+      res.json({ data: updatedLead, success: true });
     } catch (error: any) {
+      console.error('Error updating lead progress:', error);
       if (error instanceof z.ZodError) {
-        res.status(400).json({ error: error.errors });
+        res.status(400).json({ error: error.errors, success: false });
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: error.message, success: false });
       }
     }
   });

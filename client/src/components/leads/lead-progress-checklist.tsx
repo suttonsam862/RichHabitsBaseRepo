@@ -92,25 +92,48 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
         progress
       );
       
-      // Handle response - avoid parsing as JSON if not valid JSON
+      // Handle response - always handle non-JSON responses gracefully
       try {
         const contentType = res.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
           return await res.json();
         } else {
           // Not JSON, just return success status
-          return { success: res.ok };
+          return { success: res.ok, data: { ...progress } };
         }
       } catch (err) {
-        // If JSON parsing fails, return success status based on HTTP status
-        return { success: res.ok };
+        console.log('Error parsing progress update response:', err);
+        // If JSON parsing fails, return success status based on HTTP status with the requested progress data
+        return { success: res.ok, data: { ...progress } };
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Immediately update the UI state based on the mutation data
+      if (data.success) {
+        // Force the component to re-render with the new values
+        if ('contactComplete' in data.data) {
+          contactComplete = data.data.contactComplete;
+        }
+        if ('itemsConfirmed' in data.data) {
+          itemsConfirmed = data.data.itemsConfirmed;
+        }
+        if ('submittedToDesign' in data.data) {
+          submittedToDesign = data.data.submittedToDesign;
+        }
+      }
+      
+      // Refresh data on server
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
       onUpdate();
+      
+      // Show success message
+      toast({
+        title: "Progress updated",
+        description: "Lead progress has been updated successfully.",
+      });
     },
     onError: (error: Error) => {
+      console.error('Error updating lead progress:', error);
       toast({
         title: "Failed to update progress",
         description: error.message,
@@ -132,24 +155,43 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
         contactLog
       );
       
-      // Handle response - avoid parsing as JSON if not valid JSON
+      // Handle response - always handle non-JSON responses gracefully
       try {
         const contentType = res.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
           return await res.json();
         } else {
-          // Not JSON, just return success status
-          return { success: res.ok };
+          // Not JSON, just return success status with the submitted data
+          return { 
+            success: res.ok, 
+            data: { 
+              ...contactLog,
+              id: Date.now(), // Temporary ID in case we can't get the real one
+              userId: 0, // Placeholder
+              timestamp: new Date().toISOString()
+            } 
+          };
         }
       } catch (err) {
+        console.log('Error parsing contact log response:', err);
         // If JSON parsing fails, return success status based on HTTP status
-        return { success: res.ok };
+        return { 
+          success: res.ok, 
+          data: { 
+            ...contactLog,
+            id: Date.now(), // Temporary ID in case we can't get the real one
+            userId: 0, // Placeholder
+            timestamp: new Date().toISOString()
+          } 
+        };
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Force immediate refresh of contact logs
       queryClient.invalidateQueries({ queryKey: [`/api/leads/${leadId}/contact-logs`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/leads`] });
       
-      // Also mark contact as complete
+      // Also mark contact as complete if this is the first contact
       if (!contactComplete) {
         updateProgressMutation.mutate({ contactComplete: true });
       }
@@ -167,6 +209,7 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
       onUpdate();
     },
     onError: (error: Error) => {
+      console.error('Error adding contact log:', error);
       toast({
         title: "Failed to add contact log",
         description: error.message,

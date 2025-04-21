@@ -417,6 +417,29 @@ export default function SalesTeamPage() {
       });
     },
   });
+  
+  // Restore sample leads mutation
+  const restoreSampleLeadsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/leads/restore-samples", {});
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/leads/unassigned"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      toast({
+        title: "Sample leads restored",
+        description: `${data.data.length} sample leads have been added to the whiteboard`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to restore sample leads",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Filter members by search term and status
   const filteredMembers = teamMembers.filter((member: SalesTeamMember) => {
@@ -1252,10 +1275,30 @@ export default function SalesTeamPage() {
         {/* Leads By Salesperson Tab */}
         <TabsContent value="leads-by-salesperson" className="space-y-4">
           <div className="flex flex-col md:flex-row gap-4 md:items-center justify-between mb-4">
-            <h3 className="text-lg font-medium">Leads By Salesperson</h3>
-            <p className="text-sm text-muted-foreground">
-              Showing leads grouped by sales representative
-            </p>
+            <div>
+              <h3 className="text-lg font-medium">Leads By Salesperson</h3>
+              <p className="text-sm text-muted-foreground">
+                Showing leads grouped by sales representative
+              </p>
+            </div>
+            <Button 
+              onClick={() => restoreSampleLeadsMutation.mutate()}
+              disabled={restoreSampleLeadsMutation.isPending}
+              variant="outline"
+              size="sm"
+            >
+              {restoreSampleLeadsMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Restoring...
+                </>
+              ) : (
+                <>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Restore Sample Leads
+                </>
+              )}
+            </Button>
           </div>
           
           {isLoadingTeamMembers || isLoadingAllLeads ? (

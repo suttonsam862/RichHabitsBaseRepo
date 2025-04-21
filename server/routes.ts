@@ -1927,6 +1927,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Restore sample leads to whiteboard - Admin only
+  app.post("/api/admin/leads/restore-samples", hasRequiredPermission(PERMISSIONS.MANAGE_USERS), async (req, res) => {
+    try {
+      // Create sample leads for the whiteboard view
+      const sampleLeads = await storage.createSampleLeads();
+      
+      // Create activity log for the action
+      await storage.createActivity({
+        userId: req.user?.id || 1,
+        type: "system",
+        content: `Sample leads restored to whiteboard (${sampleLeads.length} leads added)`,
+        relatedType: "lead"
+      });
+      
+      res.json({ 
+        success: true, 
+        message: `${sampleLeads.length} sample leads added to whiteboard`, 
+        data: sampleLeads 
+      });
+    } catch (error: any) {
+      console.error("Error restoring sample leads:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
   // Get lead assignments - Admin only
   app.get("/api/admin/leads/assignments", hasRequiredPermission(PERMISSIONS.MANAGE_USERS), async (req, res) => {
     try {

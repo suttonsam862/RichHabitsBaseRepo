@@ -94,11 +94,16 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
   
   // Track which step is currently open in the accordion
   const [openStep, setOpenStep] = React.useState<string>(() => {
-    // Initialize with the first incomplete step
-    if (!initialContactComplete) return "contact";
-    if (!initialItemsConfirmed) return "items";
-    if (!initialSubmittedToDesign) return "design";
-    return "complete"; // All steps complete
+    // Initialize with the first incomplete step, but keep completed steps closed
+    if (initialContactComplete) {
+      // First step is complete, so it should be closed
+      if (!initialItemsConfirmed) return "items"; // Open the second step
+      if (!initialSubmittedToDesign) return "design"; // Open the third step
+      return "complete"; // All steps complete
+    } else {
+      // First step is not complete, so it should be open by default
+      return "contact";
+    }
   });
 
   // Progress update mutation
@@ -230,8 +235,15 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
         // Update local state first for responsive UI
         setContactComplete(true);
         
-        // Also advance to the next step if this completes the contact step
-        setOpenStep('items');
+        // First set the accordion to be closed (nothing open)
+        setOpenStep('');
+        
+        // Then add a delay before opening the second step
+        setTimeout(() => {
+          if (!itemsConfirmed) {
+            setOpenStep('items');
+          }
+        }, 350);
         
         // Then update on server
         updateProgressMutation.mutate({ contactComplete: true });
@@ -363,26 +375,43 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
         setItemsConfirmed(!!result.data.itemsConfirmed);
         setSubmittedToDesign(!!result.data.submittedToDesign);
 
-        // If this was a completion (not an undo), update the open step to the next one
+        // If this was a completion (not an undo), immediately close the current step and open the next one
         if (value) {
           console.log(`Completed step ${step}, transitioning to ${nextStep}`);
-          setOpenStep(nextStep);
+          
+          // First close the current step completely
+          // This ensures any time we view the lead, completed steps stay closed
+          setOpenStep(""); 
           
           // Show success message specific to this step
           switch (step) {
             case 'contact':
               toast({
                 title: "Step 1 Complete",
-                description: "You can now move on to confirming items in Step 2",
+                description: "Lead contact information has been saved",
                 variant: "default",
               });
+              // Add a short delay to allow the closing animation to complete
+              // before opening the next step
+              if (!itemsConfirmed) {
+                setTimeout(() => {
+                  setOpenStep(nextStep);
+                }, 350);
+              }
               break;
             case 'items':
               toast({
                 title: "Step 2 Complete",
-                description: "You can now submit to design in Step 3",
+                description: "Item requirements have been confirmed",
                 variant: "default",
               });
+              // Add a short delay to allow the closing animation to complete
+              // before opening the next step
+              if (!submittedToDesign) {
+                setTimeout(() => {
+                  setOpenStep(nextStep);
+                }, 350);
+              }
               break;
             case 'design':
               toast({
@@ -390,6 +419,10 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                 description: "All steps have been completed successfully",
                 variant: "default",
               });
+              // Then set a timeout to show completion status
+              setTimeout(() => {
+                setOpenStep(nextStep);
+              }, 350);
               break;
           }
         } else {

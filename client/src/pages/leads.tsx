@@ -238,21 +238,29 @@ export default function Leads() {
   // Create a mutation to claim a lead by the current user
   const claimLeadMutation = useMutation({
     mutationFn: async (leadId: number) => {
+      console.log(`Attempting to claim lead ID ${leadId}`);
       return await apiRequest("POST", `/api/leads/${leadId}/claim`, {});
     },
     onSuccess: (response) => {
+      console.log(`Lead claim success! Response:`, response);
+      
       // Invalidate and immediately refetch to refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
       queryClient.refetchQueries({ queryKey: ['/api/leads'] });
       
       // Update the local cache immediately to show the lead in My Leads tab
-      queryClient.setQueryData(['/api/leads', refreshKey], (oldData: any) => {
-        if (!oldData) return oldData;
+      queryClient.setQueryData(['/api/leads'], (oldData: any) => {
+        if (!oldData) {
+          console.log('No existing lead data in cache to update');
+          return oldData;
+        }
+        
+        console.log('Updating lead cache data with claimed lead', response.leadId);
         
         // Update the lead in the data to mark it as claimed by current user
         const updatedLeads = oldData.data.map((lead: any) => {
           if (lead.id === response.leadId) {
-            return {
+            const updatedLead = {
               ...lead,
               claimed: true,
               claimedById: user?.id,
@@ -260,6 +268,8 @@ export default function Leads() {
               salesRepId: user?.id,
               status: "claimed"
             };
+            console.log(`Updated lead ${lead.id} in cache:`, updatedLead);
+            return updatedLead;
           }
           return lead;
         });

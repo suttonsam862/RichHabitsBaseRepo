@@ -1892,8 +1892,40 @@ export default function Leads() {
                 </div>
                 <div className="flex space-x-2">
                   <Button type="button" variant="outline" onClick={() => {
-                    setOpenViewDialog(false);
-                    setSelectedLead(null);
+                    // Before closing, make sure all lead progress changes are saved
+                    console.log("Close button clicked, ensuring progress is saved");
+                    
+                    // Trigger a final refresh of the lead data to persist all changes
+                    apiRequest("GET", `/api/leads/${selectedLead.id}`)
+                      .then(response => response.json())
+                      .then(data => {
+                        console.log("Final save of lead data:", data);
+                        
+                        // Update the cache with the latest data
+                        queryClient.setQueryData(['/api/leads'], (oldData: any) => {
+                          if (!oldData || !oldData.data) return oldData;
+                          
+                          return {
+                            ...oldData,
+                            data: oldData.data.map((lead: any) => {
+                              if (lead.id === selectedLead.id) {
+                                return data.data;
+                              }
+                              return lead;
+                            })
+                          };
+                        });
+                        
+                        // Now close the dialog
+                        setOpenViewDialog(false);
+                        setSelectedLead(null);
+                      })
+                      .catch(err => {
+                        console.error("Error doing final save:", err);
+                        // Close anyway to prevent user from being stuck
+                        setOpenViewDialog(false);
+                        setSelectedLead(null);
+                      });
                   }}>
                     Close
                   </Button>

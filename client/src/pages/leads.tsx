@@ -480,10 +480,19 @@ export default function Leads() {
       // 2. Claimed by the user (claimed === true AND claimedById === user.id)
       // 3. Has status "claimed" and was claimed by this user
       // 4. User has executive role (they can see and manage all claimed leads as their own)
+      // 5. For Sam Sutton (admin with ID 1) - show leads assigned to him in sales management
       console.log(`Checking lead ${lead.id} - ${lead.name}: salesRepId=${lead.salesRepId}, claimed=${lead.claimed}, claimedById=${lead.claimedById}, status=${lead.status}, user.id=${user?.id}, isExecutive=${isExecutive}, isAdmin=${isAdmin}`);
       
+      // For Sam Sutton (admin user ID 1), include leads assigned to him as a sales rep
+      if (isAdmin && user?.id === 1) {
+        if (lead.salesRepId === 1) {
+          console.log(`Lead ${lead.id} - ${lead.name} matches for Sam Sutton by salesRepId=1`);
+          return true;
+        }
+      }
+      
       // Executive role can see all leads they personally claimed OR that are assigned to them
-      if (isExecutive || isAdmin) {
+      if (isExecutive || (isAdmin && user?.id !== 1)) { // Exclude Sam Sutton from general admin rule
         if (lead.salesRepId === user?.id || lead.claimedById === user?.id) {
           console.log(`Lead ${lead.id} - ${lead.name} matches for executive/admin by direct assignment`);
           return true;

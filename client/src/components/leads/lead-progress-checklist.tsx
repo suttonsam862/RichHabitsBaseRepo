@@ -19,8 +19,15 @@ import {
   BookOpen, 
   ArrowRight,
   CheckSquare,
-  Package
+  Package,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -83,6 +90,15 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
   const [contactComplete, setContactComplete] = React.useState<boolean>(initialContactComplete);
   const [itemsConfirmed, setItemsConfirmed] = React.useState<boolean>(initialItemsConfirmed);
   const [submittedToDesign, setSubmittedToDesign] = React.useState<boolean>(initialSubmittedToDesign);
+  
+  // Track which step is currently open in the accordion
+  const [openStep, setOpenStep] = React.useState<string>(() => {
+    // Initialize with the first incomplete step
+    if (!initialContactComplete) return "contact";
+    if (!initialItemsConfirmed) return "items";
+    if (!initialSubmittedToDesign) return "design";
+    return "complete"; // All steps complete
+  });
 
   // Progress update mutation
   const updateProgressMutation = useMutation({
@@ -262,7 +278,7 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
     });
   };
 
-  // We need a more reliable function that doesn't close dialogs or cause UI jumps
+  // Improved function that implements accordion-style step flow
   const handleToggleStep = async (step: string, value: boolean) => {
     try {
       // This object will track what we're updating
@@ -275,11 +291,19 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
       // First update the UI state directly for immediate feedback
       console.log(`Updating step ${step} to ${value}`);
       
+      // If this is completing a step, we need to handle step transitions
+      let nextStep = step;
+      
       switch (step) {
         case 'contact': {
           // Update local component state
           setContactComplete(value);
           progressUpdates.contactComplete = value;
+          
+          if (value) {
+            // If completing this step, we should advance to the next one
+            nextStep = 'items';
+          }
           break;
         }
         
@@ -287,6 +311,11 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
           // Update local component state
           setItemsConfirmed(value);
           progressUpdates.itemsConfirmed = value;
+          
+          if (value) {
+            // If completing this step, we should advance to the next one
+            nextStep = 'design';
+          }
           break;
         }
         
@@ -294,6 +323,11 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
           // Update local component state
           setSubmittedToDesign(value);
           progressUpdates.submittedToDesign = value;
+          
+          if (value) {
+            // If completing this step, we mark "complete" as active
+            nextStep = 'complete';
+          }
           break;
         }
       }
@@ -324,8 +358,12 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
         setItemsConfirmed(!!result.data.itemsConfirmed);
         setSubmittedToDesign(!!result.data.submittedToDesign);
 
-        // Show success message if this was marking a step complete (not for undoing)
+        // If this was a completion (not an undo), update the open step to the next one
         if (value) {
+          console.log(`Completed step ${step}, transitioning to ${nextStep}`);
+          setOpenStep(nextStep);
+          
+          // Show success message specific to this step
           switch (step) {
             case 'contact':
               toast({
@@ -348,6 +386,19 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                 variant: "default",
               });
               break;
+          }
+        } else {
+          // If this was an undo, we also need to adjust the open step accordingly
+          if (step === 'contact') {
+            setOpenStep('contact');
+          } else if (step === 'items' && !result.data.contactComplete) {
+            setOpenStep('contact');
+          } else if (step === 'items') {
+            setOpenStep('items');
+          } else if (step === 'design' && !result.data.itemsConfirmed) {
+            setOpenStep('items');
+          } else if (step === 'design') {
+            setOpenStep('design');
           }
         }
         

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import logoPath from '@assets/BlackPNG New Rich Habits Logo.png';
+// Import the logo directly
+import logoPath from '../../assets/black-logo.png';
 
 interface LogoParticle {
   x: number;

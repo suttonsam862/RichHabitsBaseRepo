@@ -301,9 +301,6 @@ export default function LeadsWhiteboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/activities/recent'] });
-      // Force refetch to ensure we have the latest data
-      queryClient.refetchQueries({ queryKey: ['/api/leads'] });
       toast({
         title: "Lead deleted",
         description: "Lead has been successfully deleted",
@@ -320,176 +317,184 @@ export default function LeadsWhiteboard() {
     },
   });
 
+  // Setup function to handle form submission
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // The server now handles auto-claiming leads during creation,
-    // so we don't need to make a separate API call to claim the lead
     addLeadMutation.mutate(values);
   }
-  
+
+  // Setup function to handle lead update
   function onUpdate(values: z.infer<typeof formSchema>) {
-    if (selectedLeadId) {
-      updateLeadMutation.mutate({ ...values, id: selectedLeadId });
+    if (selectedLead) {
+      updateLeadMutation.mutate({ ...values, id: selectedLead.id });
     }
   }
 
-  // Create filtered lists for unclaimed and user's leads
-  const unclaimedLeads = leads.filter(lead => lead.status === "new" && !lead.salesRepId)
-    .filter(lead => {
-      const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         lead.email.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesSearch;
-    });
+  // Filter leads that are not claimed yet
+  const unclaimedLeads = leads.filter(lead => 
+      // Only include leads that are NOT claimed or assigned
+      (!lead.claimed || lead.claimed === false) && 
+      (!lead.claimedById) && 
+      (!lead.salesRepId) &&
+      // And match the search term if provided
+      (lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+       lead.email.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
   
-  const myLeads = leads.filter(lead => lead.salesRepId === user?.id)
-    .filter(lead => {
-      const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         lead.email.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-    
-  // Create filtered list for archived leads (for admin only)
-  const archivedLeads = leads.filter(lead => lead.status === "closed" || lead.status === "lost")
-    .filter(lead => {
-      const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         lead.email.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesSearch;
-    });
+  // Create filtered list for my claimed leads
+  const myLeads = leads.filter(lead => 
+      // Only include leads that are assigned to me directly or claimed by me
+      (lead.salesRepId === user?.id || lead.claimedById === user?.id) &&
+      // And match search term and status filter if provided
+      (lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+       lead.email.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
-  // Get a color based on lead status
+  // Function to get color based on lead status for sticky notes
   const getLeadColor = (status: LeadStatus): "pink" | "yellow" | "blue" | "green" | "purple" => {
     switch (status) {
-      case "new": return "green";
-      case "contacted": return "blue";
-      case "qualified": return "purple";
-      case "proposal": return "pink";
-      case "negotiation": return "yellow";
-      case "closed": return "blue";
-      case "lost": return "pink";
-      default: return "yellow";
+      case "new":
+        return "green";
+      case "contacted":
+        return "blue";
+      case "qualified":
+        return "purple";
+      case "proposal":
+        return "yellow";
+      case "negotiation":
+        return "pink";
+      case "closed":
+        return "blue";
+      case "lost":
+        return "pink";
+      default:
+        return "yellow";
     }
   };
 
-  // Create a ViewLeadDialog component
-  const ViewLeadDialog = () => {
-    if (!selectedLead) return null;
-    
-    return (
-      <Dialog open={openViewDialog} onOpenChange={setOpenViewDialog}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>{selectedLead.name}</DialogTitle>
-            <DialogDescription>
-              Lead details and information
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  // Dialog component for viewing a lead
+  const ViewLeadDialog = () => (
+    <Dialog open={openViewDialog} onOpenChange={setOpenViewDialog}>
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl flex items-center gap-2">
+            <UserCircle className="h-5 w-5" />
+            {selectedLead?.name}
+          </DialogTitle>
+          <DialogDescription>
+            Lead Details
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
             <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Contact Information</h3>
-              <div className="space-y-2">
-                <p><span className="font-medium">Email:</span> {selectedLead.email}</p>
-                {selectedLead.phone && <p><span className="font-medium">Phone:</span> {selectedLead.phone}</p>}
-              </div>
-              
-              <h3 className="text-sm font-medium text-gray-500 mt-4 mb-1">Lead Status</h3>
-              <Badge className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedLead.status as LeadStatus)}`}>
-                {selectedLead.status.charAt(0).toUpperCase() + selectedLead.status.slice(1)}
-              </Badge>
-              
-              <h3 className="text-sm font-medium text-gray-500 mt-4 mb-1">Lead Details</h3>
-              <div className="space-y-2">
-                <p><span className="font-medium">Source:</span> {selectedLead.source}</p>
-                <p><span className="font-medium">Created:</span> {formatDate(selectedLead.createdAt)}</p>
-                {selectedLead.value && (
-                  <p>
-                    <span className="font-medium">Est. Value:</span> 
-                    <span className="text-green-600 font-bold"> ${parseFloat(selectedLead.value).toLocaleString()}</span>
-                  </p>
-                )}
+              <h3 className="text-sm font-medium text-gray-500">Contact Info</h3>
+              <p className="mt-1">{selectedLead?.email}</p>
+              {selectedLead?.phone && <p className="mt-1">{selectedLead?.phone}</p>}
+            </div>
+            
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Company</h3>
+              <p className="mt-1">{selectedLead?.companyName || "N/A"}</p>
+            </div>
+            
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Status</h3>
+              <div className="mt-1">
+                <Badge className={getStatusColor(selectedLead?.status as LeadStatus)}>
+                  {selectedLead?.status?.charAt(0).toUpperCase() + selectedLead?.status?.slice(1)}
+                </Badge>
               </div>
             </div>
             
             <div>
-              {selectedLead.notes && (
-                <>
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">Notes</h3>
-                  <div className="bg-gray-50 p-3 rounded-md mb-4">
-                    <p className="text-sm text-gray-700 whitespace-pre-line">{selectedLead.notes}</p>
-                  </div>
-                </>
-              )}
-              
-              {selectedLead.salesRepId === user?.id && (
-                <div className="space-y-3 mt-4">
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">Actions</h3>
-                  <div className="flex flex-wrap gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        setSelectedLeadId(selectedLead.id);
-                        setOpenEditDialog(true);
-                        setOpenViewDialog(false);
-                        // Populate the form with the selected lead data
-                        form.reset({
-                          name: selectedLead.name,
-                          email: selectedLead.email,
-                          phone: selectedLead.phone || "",
-                          source: selectedLead.source || "",
-                          status: selectedLead.status,
-                          notes: selectedLead.notes || "",
-                          value: selectedLead.value || "",
-                        });
-                      }}
-                    >
-                      Edit Lead
-                    </Button>
-                    
-                    {/* Only show Convert to Order if claimed by current user and not already converted */}
-                    {selectedLead.salesRepId === user?.id && selectedLead.status !== "closed" && (
-                      <Button 
-                        size="sm"
-                        onClick={() => convertToOrderMutation.mutate(selectedLead.id)}
-                        disabled={convertToOrderMutation.isPending}
-                      >
-                        {convertToOrderMutation.isPending ? "Converting..." : "Convert to Order"}
-                      </Button>
-                    )}
-                    
-                    {/* Only show Delete button for admin */}
-                    {isAdmin && (
-                      <Button 
-                        variant="destructive" 
-                        size="sm"
-                        onClick={() => deleteLeadMutation.mutate(selectedLead.id)}
-                        disabled={deleteLeadMutation.isPending}
-                      >
-                        {deleteLeadMutation.isPending ? "Deleting..." : "Delete Lead"}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              )}
+              <h3 className="text-sm font-medium text-gray-500">Lead Value</h3>
+              <p className="mt-1">
+                {selectedLead?.value 
+                  ? `$${parseFloat(selectedLead.value).toLocaleString()}` 
+                  : "Not specified"}
+              </p>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Source</h3>
+              <p className="mt-1">{selectedLead?.source || "Not specified"}</p>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Created At</h3>
+              <p className="mt-1">
+                {selectedLead?.createdAt 
+                  ? formatDate(selectedLead.createdAt)
+                  : "Not available"}
+              </p>
             </div>
           </div>
           
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenViewDialog(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  };
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Assigned To</h3>
+              <p className="mt-1">
+                {selectedLead?.salesRepName || (selectedLead?.salesRepId === user?.id ? "You" : "Unassigned")}
+              </p>
+            </div>
+            
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Notes</h3>
+              {selectedLead?.notes ? (
+                <div className="bg-gray-50 p-3 rounded-md mb-4">
+                  <p className="text-sm text-gray-700 whitespace-pre-line">{selectedLead.notes}</p>
+                </div>
+              ) : (
+                <p className="mt-1 text-gray-500 italic">No notes added</p>
+              )}
+            </div>
+            
+            {/* Action buttons */}
+            <div className="mt-6">
+              <h3 className="text-sm font-medium text-gray-500 mb-2">Actions</h3>
+              <div className="flex flex-wrap gap-2">
+                {selectedLead.salesRepId === user?.id && selectedLead.status !== "closed" && (
+                  <Button 
+                    size="sm"
+                    onClick={() => convertToOrderMutation.mutate(selectedLead.id)}
+                    disabled={convertToOrderMutation.isPending}
+                  >
+                    {convertToOrderMutation.isPending ? "Converting..." : "Convert to Order"}
+                  </Button>
+                )}
+                
+                {/* Only show Delete button for admin */}
+                {isAdmin && (
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => deleteLeadMutation.mutate(selectedLead.id)}
+                    disabled={deleteLeadMutation.isPending}
+                  >
+                    {deleteLeadMutation.isPending ? "Deleting..." : "Delete Lead"}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpenViewDialog(false)}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 
   return (
     <>
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-800 py-4 px-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">Leads Board</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">Leads Whiteboard</h1>
           
           <Dialog open={openAddDialog} onOpenChange={setOpenAddDialog}>
             <DialogTrigger asChild>
@@ -498,57 +503,73 @@ export default function LeadsWhiteboard() {
                 Add Lead
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Lead</DialogTitle>
                 <DialogDescription>
-                  Fill in the details below to add a new lead to your system.
+                  Fill in the details below to add a new lead to your pipeline.
                 </DialogDescription>
               </DialogHeader>
               
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="John Doe" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="john@example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone</FormLabel>
-                        <FormControl>
-                          <Input placeholder="+1 (555) 123-4567" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Name <span className="text-red-500">*</span></FormLabel>
+                          <FormControl>
+                            <Input placeholder="John Doe" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email <span className="text-red-500">*</span></FormLabel>
+                          <FormControl>
+                            <Input placeholder="john@example.com" type="email" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="companyName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Company Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Acme Inc" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone</FormLabel>
+                          <FormControl>
+                            <Input placeholder="+1 (555) 123-4567" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   
                   <FormField
                     control={form.control}
@@ -598,7 +619,7 @@ export default function LeadsWhiteboard() {
                       <FormItem>
                         <FormLabel>Notes</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Add any relevant notes about this lead" {...field} />
+                          <Textarea placeholder="Add any relevant details here..." {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -617,140 +638,120 @@ export default function LeadsWhiteboard() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Auto-claim this lead</FormLabel>
+                          <FormLabel>Automatically claim this lead for yourself</FormLabel>
                           <p className="text-sm text-muted-foreground">
-                            If checked, you will automatically claim this lead after creation
+                            The lead will be assigned to you immediately after creation
                           </p>
                         </div>
                       </FormItem>
                     )}
                   />
                   
-                  {/* Organization information section */}
-                  <div className="border-t pt-4 mt-6">
-                    <h3 className="text-base font-medium mb-3">Organization Information</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      A new organization record will be created for this lead. 
-                      You can provide additional details about the organization below.
-                    </p>
+                  {/* Organization information */}
+                  <Separator className="my-4" />
+                  <h3 className="text-md font-medium mb-2">Organization Information</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    An organization will be automatically created with this information.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="website"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Website</FormLabel>
+                          <FormControl>
+                            <Input placeholder="https://example.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="website"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Website</FormLabel>
-                            <FormControl>
-                              <Input placeholder="https://example.com" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="industry"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Industry</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select industry" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Technology">Technology</SelectItem>
-                                <SelectItem value="Healthcare">Healthcare</SelectItem>
-                                <SelectItem value="Education">Education</SelectItem>
-                                <SelectItem value="Finance">Finance</SelectItem>
-                                <SelectItem value="Retail">Retail</SelectItem>
-                                <SelectItem value="Manufacturing">Manufacturing</SelectItem>
-                                <SelectItem value="Services">Services</SelectItem>
-                                <SelectItem value="Other">Other</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name="industry"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Industry</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Technology" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     
-                    <div className="mt-3">
-                      <FormField
-                        control={form.control}
-                        name="address"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Address</FormLabel>
-                            <FormControl>
-                              <Input placeholder="123 Main St." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Address</FormLabel>
+                          <FormControl>
+                            <Input placeholder="123 Main St" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
-                      <FormField
-                        control={form.control}
-                        name="city"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>City</FormLabel>
-                            <FormControl>
-                              <Input placeholder="New York" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="state"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>State</FormLabel>
-                            <FormControl>
-                              <Input placeholder="NY" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="zip"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>ZIP</FormLabel>
-                            <FormControl>
-                              <Input placeholder="10001" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="country"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Country</FormLabel>
-                            <FormControl>
-                              <Input placeholder="USA" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>City</FormLabel>
+                          <FormControl>
+                            <Input placeholder="San Francisco" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>State/Province</FormLabel>
+                          <FormControl>
+                            <Input placeholder="CA" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="zip"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>ZIP/Postal Code</FormLabel>
+                          <FormControl>
+                            <Input placeholder="94103" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="country"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Country</FormLabel>
+                          <FormControl>
+                            <Input placeholder="USA" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
                   
                   <DialogFooter>
@@ -766,318 +767,341 @@ export default function LeadsWhiteboard() {
       </div>
       
       {/* Main content */}
-      <div className="container mx-auto py-6 px-4">
-        {/* Search and filter */}
-        <div className="flex flex-wrap gap-4 mb-6">
-          <div className="relative w-full md:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search leads..."
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
-          <div className="w-full md:w-52">
-            <Select
-              value={statusFilter}
-              onValueChange={(value) => setStatusFilter(value as LeadStatus | "all")}
-            >
-              <SelectTrigger>
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="new">New</SelectItem>
-                <SelectItem value="contacted">Contacted</SelectItem>
-                <SelectItem value="qualified">Qualified</SelectItem>
-                <SelectItem value="proposal">Proposal</SelectItem>
-                <SelectItem value="negotiation">Negotiation</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-                <SelectItem value="lost">Lost</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+      <div className="container mx-auto py-6 px-4 relative">
+        {/* Add animated logo background behind the content */}
+        <AnimatedLogoBackground logoCount={10} className="opacity-100" />
         
-        {/* Leads tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} key={refreshKey} className="space-y-4">
-          <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-2'} mb-6`}>
-            <TabsTrigger value="unclaimed" className="flex items-center">
-              <Inbox className="h-4 w-4 mr-2" />
-              Unclaimed Leads
-            </TabsTrigger>
-            <TabsTrigger value="my-leads" className="flex items-center">
-              <UserCircle className="h-4 w-4 mr-2" />
-              My Leads
-            </TabsTrigger>
-            {isAdmin && (
-              <TabsTrigger value="by-salesperson" className="flex items-center">
-                <Users className="h-4 w-4 mr-2" />
-                Leads By Salesperson
-              </TabsTrigger>
-            )}
-            {isAdmin && (
-              <TabsTrigger value="archived-leads" className="flex items-center">
-                <Archive className="h-4 w-4 mr-2" />
-                Archived Leads
-              </TabsTrigger>
-            )}
-          </TabsList>
+        {/* Content overlay with higher z-index */}
+        <div className="relative z-10">
+          {/* Search and filter */}
+          <div className="flex flex-wrap gap-4 mb-6">
+            <div className="relative w-full md:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search leads..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <div className="w-full md:w-52">
+              <Select
+                value={statusFilter}
+                onValueChange={(value) => setStatusFilter(value as LeadStatus | "all")}
+              >
+                <SelectTrigger>
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="new">New</SelectItem>
+                  <SelectItem value="contacted">Contacted</SelectItem>
+                  <SelectItem value="qualified">Qualified</SelectItem>
+                  <SelectItem value="proposal">Proposal</SelectItem>
+                  <SelectItem value="negotiation">Negotiation</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                  <SelectItem value="lost">Lost</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           
-          <TabsContent value="unclaimed" className="mt-2">
-            <div className="p-6 bg-whiteboard bg-whiteboard-grid bg-grid border border-gray-100 rounded-lg min-h-[600px]">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-medium">Available Opportunities</h3>
-                <p className="text-sm text-gray-500">
-                  {unclaimedLeads.length} {unclaimedLeads.length === 1 ? 'lead' : 'leads'} available to claim
-                </p>
-              </div>
-              
-              <DragDropContext onDragEnd={handleDragEnd}>
-                <div className="flex flex-col md:flex-row gap-6">
-                  {/* Main leads grid area */}
-                  <div className="flex-1">
-                    {unclaimedLeads.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 p-4">
-                        {unclaimedLeads.map((lead, index) => {
-                          // Assign a color based on the lead source or status
-                          const leadColor = getLeadColor(lead.status as LeadStatus);
-                          
-                          // Random rotation between -3 and 3 degrees
-                          const rotation = Math.floor(Math.random() * 7) - 3;
-                          
-                          return (
-                            <Draggable key={lead.id} draggableId={`lead-${lead.id}`} index={index}>
-                              {(provided, snapshot) => (
-                                <div 
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  className="flex justify-center"
-                                  style={{
-                                    ...provided.draggableProps.style,
-                                    opacity: snapshot.isDragging ? 0.8 : 1
-                                  }}
-                                >
-                                  <StickyNote 
-                                    color={leadColor} 
-                                    size="md" 
-                                    glow={true}
-                                    title={lead.name}
-                                    status={lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
-                                    rotation={rotation}
-                                    onClick={() => {
-                                      setSelectedLead(lead);
-                                      setOpenViewDialog(true);
+          {/* Leads tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} key={refreshKey} className="space-y-4">
+            <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'} mb-6`}>
+              <TabsTrigger value="unclaimed" className="flex items-center">
+                <Inbox className="h-4 w-4 mr-2" />
+                Unclaimed Leads
+              </TabsTrigger>
+              <TabsTrigger value="my-leads" className="flex items-center">
+                <UserCircle className="h-4 w-4 mr-2" />
+                My Leads
+              </TabsTrigger>
+              {isAdmin && (
+                <TabsTrigger value="by-salesperson" className="flex items-center">
+                  <Users className="h-4 w-4 mr-2" />
+                  Leads By Salesperson
+                </TabsTrigger>
+              )}
+            </TabsList>
+            
+            <TabsContent value="unclaimed" className="mt-2">
+              <div className="p-6 bg-whiteboard bg-whiteboard-grid bg-grid border border-gray-100 rounded-lg min-h-[600px]">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-medium">Available Opportunities</h3>
+                  <p className="text-sm text-gray-500">
+                    {unclaimedLeads.length} {unclaimedLeads.length === 1 ? 'lead' : 'leads'} available to claim
+                  </p>
+                </div>
+                
+                <DragDropContext onDragEnd={handleDragEnd}>
+                  <div className="flex flex-col md:flex-row gap-6">
+                    {/* Main leads grid area */}
+                    <div className="flex-1">
+                      {unclaimedLeads.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 p-4">
+                          {unclaimedLeads.map((lead, index) => {
+                            // Assign a color based on the lead source or status
+                            const leadColor = getLeadColor(lead.status as LeadStatus);
+                            
+                            // Random rotation between -3 and 3 degrees
+                            const rotation = Math.floor(Math.random() * 7) - 3;
+                            
+                            return (
+                              <Draggable key={lead.id} draggableId={`lead-${lead.id}`} index={index}>
+                                {(provided, snapshot) => (
+                                  <div 
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    className="flex justify-center"
+                                    style={{
+                                      ...provided.draggableProps.style,
+                                      opacity: snapshot.isDragging ? 0.8 : 1
                                     }}
-                                    className="w-full"
                                   >
-                                    <div className="space-y-2 mt-2">
-                                      <p>{lead.email}</p>
-                                      {lead.phone && <p>{lead.phone}</p>}
-                                      
-                                      <div className="flex items-center mt-2">
-                                        <span className="text-xs font-bold mr-1">Source:</span>
-                                        <span className="text-xs">{lead.source}</span>
-                                      </div>
-                                      
-                                      {lead.notes && (
-                                        <p className="mt-2 text-sm line-clamp-2 opacity-80">{lead.notes}</p>
-                                      )}
-                                      
-                                      <div className="mt-3 pt-3 border-t border-black/10">
-                                        {lead.value ? (
-                                          <p className="font-bold">
-                                            Est. Value: ${parseFloat(lead.value).toLocaleString()}
-                                          </p>
-                                        ) : (
-                                          <p className="opacity-75">
-                                            Value: Unknown
-                                          </p>
+                                    <StickyNote 
+                                      color={leadColor} 
+                                      size="md" 
+                                      glow={true}
+                                      title={lead.name}
+                                      status={lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
+                                      rotation={rotation}
+                                      onClick={() => {
+                                        setSelectedLead(lead);
+                                        setOpenViewDialog(true);
+                                      }}
+                                      className="w-full"
+                                    >
+                                      <div className="space-y-2 mt-2">
+                                        <p>{lead.email}</p>
+                                        {lead.phone && <p>{lead.phone}</p>}
+                                        
+                                        <div className="flex items-center mt-2">
+                                          <span className="text-xs font-bold mr-1">Source:</span>
+                                          <span className="text-xs">{lead.source}</span>
+                                        </div>
+                                        
+                                        {lead.notes && (
+                                          <p className="mt-2 text-sm line-clamp-2 opacity-80">{lead.notes}</p>
                                         )}
+                                        
+                                        <div className="mt-3 pt-3 border-t border-black/10">
+                                          {lead.value ? (
+                                            <p className="font-bold">
+                                              Est. Value: ${parseFloat(lead.value).toLocaleString()}
+                                            </p>
+                                          ) : (
+                                            <p className="opacity-75">
+                                              Value: Unknown
+                                            </p>
+                                          )}
+                                        </div>
+                                        
+                                        <Button
+                                          variant="default"
+                                          size="sm"
+                                          className="mt-2 w-full shadow-md"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            claimLeadMutation.mutate(lead.id);
+                                          }}
+                                          disabled={claimLeadMutation.isPending}
+                                        >
+                                          {claimLeadMutation.isPending ? "Claiming..." : "Claim Lead"}
+                                        </Button>
                                       </div>
-                                      
-                                      <Button
-                                        variant="default"
-                                        size="sm"
-                                        className="mt-2 w-full shadow-md"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          claimLeadMutation.mutate(lead.id);
-                                        }}
-                                        disabled={claimLeadMutation.isPending}
-                                      >
-                                        {claimLeadMutation.isPending ? "Claiming..." : "Claim Lead"}
-                                      </Button>
-                                    </div>
-                                  </StickyNote>
-                                </div>
-                              )}
-                            </Draggable>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="text-center py-10">
-                        <div className="mx-auto w-16 h-16 flex items-center justify-center rounded-full bg-gray-100">
-                          <Inbox className="h-8 w-8 text-gray-400" />
+                                    </StickyNote>
+                                  </div>
+                                )}
+                              </Draggable>
+                            );
+                          })}
                         </div>
-                        <h3 className="mt-4 text-lg font-medium text-gray-900">No Unclaimed Leads</h3>
-                        <p className="mt-1 text-sm text-gray-500">
-                          There are currently no unclaimed leads available for you to claim.
-                        </p>
-                        <Button variant="outline" className="mt-6" onClick={() => setOpenAddDialog(true)}>
-                          <Plus className="mr-2 h-4 w-4" />
-                          Create New Lead
-                        </Button>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="text-center py-10">
+                          <div className="mx-auto w-16 h-16 flex items-center justify-center rounded-full bg-gray-100">
+                            <Inbox className="h-8 w-8 text-gray-400" />
+                          </div>
+                          <h3 className="mt-4 text-lg font-medium text-gray-900">No Unclaimed Leads</h3>
+                          <p className="mt-1 text-sm text-gray-500">
+                            There are currently no unclaimed leads available for you to claim.
+                          </p>
+                          <Button variant="outline" className="mt-6" onClick={() => setOpenAddDialog(true)}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Create New Lead
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Claim bucket area - always displayed */}
+                    <Droppable droppableId="claim-bucket">
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          className={`
+                            flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed
+                            ${snapshot.isDraggingOver 
+                              ? 'bg-green-50 border-green-500' 
+                              : 'bg-gray-50 border-gray-300'}
+                            transition-colors w-full md:w-72 h-72 md:h-auto
+                          `}
+                        >
+                          <div className={`
+                            rounded-full p-4 mb-4
+                            ${snapshot.isDraggingOver 
+                              ? 'bg-green-100 text-green-600' 
+                              : 'bg-gray-100 text-gray-500'}
+                          `}>
+                            <DollarSign className="h-10 w-10" />
+                          </div>
+                          <h3 className="text-lg font-semibold mb-2">
+                            {snapshot.isDraggingOver ? "Drop to Claim!" : "Claim Lead"}
+                          </h3>
+                          <p className="text-sm text-center text-gray-500 mb-4">
+                            Drag & drop leads here to claim them for yourself
+                          </p>
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </div>
+                </DragDropContext>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="my-leads" className="mt-2">
+              <div className="p-6 bg-whiteboard bg-whiteboard-grid bg-grid border border-gray-100 rounded-lg min-h-[600px]">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-medium">My Assigned Leads</h3>
+                  <p className="text-sm text-gray-500">
+                    {myLeads.length} {myLeads.length === 1 ? 'lead' : 'leads'} assigned to you
+                  </p>
+                </div>
+                
+                {myLeads.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 p-4">
+                    {myLeads.map((lead, index) => {
+                      // Assign a color based on the lead status
+                      const leadColor = getLeadColor(lead.status as LeadStatus);
+                      
+                      // Random rotation between -3 and 3 degrees
+                      const rotation = Math.floor(Math.random() * 7) - 3;
+                      
+                      return (
+                        <div key={lead.id} className="flex justify-center">
+                          <StickyNote 
+                            color={leadColor} 
+                            size="md" 
+                            glow={true}
+                            title={lead.name}
+                            status={lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
+                            rotation={rotation}
+                            onClick={() => {
+                              setSelectedLead(lead);
+                              setOpenViewDialog(true);
+                            }}
+                            className="w-full"
+                          >
+                            <div className="space-y-2 mt-2">
+                              <p>{lead.email}</p>
+                              {lead.phone && <p>{lead.phone}</p>}
+                              
+                              <div className="flex items-center mt-2">
+                                <span className="text-xs font-bold mr-1">Source:</span>
+                                <span className="text-xs">{lead.source}</span>
+                              </div>
+                              
+                              {lead.notes && (
+                                <p className="mt-2 text-sm line-clamp-2 opacity-80">{lead.notes}</p>
+                              )}
+                              
+                              <div className="mt-3 pt-3 border-t border-black/10">
+                                {lead.value ? (
+                                  <p className="font-bold">
+                                    Est. Value: ${parseFloat(lead.value).toLocaleString()}
+                                  </p>
+                                ) : (
+                                  <p className="opacity-75">
+                                    Value: Unknown
+                                  </p>
+                                )}
+                              </div>
+                              
+                              {lead.status !== "closed" && (
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  className="mt-2 w-full shadow-md"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    convertToOrderMutation.mutate(lead.id);
+                                  }}
+                                  disabled={convertToOrderMutation.isPending}
+                                >
+                                  {convertToOrderMutation.isPending ? "Converting..." : "Convert to Order"}
+                                </Button>
+                              )}
+                            </div>
+                          </StickyNote>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-10">
+                    <div className="mx-auto w-16 h-16 flex items-center justify-center rounded-full bg-gray-100">
+                      <UserCircle className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="mt-4 text-lg font-medium text-gray-900">No Leads Assigned to You</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      You don't have any leads assigned to you yet. Try claiming an unclaimed lead or create a new one.
+                    </p>
+                    <div className="flex gap-4 justify-center mt-6">
+                      <Button variant="outline" onClick={() => setActiveTab("unclaimed")}>
+                        View Unclaimed Leads
+                      </Button>
+                      <Button onClick={() => setOpenAddDialog(true)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create New Lead
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            
+            {/* Admin view - Leads By Salesperson */}
+            {isAdmin && (
+              <TabsContent value="by-salesperson" className="mt-2">
+                <div className="p-6 bg-whiteboard bg-whiteboard-grid bg-grid border border-gray-100 rounded-lg min-h-[600px]">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-medium">Leads By Salesperson</h3>
+                    <p className="text-sm text-gray-500">
+                      {leads.length} total leads in the system
+                    </p>
                   </div>
                   
-                  {/* Claim bucket area - always displayed */}
-                  <Droppable droppableId="claim-bucket">
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        className={`
-                          flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed
-                          ${snapshot.isDraggingOver 
-                            ? 'bg-green-50 border-green-500' 
-                            : 'bg-gray-50 border-gray-300'}
-                          transition-colors w-full md:w-72 h-72 md:h-auto
-                        `}
-                      >
-                        <div className={`
-                          rounded-full p-4 mb-4
-                          ${snapshot.isDraggingOver 
-                            ? 'bg-green-100 text-green-600' 
-                            : 'bg-gray-100 text-gray-500'}
-                        `}>
-                          <DollarSign className="h-10 w-10" />
-                        </div>
-                        <h3 className="text-lg font-semibold mb-2">
-                          {snapshot.isDraggingOver ? "Drop to Claim!" : "Claim Lead"}
-                        </h3>
-                        <p className="text-sm text-center text-gray-500 mb-4">
-                          Drag & drop leads here to claim them for yourself
-                        </p>
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
-                </div>
-              </DragDropContext>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="my-leads" className="mt-2">
-            <div className="p-6 bg-whiteboard bg-whiteboard-grid bg-grid border border-gray-100 rounded-lg min-h-[600px]">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-medium">My Assigned Leads</h3>
-                <p className="text-sm text-gray-500">
-                  {myLeads.length} {myLeads.length === 1 ? 'lead' : 'leads'} assigned to you
-                </p>
-              </div>
-              
-              {myLeads.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 p-4">
-                  {myLeads.map((lead, index) => {
-                    // Assign a color based on the lead status
-                    const leadColor = getLeadColor(lead.status as LeadStatus);
-                    
-                    // Random rotation between -3 and 3 degrees
-                    const rotation = Math.floor(Math.random() * 7) - 3;
-                    
-                    return (
-                      <div key={lead.id} className="flex justify-center">
-                        <StickyNote 
-                          color={leadColor} 
-                          size="md" 
-                          glow={true}
-                          title={lead.name}
-                          status={lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
-                          rotation={rotation}
-                          onClick={() => {
-                            setSelectedLead(lead);
-                            setOpenViewDialog(true);
-                          }}
-                          className="w-full"
-                        >
-                          <div className="space-y-2 mt-2">
-                            <p>{lead.email}</p>
-                            {lead.phone && <p>{lead.phone}</p>}
-                            
-                            <div className="flex items-center mt-2">
-                              <span className="text-xs font-bold mr-1">Source:</span>
-                              <span className="text-xs">{lead.source}</span>
-                            </div>
-                            
-                            {lead.notes && (
-                              <p className="mt-2 text-sm line-clamp-2 opacity-80">{lead.notes}</p>
-                            )}
-                            
-                            <div className="mt-3 pt-3 border-t border-black/10">
-                              {lead.value ? (
-                                <p className="font-bold">
-                                  Est. Value: ${parseFloat(lead.value).toLocaleString()}
-                                </p>
-                              ) : (
-                                <p className="opacity-75">
-                                  Value: Unknown
-                                </p>
-                              )}
-                            </div>
-                            
-                            {lead.status !== "closed" && (
-                              <Button
-                                variant="default"
-                                size="sm"
-                                className="mt-2 w-full shadow-md"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  convertToOrderMutation.mutate(lead.id);
-                                }}
-                                disabled={convertToOrderMutation.isPending}
-                              >
-                                {convertToOrderMutation.isPending ? "Converting..." : "Convert to Order"}
-                              </Button>
-                            )}
-                          </div>
-                        </StickyNote>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-10">
-                  <div className="mx-auto w-16 h-16 flex items-center justify-center rounded-full bg-gray-100">
-                    <UserCircle className="h-8 w-8 text-gray-400" />
-                  </div>
-                  <h3 className="mt-4 text-lg font-medium text-gray-900">No Leads Assigned to You</h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    You don't have any leads assigned to you yet. Try claiming an unclaimed lead or create a new one.
-                  </p>
-                  <div className="flex gap-4 justify-center mt-6">
-                    <Button variant="outline" onClick={() => setActiveTab("unclaimed")}>
-                      View Unclaimed Leads
-                    </Button>
-                    <Button onClick={() => setOpenAddDialog(true)}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create New Lead
+                  <div className="text-center">
+                    <p className="text-gray-600 mb-4">
+                      This view is now available in the Admin Dashboard under Sales Management.
+                    </p>
+                    <Button variant="outline" onClick={() => window.location.href = "/admin/sales-team"}>
+                      Go to Sales Team Management
                     </Button>
                   </div>
                 </div>
-              )}
-            </div>
-          </TabsContent>
+              </TabsContent>
+            )}
           
-          {/* Show View Dialog when a lead is selected */}
-          {selectedLead && <ViewLeadDialog />}
-        </Tabs>
+            {/* Show View Dialog when a lead is selected */}
+            {selectedLead && <ViewLeadDialog />}
+          </Tabs>
+        </div>
       </div>
     </>
   );

@@ -156,8 +156,10 @@ export default function SalesTeamPage() {
   const [selectedMember, setSelectedMember] = useState<SalesTeamMember | null>(null);
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
   const [isAssignLeadDialogOpen, setIsAssignLeadDialogOpen] = useState(false);
+  const [isEditLeadDialogOpen, setIsEditLeadDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editedMember, setEditedMember] = useState<Partial<SalesTeamMember>>({});
+  const [editLeadData, setEditLeadData] = useState<any>({});
   const [assignmentData, setAssignmentData] = useState<{
     leadId: number;
     salesRepId: number;
@@ -457,6 +459,31 @@ export default function SalesTeamPage() {
       });
     },
   });
+  
+  // Edit lead mutation
+  const editLeadMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("PATCH", `/api/leads/${data.id}`, data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/leads/unassigned"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/leads/assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      setIsEditLeadDialogOpen(false);
+      toast({
+        title: "Lead updated",
+        description: "Lead information has been successfully updated",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update lead",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Filter members by search term and status
   const filteredMembers = teamMembers.filter((member: SalesTeamMember) => {
@@ -580,6 +607,35 @@ export default function SalesTeamPage() {
         return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">On Leave</Badge>;
       default:
         return <Badge>{status}</Badge>;
+    }
+  };
+  
+  // Handler for editing a lead
+  const handleEditLead = (lead: any) => {
+    setEditLeadData({
+      id: lead.id,
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+      source: lead.source,
+      status: lead.status,
+      notes: lead.notes
+    });
+    setIsEditLeadDialogOpen(true);
+  };
+  
+  // Handler for editing a lead assignment
+  const handleEditLeadAssignment = (assignment: LeadAssignment) => {
+    // Find the actual lead from the leads list to get full details
+    const lead = allLeads.find((l: any) => l.id === assignment.leadId);
+    if (lead) {
+      handleEditLead(lead);
+    } else {
+      toast({
+        title: "Lead not found",
+        description: "Could not find the lead details for editing",
+        variant: "destructive",
+      });
     }
   };
   
@@ -1967,6 +2023,106 @@ export default function SalesTeamPage() {
                 </>
               ) : (
                 "Assign Lead"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Lead Dialog */}
+      <Dialog open={isEditLeadDialogOpen} onOpenChange={setIsEditLeadDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Lead Information</DialogTitle>
+            <DialogDescription>
+              Update lead details and status. Click save when you're done.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="lead-name">Name</Label>
+                <Input
+                  id="lead-name"
+                  value={editLeadData.name || ''}
+                  onChange={(e) => setEditLeadData({ ...editLeadData, name: e.target.value })}
+                  placeholder="Full name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lead-email">Email</Label>
+                <Input
+                  id="lead-email"
+                  value={editLeadData.email || ''}
+                  onChange={(e) => setEditLeadData({ ...editLeadData, email: e.target.value })}
+                  placeholder="Email address"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lead-phone">Phone</Label>
+                <Input
+                  id="lead-phone"
+                  value={editLeadData.phone || ''}
+                  onChange={(e) => setEditLeadData({ ...editLeadData, phone: e.target.value })}
+                  placeholder="Phone number"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lead-source">Source</Label>
+                <Input
+                  id="lead-source"
+                  value={editLeadData.source || ''}
+                  onChange={(e) => setEditLeadData({ ...editLeadData, source: e.target.value })}
+                  placeholder="Where did this lead come from?"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lead-status">Status</Label>
+                <Select 
+                  value={editLeadData.status || 'new'} 
+                  onValueChange={(value) => setEditLeadData({ ...editLeadData, status: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="contacted">Contacted</SelectItem>
+                    <SelectItem value="qualified">Qualified</SelectItem>
+                    <SelectItem value="proposal">Proposal</SelectItem>
+                    <SelectItem value="negotiation">Negotiation</SelectItem>
+                    <SelectItem value="closed">Closed (Won)</SelectItem>
+                    <SelectItem value="lost">Lost</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lead-notes">Notes</Label>
+                <Textarea
+                  id="lead-notes"
+                  value={editLeadData.notes || ''}
+                  onChange={(e) => setEditLeadData({ ...editLeadData, notes: e.target.value })}
+                  placeholder="Additional information about this lead"
+                  rows={4}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditLeadDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => editLeadMutation.mutate(editLeadData)}
+              disabled={editLeadMutation.isPending}
+            >
+              {editLeadMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
               )}
             </Button>
           </DialogFooter>

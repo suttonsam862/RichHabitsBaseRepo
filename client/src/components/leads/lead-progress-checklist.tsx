@@ -381,34 +381,41 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
     icon: React.ElementType,
     isDisabled: boolean = false
   ) => (
-    <div className="flex items-start space-x-4 mb-6">
+    <div className={`flex items-start space-x-4 mb-6 ${completed ? 'bg-green-50 p-3 rounded-md border border-green-100' : isDisabled ? 'opacity-60' : ''}`}>
       {getStepIcon(completed, icon)}
       <div className="flex-1">
         <div className="flex justify-between">
           <div>
-            <h3 className="font-medium text-gray-900">{title}</h3>
-            <p className="text-sm text-gray-500">{description}</p>
+            <h3 className={`font-medium ${completed ? 'text-green-800' : 'text-gray-900'}`}>{title}</h3>
+            <p className={`text-sm ${completed ? 'text-green-700' : 'text-gray-500'}`}>
+              {description}
+              {completed && <span className="ml-2 font-medium">✓ Complete</span>}
+            </p>
           </div>
           <div>
             {completed ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-gray-600"
-                onClick={() => handleToggleStep(stepName, false)}
-                disabled={isDisabled || updateProgressMutation.isPending}
-              >
-                <Circle className="mr-1 h-3.5 w-3.5" /> Mark Incomplete
-              </Button>
+              <div className="flex items-center">
+                <Badge className="bg-green-600 text-white mr-2">Completed</Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-gray-600"
+                  onClick={() => handleToggleStep(stepName, false)}
+                  disabled={updateProgressMutation.isPending}
+                >
+                  <Circle className="mr-1 h-3.5 w-3.5" /> Undo
+                </Button>
+              </div>
             ) : (
               <Button
-                variant="outline"
+                variant={isDisabled ? "outline" : "default"}
                 size="sm"
-                className="text-green-600"
+                className={isDisabled ? "text-gray-400" : "bg-green-600 hover:bg-green-700 text-white"}
                 onClick={() => handleToggleStep(stepName, true)}
                 disabled={isDisabled || updateProgressMutation.isPending}
               >
-                <CheckSquare className="mr-1 h-3.5 w-3.5" /> Mark Complete
+                <CheckSquare className="mr-1 h-3.5 w-3.5" /> 
+                {updateProgressMutation.isPending ? "Saving..." : "Mark Complete"}
               </Button>
             )}
           </div>

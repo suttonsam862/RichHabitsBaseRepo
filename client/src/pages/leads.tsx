@@ -62,10 +62,13 @@ export default function Leads() {
   // Check if user is admin (for archived leads tab)
   const isAdmin = user?.role === 'admin';
   
+  // Refresh key to force re-render when needed
+  const [refreshKey, setRefreshKey] = useState(0);
+  
   const { data, isLoading } = useQuery({
-    queryKey: ['/api/leads'],
+    queryKey: ['/api/leads', refreshKey], // Add refreshKey to the query key
     refetchInterval: false,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true, // Enable to make sure changes are reflected
   });
 
   // Use data from the API
@@ -231,8 +234,6 @@ export default function Leads() {
 
   // State to control active tab
   const [activeTab, setActiveTab] = useState("whiteboard");
-  // Refresh key to force re-render when needed
-  const [refreshKey, setRefreshKey] = useState(0);
   
   // Create a mutation to claim a lead by the current user
   const claimLeadMutation = useMutation({
@@ -240,11 +241,12 @@ export default function Leads() {
       return await apiRequest("POST", `/api/leads/${leadId}/claim`, {});
     },
     onSuccess: (response) => {
-      // Invalidate to refresh data
+      // Invalidate and immediately refetch to refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+      queryClient.refetchQueries({ queryKey: ['/api/leads'] });
       
       // Update the local cache immediately to show the lead in My Leads tab
-      queryClient.setQueryData(['/api/leads'], (oldData: any) => {
+      queryClient.setQueryData(['/api/leads', refreshKey], (oldData: any) => {
         if (!oldData) return oldData;
         
         // Update the lead in the data to mark it as claimed by current user
@@ -253,9 +255,9 @@ export default function Leads() {
             return {
               ...lead,
               claimed: true,
-              claimedById: user.id,
+              claimedById: user?.id,
               claimedAt: new Date().toISOString(),
-              salesRepId: user.id,
+              salesRepId: user?.id,
               status: "claimed"
             };
           }
@@ -267,11 +269,16 @@ export default function Leads() {
       
       // Switch to My Leads tab and force refresh
       setActiveTab("my-leads");
+      
+      // Increment the refresh key to force a re-fetch and re-render
       setRefreshKey(prev => prev + 1);
+      
+      // Log the update for debugging
+      console.log(`Lead ${response.leadId} claimed and marked as claimed in cache, refresh key = ${refreshKey + 1}`);
       
       toast({
         title: "Lead claimed",
-        description: "Lead has been successfully claimed. You'll be able to convert it to an order after the 3-day verification period.",
+        description: "Lead has been successfully claimed and added to your My Leads tab.",
       });
     },
     onError: (error: any) => {

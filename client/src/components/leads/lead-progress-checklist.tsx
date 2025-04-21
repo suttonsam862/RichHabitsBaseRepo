@@ -560,21 +560,9 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                 <Dialog 
                   open={isContactLogOpen} 
                   modal={true}
-                  onOpenChange={(open) => {
+                  onOpenChange={(open: boolean): void => {
                     console.log(`Contact log dialog ${open ? 'opening' : 'closing'}`);
-                    // Only allow changes we explicitly control to prevent bubbling up to parent dialog
-                    if (open !== isContactLogOpen) {
-                      if (!open) {
-                        // If closing, make sure we prevent bubbling to parent dialog
-                        console.log("Preventing potential parent dialog close");
-                      }
-                      setIsContactLogOpen(open);
-                    }
-                    
-                    // Return false to prevent the default behavior that might close parent dialogs
-                    if (!open) {
-                      return false;
-                    }
+                    setIsContactLogOpen(open);
                   }}
                 >
                   <DialogTrigger asChild>
@@ -583,10 +571,19 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                       Log Contact
                     </Button>
                   </DialogTrigger>
-                  <DialogContent onClick={(e) => {
-                    // Prevent click events from bubbling up to parent dialog
-                    e.stopPropagation();
-                  }}>
+                  <DialogContent 
+                    onClick={(e: React.MouseEvent): void => {
+                      // Prevent click events from bubbling up to parent dialog
+                      e.stopPropagation();
+                    }}
+                    onPointerDownOutside={(e): void => {
+                      // Prevent clicks outside from closing the dialog
+                      e.preventDefault();
+                    }}
+                    onInteractOutside={(e): void => {
+                      // Prevent any outside interaction from affecting parent dialog
+                      e.preventDefault();
+                    }}>
                     <DialogHeader>
                       <DialogTitle>Add Contact Log</DialogTitle>
                       <DialogDescription>
@@ -644,21 +641,9 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                 <Dialog 
                   open={isContactLogHistoryOpen} 
                   modal={true}
-                  onOpenChange={(open) => {
+                  onOpenChange={(open: boolean): void => {
                     console.log(`Contact history dialog ${open ? 'opening' : 'closing'}`);
-                    // Only allow changes we explicitly control to prevent bubbling up to parent dialog
-                    if (open !== isContactLogHistoryOpen) {
-                      if (!open) {
-                        // If closing, make sure we prevent bubbling to parent dialog
-                        console.log("Preventing potential parent dialog close");
-                      }
-                      setIsContactLogHistoryOpen(open);
-                    }
-                    
-                    // Return false to prevent the default behavior that might close parent dialogs
-                    if (!open) {
-                      return false;
-                    }
+                    setIsContactLogHistoryOpen(open);
                   }}
                 >
                   <DialogTrigger asChild>
@@ -669,9 +654,17 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                   </DialogTrigger>
                   <DialogContent 
                     className="sm:max-w-[600px]" 
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent): void => {
                       // Prevent click events from bubbling up to parent dialog
                       e.stopPropagation();
+                    }}
+                    onPointerDownOutside={(e): void => {
+                      // Prevent clicks outside from closing the dialog
+                      e.preventDefault();
+                    }}
+                    onInteractOutside={(e): void => {
+                      // Prevent any outside interaction from affecting parent dialog
+                      e.preventDefault();
                     }}
                   >
                     <DialogHeader>

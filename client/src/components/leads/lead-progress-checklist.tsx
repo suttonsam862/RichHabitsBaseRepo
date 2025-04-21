@@ -66,9 +66,9 @@ interface LeadProgressChecklistProps {
 
 const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
   leadId,
-  contactComplete,
-  itemsConfirmed,
-  submittedToDesign,
+  contactComplete: initialContactComplete,
+  itemsConfirmed: initialItemsConfirmed,
+  submittedToDesign: initialSubmittedToDesign,
   contactLogs = [],
   onUpdate,
 }) => {
@@ -78,6 +78,11 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
   const [contactNotes, setContactNotes] = React.useState<string>("");
   const [isContactLogOpen, setIsContactLogOpen] = React.useState<boolean>(false);
   const [isContactLogHistoryOpen, setIsContactLogHistoryOpen] = React.useState<boolean>(false);
+  
+  // Create state values from props so we can update them properly
+  const [contactComplete, setContactComplete] = React.useState<boolean>(initialContactComplete);
+  const [itemsConfirmed, setItemsConfirmed] = React.useState<boolean>(initialItemsConfirmed);
+  const [submittedToDesign, setSubmittedToDesign] = React.useState<boolean>(initialSubmittedToDesign);
 
   // Progress update mutation
   const updateProgressMutation = useMutation({
@@ -112,13 +117,13 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
       if (data.success) {
         // Force the component to re-render with the new values
         if ('contactComplete' in data.data) {
-          contactComplete = data.data.contactComplete;
+          setContactComplete(data.data.contactComplete);
         }
         if ('itemsConfirmed' in data.data) {
-          itemsConfirmed = data.data.itemsConfirmed;
+          setItemsConfirmed(data.data.itemsConfirmed);
         }
         if ('submittedToDesign' in data.data) {
-          submittedToDesign = data.data.submittedToDesign;
+          setSubmittedToDesign(data.data.submittedToDesign);
         }
       }
       
@@ -194,6 +199,7 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
       // Also mark contact as complete if this is the first contact
       if (!contactComplete) {
         updateProgressMutation.mutate({ contactComplete: true });
+        setContactComplete(true);
       }
       
       // Reset form and close dialog
@@ -239,12 +245,15 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
     switch (step) {
       case 'contact':
         updateProgressMutation.mutate({ contactComplete: value });
+        setContactComplete(value); // Update local state immediately for responsive UI
         break;
       case 'items':
         updateProgressMutation.mutate({ itemsConfirmed: value });
+        setItemsConfirmed(value); // Update local state immediately for responsive UI
         break;
       case 'design':
         updateProgressMutation.mutate({ submittedToDesign: value });
+        setSubmittedToDesign(value); // Update local state immediately for responsive UI
         break;
     }
   };

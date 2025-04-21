@@ -134,7 +134,7 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
         // Map through the leads and update the specific lead that was modified
         const updatedLeads = oldData.data.map((lead: any) => {
           if (lead.id === leadId) {
-            return {
+            const updatedLead = {
               ...lead,
               contactComplete: data.data.contactComplete !== undefined 
                 ? data.data.contactComplete 
@@ -146,6 +146,8 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                 ? data.data.submittedToDesign 
                 : lead.submittedToDesign
             };
+            
+            return updatedLead;
           }
           return lead;
         });
@@ -156,11 +158,7 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
       // Only call onUpdate after modifying the cache directly to avoid navigation issues
       onUpdate();
       
-      // Show success message
-      toast({
-        title: "Progress updated",
-        description: "Lead progress has been updated successfully.",
-      });
+      // No need for duplicate success messages as handleToggleStep already shows them
       
       // Schedule a background refetch to ensure data consistency
       setTimeout(() => {
@@ -310,20 +308,79 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
   };
 
   const handleToggleStep = (step: string, value: boolean) => {
+    // Create a progress object to track all changes we need to make
+    let progress: { 
+      contactComplete?: boolean; 
+      itemsConfirmed?: boolean; 
+      submittedToDesign?: boolean; 
+    } = {};
+    
     switch (step) {
       case 'contact':
-        updateProgressMutation.mutate({ contactComplete: value });
+        // Update the contact step
+        progress.contactComplete = value;
         setContactComplete(value); // Update local state immediately for responsive UI
+        
+        // If marking complete, make sure we update the cache properly
+        if (value) {
+          // Show a confirmation message that next step is now available
+          toast({
+            title: "Step completed",
+            description: "You can now confirm items in Step 2.",
+          });
+        }
         break;
+        
       case 'items':
-        updateProgressMutation.mutate({ itemsConfirmed: value });
+        // Update the items step
+        progress.itemsConfirmed = value;
         setItemsConfirmed(value); // Update local state immediately for responsive UI
+        
+        // If marking complete, make sure we update the cache properly
+        if (value) {
+          // Show a confirmation message that next step is now available
+          toast({
+            title: "Step completed",
+            description: "You can now submit to design in Step 3.",
+          });
+        }
         break;
+        
       case 'design':
-        updateProgressMutation.mutate({ submittedToDesign: value });
+        // Update the design step
+        progress.submittedToDesign = value;
         setSubmittedToDesign(value); // Update local state immediately for responsive UI
+        
+        // If marking complete, show a success message
+        if (value) {
+          toast({
+            title: "All steps completed",
+            description: "Lead has been successfully processed through all steps.",
+          });
+        }
         break;
     }
+    
+    // Update the cache with our changes
+    queryClient.setQueryData(["/api/leads"], (oldData: any) => {
+      if (!oldData || !oldData.data) return oldData;
+      
+      // Find and update the specific lead with all progress updates
+      const updatedLeads = oldData.data.map((lead: any) => {
+        if (lead.id === leadId) {
+          return {
+            ...lead,
+            ...progress // Apply all progress updates
+          };
+        }
+        return lead;
+      });
+      
+      return { ...oldData, data: updatedLeads };
+    });
+    
+    // Send the update to the server
+    updateProgressMutation.mutate(progress);
   };
 
   const getStepIcon = (completed: boolean, Icon: React.ElementType) => {

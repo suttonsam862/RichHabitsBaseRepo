@@ -117,7 +117,7 @@ import {
   type InsertRegistrationCommunication
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, sql, and, or, isNull, asc, inArray } from "drizzle-orm";
+import { eq, desc, sql, and, or, isNull, isNotNull, notExists, asc, inArray } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -1380,7 +1380,12 @@ export class DatabaseStorage implements IStorage {
   async getUnassignedLeads(): Promise<Lead[]> {
     return db.select()
       .from(leads)
-      .where(eq(leads.status, 'new'))
+      .where(
+        and(
+          isNull(leads.salesRepId),
+          eq(leads.claimed, false)
+        )
+      )
       .orderBy(desc(leads.createdAt));
   }
   

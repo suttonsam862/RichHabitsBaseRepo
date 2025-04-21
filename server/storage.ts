@@ -1330,10 +1330,15 @@ export class DatabaseStorage implements IStorage {
   
   async getLeadAssignments(): Promise<any[]> {
     // In a real implementation, we would have a lead_assignments table
-    // For now, we'll just return leads with salesRepId populated
+    // For now, we'll return both leads with salesRepId populated and claimed leads
     const assignedLeads = await db.select()
       .from(leads)
-      .where(sql`sales_rep_id IS NOT NULL`)
+      .where(
+        or(
+          sql`sales_rep_id IS NOT NULL`,
+          sql`claimed = true`
+        )
+      )
       .orderBy(desc(leads.createdAt));
     
     return assignedLeads;

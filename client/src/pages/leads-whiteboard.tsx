@@ -19,12 +19,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
-import { insertLeadSchema } from "@shared/schema";
+import { insertLeadSchema, ROLES } from "@shared/schema";
 import { Lead, LeadStatus } from "@/types";
 import { HelpIconOnly } from "@/components/ui/help-tooltip";
 import { useAuth } from "@/hooks/use-auth";
 import { StickyNote } from "@/components/ui/sticky-note";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
+import { AnimatedLogoBackground } from "@/components/ui/animated-logo-background";
 
 const formSchema = insertLeadSchema.extend({
   companyName: z.string().optional().nullable(),

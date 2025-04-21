@@ -1502,12 +1502,15 @@ export class DatabaseStorage implements IStorage {
     .where(isNotNull(leads.salesRepId))
     .orderBy(desc(leads.createdAt));
 
-    // Get the name of each sales rep
+    // Get the name of each sales rep using explicit column selection
     const assignments = await Promise.all(
       assignedLeads.map(async (lead) => {
-        const [salesRep] = await db.select()
-          .from(salesTeamMembers)
-          .where(eq(salesTeamMembers.id, lead.assignedToId));
+        const [salesRep] = await db.select({
+          id: salesTeamMembers.id,
+          name: salesTeamMembers.name
+        })
+        .from(salesTeamMembers)
+        .where(eq(salesTeamMembers.id, lead.assignedToId));
 
         return {
           id: lead.id,
@@ -1540,7 +1543,13 @@ export class DatabaseStorage implements IStorage {
     
     // Update the sales rep's lead count
     // In a real application, we would use a transaction here
-    const [salesRep] = await db.select().from(salesTeamMembers).where(eq(salesTeamMembers.id, salesRepId));
+    const [salesRep] = await db.select({
+      id: salesTeamMembers.id,
+      leadCount: salesTeamMembers.leadCount
+    })
+    .from(salesTeamMembers)
+    .where(eq(salesTeamMembers.id, salesRepId));
+    
     if (salesRep) {
       await db.update(salesTeamMembers)
         .set({ 

@@ -91,7 +91,20 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
         `/api/leads/${leadId}/progress`, 
         progress
       );
-      return await res.json();
+      
+      // Handle response - avoid parsing as JSON if not valid JSON
+      try {
+        const contentType = res.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          return await res.json();
+        } else {
+          // Not JSON, just return success status
+          return { success: res.ok };
+        }
+      } catch (err) {
+        // If JSON parsing fails, return success status based on HTTP status
+        return { success: res.ok };
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
@@ -118,7 +131,20 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
         `/api/leads/${leadId}/contact-logs`, 
         contactLog
       );
-      return await res.json();
+      
+      // Handle response - avoid parsing as JSON if not valid JSON
+      try {
+        const contentType = res.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          return await res.json();
+        } else {
+          // Not JSON, just return success status
+          return { success: res.ok };
+        }
+      } catch (err) {
+        // If JSON parsing fails, return success status based on HTTP status
+        return { success: res.ok };
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/leads/${leadId}/contact-logs`] });

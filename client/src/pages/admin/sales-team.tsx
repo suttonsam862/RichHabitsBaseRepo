@@ -75,6 +75,8 @@ import {
   Filter,
   MoreHorizontal,
   Edit,
+  Eye,
+  Pencil,
   Trash,
   Mail,
   Phone,
@@ -1187,7 +1189,6 @@ export default function SalesTeamPage() {
                     <TableRow>
                       <TableHead>Lead</TableHead>
                       <TableHead>Source</TableHead>
-                      <TableHead>Value</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -1202,15 +1203,23 @@ export default function SalesTeamPage() {
                           </div>
                         </TableCell>
                         <TableCell>{lead.source}</TableCell>
-                        <TableCell>{formatCurrency(parseFloat(lead.value))}</TableCell>
                         <TableCell>{formatDate(lead.createdAt)}</TableCell>
                         <TableCell className="text-right">
-                          <Button 
-                            size="sm" 
-                            onClick={() => setIsAssignLeadDialogOpen(true)}
-                          >
-                            Assign
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleEditLead(lead)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              onClick={() => setIsAssignLeadDialogOpen(true)}
+                            >
+                              Assign
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1246,8 +1255,8 @@ export default function SalesTeamPage() {
                       <TableHead>Lead</TableHead>
                       <TableHead>Assigned To</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Value</TableHead>
                       <TableHead>Assigned Date</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1276,8 +1285,18 @@ export default function SalesTeamPage() {
                             {assignment.status.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())}
                           </Badge>
                         </TableCell>
-                        <TableCell>{formatCurrency(parseFloat(assignment.value))}</TableCell>
                         <TableCell>{formatDate(assignment.assignedAt)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleEditLeadAssignment(assignment)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -1360,7 +1379,6 @@ export default function SalesTeamPage() {
                                 <TableRow>
                                   <TableHead>Lead</TableHead>
                                   <TableHead>Status</TableHead>
-                                  <TableHead>Value</TableHead>
                                   <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -1376,23 +1394,24 @@ export default function SalesTeamPage() {
                                         {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
                                       </Badge>
                                     </TableCell>
-                                    <TableCell>
-                                      {lead.value ? (
-                                        <span className="text-sm font-medium text-green-600">
-                                          ${parseFloat(lead.value).toLocaleString()}
-                                        </span>
-                                      ) : (
-                                        <span className="text-sm text-muted-foreground">Unknown</span>
-                                      )}
-                                    </TableCell>
                                     <TableCell className="text-right">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="mr-2"
-                                      >
-                                        View
-                                      </Button>
+                                      <div className="flex justify-end gap-2">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleEditLead(lead)}
+                                        >
+                                          <Pencil className="h-3.5 w-3.5 mr-1" />
+                                          Edit
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                        >
+                                          <Eye className="h-3.5 w-3.5 mr-1" />
+                                          View
+                                        </Button>
+                                      </div>
                                     </TableCell>
                                   </TableRow>
                                 ))}

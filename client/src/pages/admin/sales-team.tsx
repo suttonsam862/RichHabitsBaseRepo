@@ -85,6 +85,7 @@ import {
   BadgeDollarSign,
   User,
   Loader2,
+  PlusCircle,
 } from "lucide-react";
 
 // Type definitions

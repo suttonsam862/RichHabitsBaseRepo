@@ -248,6 +248,13 @@ export default function Leads() {
   // State to control active tab
   const [activeTab, setActiveTab] = useState(getInitialTab());
   
+  // Update URL when active tab changes to maintain state
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', activeTab);
+    window.history.replaceState({}, '', url.toString());
+  }, [activeTab]);
+  
   // Create a mutation to claim a lead by the current user
   const claimLeadMutation = useMutation({
     mutationFn: async (leadId: number) => {

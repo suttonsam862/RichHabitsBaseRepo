@@ -21,7 +21,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
-import { insertLeadSchema } from "@shared/schema";
+import { insertLeadSchema, ROLES } from "@shared/schema";
 import { Lead, LeadStatus, ContactLog } from "@/types";
 import { HelpIconOnly } from "@/components/ui/help-tooltip";
 import { useAuth } from "@/hooks/use-auth";

@@ -313,13 +313,19 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
         };
       });
       
-      // Now send the update to the server
+      // Now send the update to the server with more robust handling
       console.log("Sending update to server:", progressUpdates);
       const result = await updateProgressMutation.mutateAsync(progressUpdates);
       
-      // Verify success and show appropriate notification
-      if (result?.success) {
-        if (value) { // Only show success message for completing a step, not undoing
+      // Verify success and process the updated data from server
+      if (result?.success && result?.data) {
+        // Update the local state with the server-returned values (making sure local state is in sync)
+        setContactComplete(!!result.data.contactComplete);
+        setItemsConfirmed(!!result.data.itemsConfirmed);
+        setSubmittedToDesign(!!result.data.submittedToDesign);
+
+        // Show success message if this was marking a step complete (not for undoing)
+        if (value) {
           switch (step) {
             case 'contact':
               toast({
@@ -345,7 +351,25 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
           }
         }
         
-        // Call parent's update function to refresh parent component's state
+        // Make sure our cache is updated with the latest data from server
+        queryClient.setQueryData(["/api/leads"], (oldData: any) => {
+          if (!oldData?.data) return oldData;
+          
+          // Update the specific lead with all server-provided values 
+          return {
+            ...oldData,
+            data: oldData.data.map((lead: any) => {
+              if (lead.id === leadId) {
+                // Use the full lead object returned from the server
+                return result.data;
+              }
+              return lead;
+            })
+          };
+        });
+        
+        // Also, explicitly call the parent's update function to sync the parent state
+        console.log("Calling parent's onUpdate function");
         onUpdate();
       }
     } catch (error) {

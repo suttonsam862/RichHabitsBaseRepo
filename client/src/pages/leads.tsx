@@ -1718,43 +1718,60 @@ export default function Leads() {
                       console.log("Lead progress updated, refreshing lead view");
                       
                       // First get the latest lead data from cache or re-fetch
-                      const getUpdatedLead = async () => {
+                      // We'll implement a more reliable method to update the selected lead
+                      // by first updating the cache then refreshing the selected lead
+                      const refreshLeadData = async () => {
+                        console.log(`Refreshing data for lead ${selectedLead.id}`);
+                        
                         try {
-                          // Fetch the fresh lead data without closing the dialog
+                          // First get fresh data directly from the server
                           const response = await apiRequest("GET", `/api/leads/${selectedLead.id}`);
-                          const updatedLeadData = await response.json();
                           
-                          console.log("Fresh lead data:", updatedLeadData);
-                          
-                          if (updatedLeadData && updatedLeadData.data) {
-                            // Update the selected lead (important for the UI to show current progress)
-                            setSelectedLead(updatedLeadData.data);
+                          // Check if the response is OK before proceeding
+                          if (!response.ok) {
+                            console.warn(`Lead data response not OK: ${response.status}`);
+                            return;
                           }
                           
-                          // Also update the lead in the main leads cache
-                          queryClient.setQueryData(['/api/leads'], (oldData: any) => {
-                            if (!oldData || !oldData.data) return oldData;
+                          // Process the JSON response
+                          const updatedLeadData = await response.json();
+                          console.log("Fresh lead data from server:", updatedLeadData);
+                          
+                          if (updatedLeadData && updatedLeadData.data) {
+                            // Important: Update the selectedLead state with the fresh data
+                            // This ensures our UI is showing the latest values
+                            console.log("Updating selected lead with fresh data:", updatedLeadData.data);
+                            setSelectedLead({
+                              ...selectedLead,
+                              ...updatedLeadData.data
+                            });
                             
-                            // Update the specific lead that was modified
-                            return {
-                              ...oldData,
-                              data: oldData.data.map((lead: any) => {
-                                if (lead.id === selectedLead.id) {
-                                  return updatedLeadData.data || lead;
-                                }
-                                return lead;
-                              })
-                            };
-                          });
+                            // Also update our cache for consistency
+                            queryClient.setQueryData(['/api/leads'], (oldData: any) => {
+                              if (!oldData || !oldData.data) return oldData;
+                              
+                              return {
+                                ...oldData,
+                                data: oldData.data.map((lead: any) => {
+                                  if (lead.id === selectedLead.id) {
+                                    return updatedLeadData.data;
+                                  }
+                                  return lead;
+                                })
+                              };
+                            });
+                          }
                         } catch (error) {
-                          console.error("Error fetching updated lead:", error);
-                          // Even on error, attempt to refresh leads
-                          queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+                          console.error("Error refreshing lead data:", error);
+                          // Schedule a background invalidation on error
+                          setTimeout(() => {
+                            queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+                          }, 500);
                         }
                       };
                       
-                      // Execute the update
-                      getUpdatedLead();
+                      // Execute the refresh
+                      refreshLeadData();
                       
                       // Also refresh contact logs
                       apiRequest("GET", `/api/leads/${selectedLead.id}/contact-logs`)

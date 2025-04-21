@@ -680,6 +680,7 @@ export default function SalesTeamPage() {
           <TabsTrigger value="team-members">Team Members</TabsTrigger>
           <TabsTrigger value="lead-assignments">Lead Assignments</TabsTrigger>
           <TabsTrigger value="leads-by-salesperson">Leads By Salesperson</TabsTrigger>
+          <TabsTrigger value="archived-leads">Archived Leads</TabsTrigger>
           <TabsTrigger value="performance">Performance</TabsTrigger>
         </TabsList>
 
@@ -1495,6 +1496,112 @@ export default function SalesTeamPage() {
                   <p className="mt-1 text-sm text-muted-foreground">Add members to your sales team to see them here.</p>
                 </div>
               )}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Archived Leads Tab */}
+        <TabsContent value="archived-leads" className="space-y-4">
+          <div className="flex flex-col md:flex-row gap-4 md:items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-medium">Archived Leads</h3>
+              <p className="text-sm text-muted-foreground">
+                Showing all closed and lost leads
+              </p>
+            </div>
+            <div className="relative w-full md:w-72">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search archived leads..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {isLoadingAllLeads ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="border rounded-lg overflow-hidden">
+              <div className="p-4 border-b">
+                <p className="text-sm font-medium text-muted-foreground">
+                  {allLeads.filter(lead => lead.status === "closed" || lead.status === "lost").length} 
+                  {allLeads.filter(lead => lead.status === "closed" || lead.status === "lost").length === 1 ? ' lead' : ' leads'} archived
+                </p>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                      <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                      <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                      <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                      <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allLeads.filter(lead => lead.status === "closed" || lead.status === "lost")
+                      .filter(lead => {
+                        const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                            lead.email.toLowerCase().includes(searchTerm.toLowerCase());
+                        return matchesSearch;
+                      }).length > 0 ? (
+                      allLeads.filter(lead => lead.status === "closed" || lead.status === "lost")
+                        .filter(lead => {
+                          const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                              lead.email.toLowerCase().includes(searchTerm.toLowerCase());
+                          return matchesSearch;
+                        })
+                        .map((lead) => (
+                          <tr key={lead.id} className="hover:bg-gray-50">
+                            <td className="p-4 text-sm text-gray-900">{lead.name}</td>
+                            <td className="p-4 text-sm text-gray-600">{lead.email}</td>
+                            <td className="p-4 text-sm text-gray-600">{lead.phone}</td>
+                            <td className="p-4 text-sm text-gray-600">{lead.source}</td>
+                            <td className="p-4">
+                              <Badge className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                lead.status === "closed" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                              }`}>
+                                {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
+                              </Badge>
+                            </td>
+                            <td className="p-4">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Open menu</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => {
+                                    setEditLeadData(lead);
+                                    setIsEditLeadDialogOpen(true);
+                                  }}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit Lead
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </td>
+                          </tr>
+                        ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="p-4 text-center text-sm text-gray-500">
+                          No archived leads found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </TabsContent>

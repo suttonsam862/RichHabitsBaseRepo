@@ -12,6 +12,7 @@ export const ROLES = {
   MANUFACTURER: 'manufacturer',
   VIEWER: 'viewer',
   HYBRID: 'hybrid',  // Combined sales and design role
+  EXECUTIVE: 'executive', // Executive role with admin, sales, and design capabilities
 } as const;
 
 export type Role = typeof ROLES[keyof typeof ROLES];

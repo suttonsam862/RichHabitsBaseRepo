@@ -401,14 +401,9 @@ export default function Leads() {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    addLeadMutation.mutate(values, {
-      onSuccess: (data) => {
-        // If autoClaimLead is true, claim the newly created lead
-        if (values.autoClaimLead && data.data?.id) {
-          claimLeadMutation.mutate(data.data.id);
-        }
-      }
-    });
+    // The server now handles auto-claiming leads during creation,
+    // so we don't need to make a separate API call to claim the lead
+    addLeadMutation.mutate(values);
   }
   
   function onUpdate(values: z.infer<typeof formSchema>) {

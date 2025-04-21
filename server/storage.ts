@@ -1487,46 +1487,51 @@ export class DatabaseStorage implements IStorage {
     value: string;
     notes?: string;
   }[]> {
-    // Get all leads that have a salesRepId
-    const assignedLeads = await db.select({
-      id: leads.id,
-      leadId: leads.id,
-      leadName: leads.name,
-      assignedToId: leads.salesRepId,
-      status: leads.status,
-      value: leads.value,
-      notes: leads.notes,
-      createdAt: leads.createdAt
-    })
-    .from(leads)
-    .where(isNotNull(leads.salesRepId))
-    .orderBy(desc(leads.createdAt));
-
-    // Get the name of each sales rep using explicit column selection
-    const assignments = await Promise.all(
-      assignedLeads.map(async (lead) => {
-        const [salesRep] = await db.select({
-          id: salesTeamMembers.id,
-          name: salesTeamMembers.name
-        })
-        .from(salesTeamMembers)
-        .where(eq(salesTeamMembers.id, lead.assignedToId));
-
-        return {
-          id: lead.id,
-          leadId: lead.leadId,
-          leadName: lead.leadName,
-          assignedToId: lead.assignedToId,
-          assignedToName: salesRep ? salesRep.name : 'Unknown',
-          assignedAt: lead.createdAt.toISOString(),
-          status: lead.status,
-          value: lead.value || '$0',
-          notes: lead.notes
-        };
+    try {
+      // Get all leads that have a salesRepId
+      const assignedLeads = await db.select({
+        id: leads.id,
+        leadId: leads.id,
+        leadName: leads.name,
+        assignedToId: leads.salesRepId,
+        status: leads.status,
+        value: leads.value,
+        notes: leads.notes,
+        createdAt: leads.createdAt
       })
-    );
+      .from(leads)
+      .where(isNotNull(leads.salesRepId))
+      .orderBy(desc(leads.createdAt));
 
-    return assignments;
+      // Get the name of each sales rep using explicit column selection
+      const assignments = await Promise.all(
+        assignedLeads.map(async (lead) => {
+          const [salesRep] = await db.select({
+            id: salesTeamMembers.id,
+            name: salesTeamMembers.name
+          })
+          .from(salesTeamMembers)
+          .where(eq(salesTeamMembers.id, lead.assignedToId));
+
+          return {
+            id: lead.id,
+            leadId: lead.leadId,
+            leadName: lead.leadName,
+            assignedToId: lead.assignedToId,
+            assignedToName: salesRep ? salesRep.name : 'Unknown',
+            assignedAt: lead.createdAt.toISOString(),
+            status: lead.status,
+            value: lead.value || '$0',
+            notes: lead.notes
+          };
+        })
+      );
+      
+      return assignments;
+    } catch (error) {
+      console.error("Error fetching lead assignments:", error);
+      return []; // Return empty array on error
+    }
   }
 
   async assignLeadToSalesRep(leadId: number, salesRepId: number): Promise<Lead> {

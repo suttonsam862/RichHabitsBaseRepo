@@ -51,7 +51,7 @@ interface ContactLog {
   leadId: number;
   userId: number;
   contactMethod: string;
-  notes: string;
+  notes: string | null;
   timestamp: string;
 }
 

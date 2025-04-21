@@ -1400,12 +1400,91 @@ export class DatabaseStorage implements IStorage {
     return assignedLeads;
   }
   
-  async assignLeadToSalesRep(leadId: number, salesRepId: number): Promise<any> {
+  async getLeadById(id: number): Promise<Lead | undefined> {
+    const [lead] = await db.select().from(leads).where(eq(leads.id, id));
+    return lead;
+  }
+
+  async getSalesTeamMemberById(id: number): Promise<SalesTeamMember | undefined> {
+    const [member] = await db.select().from(salesTeamMembers).where(eq(salesTeamMembers.id, id));
+    return member;
+  }
+
+  async getUnassignedLeads(): Promise<Lead[]> {
+    return db.select()
+      .from(leads)
+      .where(isNull(leads.salesRepId))
+      .orderBy(desc(leads.createdAt));
+  }
+
+  async getLeadAssignments(): Promise<{
+    id: number;
+    leadId: number;
+    leadName: string;
+    assignedToId: number;
+    assignedToName: string;
+    assignedAt: string;
+    status: string;
+    value: string;
+    notes?: string;
+  }[]> {
+    // Get all leads that have a salesRepId
+    const assignedLeads = await db.select({
+      id: leads.id,
+      leadId: leads.id,
+      leadName: leads.name,
+      assignedToId: leads.salesRepId,
+      status: leads.status,
+      value: leads.value,
+      notes: leads.notes,
+      createdAt: leads.createdAt,
+      updatedAt: leads.updatedAt
+    })
+    .from(leads)
+    .where(
+      and(
+        isNotNull(leads.salesRepId),
+        notExists(
+          db.select()
+            .from(salesTeamMembers)
+            .where(eq(salesTeamMembers.id, leads.salesRepId))
+        )
+      )
+    )
+    .orderBy(desc(leads.updatedAt));
+
+    // Get the name of each sales rep
+    const assignments = await Promise.all(
+      assignedLeads.map(async (lead) => {
+        const [salesRep] = await db.select()
+          .from(salesTeamMembers)
+          .where(eq(salesTeamMembers.id, lead.assignedToId));
+
+        return {
+          id: lead.id,
+          leadId: lead.leadId,
+          leadName: lead.leadName,
+          assignedToId: lead.assignedToId,
+          assignedToName: salesRep ? salesRep.name : 'Unknown',
+          assignedAt: lead.updatedAt.toISOString(),
+          status: lead.status,
+          value: lead.value || '$0',
+          notes: lead.notes
+        };
+      })
+    );
+
+    return assignments;
+  }
+
+  async assignLeadToSalesRep(leadId: number, salesRepId: number): Promise<Lead> {
     // Update the lead with the sales rep id
     const [updatedLead] = await db.update(leads)
       .set({ 
         salesRepId: salesRepId,
-        status: 'assigned'
+        status: 'assigned',
+        claimed: true,
+        updatedAt: new Date()
       })
       .where(eq(leads.id, leadId))
       .returning();
@@ -1416,7 +1495,7 @@ export class DatabaseStorage implements IStorage {
     if (salesRep) {
       await db.update(salesTeamMembers)
         .set({ 
-          leadCount: Number(salesRep.leadCount) + 1,
+          leadCount: Number(salesRep.leadCount || 0) + 1,
           lastActiveAt: new Date()
         })
         .where(eq(salesTeamMembers.id, salesRepId));

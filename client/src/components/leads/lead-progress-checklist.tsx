@@ -127,8 +127,33 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
         }
       }
       
-      // Refresh data on server
-      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      // Update the lead data in the query cache directly
+      queryClient.setQueryData(["/api/leads"], (oldData: any) => {
+        if (!oldData || !oldData.data) return oldData;
+        
+        // Map through the leads and update the specific lead that was modified
+        const updatedLeads = oldData.data.map((lead: any) => {
+          if (lead.id === leadId) {
+            return {
+              ...lead,
+              contactComplete: data.data.contactComplete !== undefined 
+                ? data.data.contactComplete 
+                : lead.contactComplete,
+              itemsConfirmed: data.data.itemsConfirmed !== undefined 
+                ? data.data.itemsConfirmed 
+                : lead.itemsConfirmed,
+              submittedToDesign: data.data.submittedToDesign !== undefined 
+                ? data.data.submittedToDesign 
+                : lead.submittedToDesign
+            };
+          }
+          return lead;
+        });
+        
+        return { ...oldData, data: updatedLeads };
+      });
+      
+      // Only call onUpdate after modifying the cache directly to avoid navigation issues
       onUpdate();
       
       // Show success message
@@ -136,6 +161,11 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
         title: "Progress updated",
         description: "Lead progress has been updated successfully.",
       });
+      
+      // Schedule a background refetch to ensure data consistency
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      }, 500);
     },
     onError: (error: Error) => {
       console.error('Error updating lead progress:', error);
@@ -192,14 +222,45 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
       }
     },
     onSuccess: (data) => {
-      // Force immediate refresh of contact logs
-      queryClient.invalidateQueries({ queryKey: [`/api/leads/${leadId}/contact-logs`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/leads`] });
+      // Instead of invalidating immediately, update the contact logs cache directly
+      // This prevents UI navigation issues by not causing a full refetch
+      queryClient.setQueryData([`/api/leads/${leadId}/contact-logs`], (oldData: any) => {
+        // If we don't have previous data, create an array with the new log
+        if (!oldData || !oldData.data) {
+          return { data: [data.data] };
+        }
+        
+        // Add the new contact log to the existing array
+        return { 
+          ...oldData,
+          data: [...oldData.data, data.data]
+        };
+      });
+      
+      // Update the lead data in the cache to avoid full refetch
+      queryClient.setQueryData(["/api/leads"], (oldData: any) => {
+        if (!oldData || !oldData.data) return oldData;
+        
+        // Find and update the specific lead
+        const updatedLeads = oldData.data.map((lead: any) => {
+          if (lead.id === leadId) {
+            return {
+              ...lead,
+              contactComplete: true // Since we've added a contact log, this should be true
+            };
+          }
+          return lead;
+        });
+        
+        return { ...oldData, data: updatedLeads };
+      });
       
       // Also mark contact as complete if this is the first contact
       if (!contactComplete) {
-        updateProgressMutation.mutate({ contactComplete: true });
+        // Update local state first for responsive UI
         setContactComplete(true);
+        // Then update on server
+        updateProgressMutation.mutate({ contactComplete: true });
       }
       
       // Reset form and close dialog
@@ -212,7 +273,14 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
         description: "The contact log has been added successfully.",
       });
       
+      // Call onUpdate to refresh the parent component's UI 
       onUpdate();
+      
+      // Schedule a background refetch to ensure data consistency
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: [`/api/leads/${leadId}/contact-logs`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/leads`] });
+      }, 500);
     },
     onError: (error: Error) => {
       console.error('Error adding contact log:', error);

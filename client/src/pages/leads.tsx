@@ -1705,8 +1705,31 @@ export default function Leads() {
                     submittedToDesign={selectedLead.submittedToDesign || false}
                     contactLogs={contactLogs}
                     onUpdate={() => {
-                      // Refresh the lead data and contact logs
-                      queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+                      // Refresh the lead data without triggering navigation
+                      queryClient.setQueryData(['/api/leads'], (oldData: any) => {
+                        if (!oldData || !oldData.data) return oldData;
+                        
+                        // Find and update the lead in the cache
+                        const updatedLeads = oldData.data.map((lead: any) => {
+                          if (lead.id === selectedLead.id) {
+                            // Create an updated lead with the latest progress values
+                            return {
+                              ...lead,
+                              contactComplete: lead.contactComplete,
+                              itemsConfirmed: lead.itemsConfirmed,
+                              submittedToDesign: lead.submittedToDesign
+                            };
+                          }
+                          return lead;
+                        });
+                        
+                        return { ...oldData, data: updatedLeads };
+                      });
+                      
+                      // Schedule a background refetch without UI disruption
+                      setTimeout(() => {
+                        queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+                      }, 500);
                       
                       // Re-fetch contact logs with improved error handling
                       apiRequest("GET", `/api/leads/${selectedLead.id}/contact-logs`)

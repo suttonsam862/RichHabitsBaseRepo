@@ -379,9 +379,8 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
         if (value) {
           console.log(`Completed step ${step}, transitioning to ${nextStep}`);
           
-          // First close the current step completely
-          // This ensures any time we view the lead, completed steps stay closed
-          setOpenStep(""); 
+          // IMPORTANT: Don't set openStep to empty string as that can cause the dialog to close
+          // Instead, directly transition to the next step without an empty intermediate state
           
           // Show success message specific to this step
           switch (step) {
@@ -391,12 +390,9 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                 description: "Lead contact information has been saved",
                 variant: "default",
               });
-              // Add a short delay to allow the closing animation to complete
-              // before opening the next step
+              // Directly set the next step without the empty state and delay
               if (!itemsConfirmed) {
-                setTimeout(() => {
-                  setOpenStep(nextStep);
-                }, 350);
+                setOpenStep(nextStep);
               }
               break;
             case 'items':
@@ -405,12 +401,9 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                 description: "Item requirements have been confirmed",
                 variant: "default",
               });
-              // Add a short delay to allow the closing animation to complete
-              // before opening the next step
+              // Directly set the next step without the empty state and delay
               if (!submittedToDesign) {
-                setTimeout(() => {
-                  setOpenStep(nextStep);
-                }, 350);
+                setOpenStep(nextStep);
               }
               break;
             case 'design':
@@ -419,10 +412,8 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                 description: "All steps have been completed successfully",
                 variant: "default",
               });
-              // Then set a timeout to show completion status
-              setTimeout(() => {
-                setOpenStep(nextStep);
-              }, 350);
+              // Directly set the next step without the empty state and delay
+              setOpenStep(nextStep);
               break;
           }
         } else {
@@ -504,6 +495,8 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
           onValueChange={setOpenStep} 
           collapsible 
           className="space-y-3"
+          // Add a stable key to prevent unwanted re-renders that could affect dialog state
+          key={`lead-progress-${leadId}`}
         >
           {/* Step 1: Contact Client */}
           <AccordionItem 

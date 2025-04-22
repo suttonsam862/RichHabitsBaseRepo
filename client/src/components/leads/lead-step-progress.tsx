@@ -164,18 +164,40 @@ export default function LeadStepProgress({ lead, isAdmin = false }) {
   // Mutation to update lead progress
   const updateLeadProgressMutation = useMutation({
     mutationFn: async ({ leadId, stepId, data }) => {
-      const response = await apiRequest(
-        "PATCH", 
-        `/api/leads/${leadId}/progress/${stepId}`,
-        data
-      );
+      console.log(`Updating lead progress for lead ${leadId}, step ${stepId}`);
+      console.log('Data being sent:', JSON.stringify(data));
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to update lead progress: ${errorText}`);
+      try {
+        const response = await apiRequest(
+          "PATCH", 
+          `/api/leads/${leadId}/progress/${stepId}`,
+          data
+        );
+        
+        // First check if the response is ok
+        if (!response.ok) {
+          // Try to get a structured error message if available
+          try {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Server error: ${response.status}`);
+          } catch (parseError) {
+            // If we can't parse the JSON, just get the text
+            const errorText = await response.text();
+            throw new Error(`Failed to update lead progress: ${errorText || response.statusText}`);
+          }
+        }
+        
+        // Response is good, try to parse the JSON
+        try {
+          return await response.json();
+        } catch (jsonError) {
+          console.error('Error parsing JSON response:', jsonError);
+          throw new Error('Invalid response format received from server');
+        }
+      } catch (networkError) {
+        console.error('Network error in updateLeadProgressMutation:', networkError);
+        throw new Error(`Network error: ${networkError.message}`);
       }
-      
-      return response.json();
     },
     onSuccess: () => {
       // Invalidate the leads query to refresh the data
@@ -193,12 +215,20 @@ export default function LeadStepProgress({ lead, isAdmin = false }) {
       setExpandedStep(null);
     },
     onError: (error) => {
+      console.error('Error in lead step progress update:', error);
+      
       setIsSubmitting(false);
+      
+      // Keep formValues intact so user doesn't lose their input
+      
       toast({
-        title: "Error",
-        description: error.message || "Failed to update lead progress.",
+        title: "Error Updating Lead Progress",
+        description: error.message || "Failed to update lead progress. Please try again.",
         variant: "destructive",
       });
+      
+      // Don't collapse the step so user can try again
+      // setExpandedStep(null);
     }
   });
   

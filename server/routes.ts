@@ -523,23 +523,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "You don't have permission to update this lead" });
       }
       
-      // Update the lead progress
-      const progress = lead.progress || {};
-      progress[stepId] = {
-        ...progress[stepId],
-        ...req.body,
-        updatedAt: new Date().toISOString(),
-        updatedBy: user.id
-      };
-      
-      // Save the updated lead
-      await storage.updateLead(leadId, { progress });
-      
-      return res.json({ success: true, message: "Lead progress updated successfully" });
-      
+      try {
+        // Ensure we're working with clean data
+        const progress = lead.progress || {};
+        
+        // Safely parse and handle any nested JSON if needed
+        let safeData = req.body;
+        if (typeof req.body.data === 'string') {
+          try {
+            safeData.data = JSON.parse(req.body.data);
+          } catch (parseError) {
+            console.log("Could not parse data as JSON, using as is");
+          }
+        }
+        
+        // Update the progress for this step
+        progress[stepId] = {
+          ...progress[stepId],
+          ...safeData,
+          updatedAt: new Date().toISOString(),
+          updatedBy: user.id
+        };
+        
+        // Save the updated lead with proper error handling
+        await storage.updateLead(leadId, { progress });
+        
+        // Send a successful JSON response
+        return res.json({ 
+          success: true, 
+          message: "Lead progress updated successfully" 
+        });
+      } catch (dataError) {
+        console.error("Error processing lead progress data:", dataError);
+        return res.status(400).json({ 
+          error: "Invalid data format", 
+          details: dataError.message 
+        });
+      }
     } catch (error: any) {
       console.error(`Error updating lead step progress:`, error);
-      res.status(500).json({ error: error.message || "An error occurred updating lead progress" });
+      // Ensure we always return valid JSON
+      res.status(500).json({ 
+        error: error.message || "An error occurred updating lead progress",
+        success: false
+      });
     }
   });
       

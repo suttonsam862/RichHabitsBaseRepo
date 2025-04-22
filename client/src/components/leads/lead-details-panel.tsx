@@ -176,10 +176,17 @@ export default function LeadDetailsPanel({
       </CardHeader>
       
       <CardContent className="p-0">
-        <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs 
+          defaultValue="details" 
+          value={activeTab} 
+          onValueChange={setActiveTab} 
+          className="w-full"
+          // Add a key to ensure the tabs don't unmount during state changes
+          key={`lead-tabs-${lead.id}`}
+        >
           <TabsList className="w-full grid grid-cols-3 bg-gray-50 rounded-none border-y">
             <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="progress">Progress</TabsTrigger>
+            <TabsTrigger value="progress" className="progress-tab-trigger">Progress</TabsTrigger>
             <TabsTrigger value="logs">Contact Logs</TabsTrigger>
           </TabsList>
           
@@ -252,7 +259,14 @@ export default function LeadDetailsPanel({
             </div>
           </TabsContent>
           
-          <TabsContent value="progress" className="p-4">
+          <TabsContent 
+            value="progress" 
+            className="p-4"
+            // Add a stable key to prevent the component from unmounting during updates
+            key={`progress-tab-${lead.id}`}
+            // Add data attribute to make targeting easier with CSS
+            data-progress-panel="true"
+          >
             {lead.claimed ? (
               <LeadProgressChecklist 
                 leadId={lead.id}
@@ -262,6 +276,9 @@ export default function LeadDetailsPanel({
                 contactLogs={contactLogs}
                 onUpdate={() => {
                   console.log("Lead progress updated, refreshing lead view");
+                  
+                  // Force the active tab to stay on "progress"
+                  setActiveTab("progress");
                   
                   // Use the parent component's update handler
                   onUpdate();

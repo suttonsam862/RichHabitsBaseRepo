@@ -134,4 +134,36 @@
     transition: none !important;
     animation: none !important;
   }
+  
+  /* Fix for lead progress tab to prevent it from closing */
+  .lead-progress-checklist-container {
+    outline: none !important;
+  }
+  
+  [data-value="progress"] {
+    outline: none !important;
+  }
+  
+  .lead-progress-checklist-container button:focus {
+    outline: none !important;
+  }
+  
+  /* Ensure the progress tab stays activated when focus changes */
+  .progress-tab-trigger:focus-within {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+  
+  /* Stop transition animation on tab changes during progress updates */
+  .progress-tab-trigger + [data-state="active"] {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  /* Apply specific styling to the progress panel */
+  [data-progress-panel="true"] {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+  }
 }

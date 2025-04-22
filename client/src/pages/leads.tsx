@@ -26,6 +26,7 @@ import { Lead, LeadStatus, ContactLog } from "@/types";
 import { HelpIconOnly } from "@/components/ui/help-tooltip";
 import { useAuth } from "@/hooks/use-auth";
 import LeadProgressChecklist from "@/components/leads/lead-progress-checklist";
+import LeadDetailsPanel from "@/components/leads/lead-details-panel";
 
 const formSchema = insertLeadSchema.extend({
   companyName: z.string().optional().nullable(),
@@ -52,6 +53,8 @@ export default function Leads() {
   const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null);
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [contactLogs, setContactLogs] = useState<ContactLog[]>([]);
+  // Track which lead is expanded in the panel view
+  const [expandedLeadId, setExpandedLeadId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 

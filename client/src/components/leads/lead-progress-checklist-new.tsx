@@ -82,15 +82,29 @@ export default function LeadProgressChecklistNew({
       submittedToDesign?: boolean;
     }) => {
       console.log("Updating lead progress:", updates);
-      const response = await apiRequest("PATCH", `/api/leads/${leadId}/progress`, updates);
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to update lead progress: ${errorText}`);
+      try {
+        const response = await apiRequest("PATCH", `/api/leads/${leadId}/progress`, updates);
+        if (!response.ok) {
+          console.error("Server returned error status:", response.status);
+          let errorText = await response.text();
+          console.error("Error response body:", errorText);
+          try {
+            // Try to parse as JSON in case the error is in JSON format
+            const errorJson = JSON.parse(errorText);
+            errorText = errorJson.error || errorText;
+          } catch (e) {
+            // Not JSON, use the text as is
+          }
+          throw new Error(`Failed to update lead progress: ${errorText}`);
+        }
+        return response.json();
+      } catch (error) {
+        console.error("Exception during lead progress update:", error);
+        throw error;
       }
-      return response.json();
     },
-    onSuccess: () => {
-      console.log("Lead progress updated successfully");
+    onSuccess: (data) => {
+      console.log("Lead progress updated successfully:", data);
       // Invalidate and refetch leads data
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
       onUpdate(); // Call the parent's update function
@@ -98,8 +112,8 @@ export default function LeadProgressChecklistNew({
     onError: (error: Error) => {
       console.error("Error updating lead progress:", error);
       toast({
-        title: "Error",
-        description: `Failed to update lead progress: ${error.message}`,
+        title: "Update Failed",
+        description: `Could not update lead progress: ${error.message}`,
         variant: "destructive",
       });
     },
@@ -176,6 +190,8 @@ export default function LeadProgressChecklistNew({
 
   const handleToggleStep = async (step: string, value: boolean) => {
     try {
+      console.log(`Starting handleToggleStep for ${step} with value ${value}`);
+      
       // This object will track what we're updating
       let progressUpdates: { 
         contactComplete?: boolean; 
@@ -199,9 +215,14 @@ export default function LeadProgressChecklistNew({
           break;
       }
       
+      console.log("Applying optimistic update with:", progressUpdates);
+      
       // Apply optimistic update to the cache
       queryClient.setQueryData(["/api/leads"], (oldData: any) => {
-        if (!oldData?.data) return oldData;
+        if (!oldData?.data) {
+          console.log("No existing lead data in cache");
+          return oldData;
+        }
         
         return {
           ...oldData,
@@ -214,54 +235,71 @@ export default function LeadProgressChecklistNew({
         };
       });
       
+      console.log("Sending update to server...");
+      
       // Send update to the server
       const result = await updateProgressMutation.mutateAsync(progressUpdates);
       
-      if (result?.success && result?.data) {
-        // Update local state with server values
-        setContactComplete(!!result.data.contactComplete);
-        setItemsConfirmed(!!result.data.itemsConfirmed);
-        setSubmittedToDesign(!!result.data.submittedToDesign);
+      console.log("Server response:", result);
+      
+      if (result) {
+        // Get the updated lead data - handle both response formats
+        const updatedLead = result.data || result;
         
-        // Show appropriate toast
-        switch (step) {
-          case 'contact':
-            toast({
-              title: "Step 1 Complete",
-              description: "Lead contact information has been saved",
-              variant: "default",
-            });
-            break;
-          case 'items':
-            toast({
-              title: "Step 2 Complete",
-              description: "Item requirements have been confirmed",
-              variant: "default",
-            });
-            break;
-          case 'design':
-            toast({
-              title: "Lead Process Complete!",
-              description: "All steps have been completed successfully",
-              variant: "default",
-            });
-            break;
-        }
-        
-        // Update the lead data in cache
-        queryClient.setQueryData(["/api/leads"], (oldData: any) => {
-          if (!oldData?.data) return oldData;
+        if (updatedLead) {
+          console.log("Updating local state with:", updatedLead);
           
-          return {
-            ...oldData,
-            data: oldData.data.map((lead: any) => {
-              if (lead.id === leadId) {
-                return result.data;
-              }
-              return lead;
-            })
-          };
-        });
+          // Update local state with server values
+          setContactComplete(!!updatedLead.contactComplete);
+          setItemsConfirmed(!!updatedLead.itemsConfirmed);
+          setSubmittedToDesign(!!updatedLead.submittedToDesign);
+          
+          // Show appropriate toast
+          switch (step) {
+            case 'contact':
+              toast({
+                title: "Step 1 Complete",
+                description: "Lead contact information has been saved",
+                variant: "default",
+              });
+              break;
+            case 'items':
+              toast({
+                title: "Step 2 Complete",
+                description: "Item requirements have been confirmed",
+                variant: "default",
+              });
+              break;
+            case 'design':
+              toast({
+                title: "Lead Process Complete!",
+                description: "All steps have been completed successfully",
+                variant: "default",
+              });
+              break;
+          }
+          
+          // Update the lead data in cache
+          queryClient.setQueryData(["/api/leads"], (oldData: any) => {
+            if (!oldData?.data) return oldData;
+            
+            return {
+              ...oldData,
+              data: oldData.data.map((lead: any) => {
+                if (lead.id === leadId) {
+                  return updatedLead;
+                }
+                return lead;
+              })
+            };
+          });
+        } else {
+          console.error("Received success response but no lead data:", result);
+          throw new Error("Received success response but no lead data");
+        }
+      } else {
+        console.error("Received empty response");
+        throw new Error("Received empty response from server");
       }
     } catch (error) {
       // Handle errors and revert UI

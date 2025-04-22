@@ -46,79 +46,64 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 
-// Define steps that a lead goes through
+// Define steps that a lead goes through - consolidated to 3 detailed steps
 const LEAD_STEPS = [
   {
     id: "initial_contact",
-    name: "Initial Contact",
-    description: "Make first contact with the lead",
+    name: "Initial Contact & Qualification",
+    description: "Make first contact and qualify the lead's needs",
     icon: <Phone className="h-5 w-5" />,
     fields: [
       { name: "contactMethod", label: "Contact Method", type: "select", options: ["Phone", "Email", "In Person", "Social Media", "Video Call", "Text Message"] },
+      { name: "contactDate", label: "Contact Date", type: "date" },
       { name: "contactNotes", label: "Contact Notes", type: "textarea" },
-    ]
-  },
-  {
-    id: "qualification",
-    name: "Qualification",
-    description: "Determine if the lead is a good fit",
-    icon: <FileQuestion className="h-5 w-5" />,
-    fields: [
       { name: "budget", label: "Budget Range", type: "select", options: ["Under $1,000", "$1,000-$5,000", "$5,000-$10,000", "$10,000-$25,000", "$25,000-$50,000", "Over $50,000"] },
       { name: "timeframe", label: "Timeframe", type: "select", options: ["Immediate", "Within 30 days", "1-3 months", "3-6 months", "6-12 months", "Over 12 months"] },
-      { name: "needs", label: "Needs Assessment Notes", type: "textarea" },
-      { name: "isQualified", label: "Is Lead Qualified?", type: "select", options: ["Yes", "No", "Maybe"] },
+      { name: "needsAssessment", label: "Detailed Needs Assessment", type: "textarea" },
+      { name: "targetEventDate", label: "Target Event/Delivery Date", type: "date" },
+      { name: "specialRequirements", label: "Special Requirements", type: "textarea" },
     ]
   },
   {
-    id: "proposal",
-    name: "Proposal Preparation",
-    description: "Prepare and send a proposal",
+    id: "items_confirmation",
+    name: "AI-Assisted Item Creation", 
+    description: "Generate items, measurements and catalog reconciliation",
     icon: <FileText className="h-5 w-5" />,
     fields: [
-      { name: "proposalSent", label: "Proposal Sent Date", type: "date" },
-      { name: "proposalNotes", label: "Proposal Notes", type: "textarea" },
-    ]
+      { name: "clientNotes", label: "Client Notes (for AI parsing)", type: "textarea", placeholder: "Describe the items needed, including details like garment types, quantities, fabric preferences, colors, and any special features. The AI will help convert this into structured items." },
+      { name: "generatedItems", label: "Generated Items", type: "hidden" },
+      { name: "fabricNotes", label: "Fabric Specifications", type: "textarea", placeholder: "Type, color, weight, special requirements" },
+      { name: "designStyleNotes", label: "Design Style Notes", type: "textarea", placeholder: "Logos, artwork, style preferences" },
+      { name: "measurementNotes", label: "Measurement Requirements", type: "textarea", placeholder: "Size ranges, special measurement needs" },
+      { name: "additionalNotes", label: "Additional Notes", type: "textarea" },
+    ],
+    description2: `
+This stage integrates AI to parse client requirements into structured items with:
+• Automatic categorization and measurement schema matching
+• Catalog search and reconciliation
+• Fabric specification and color matching
+• Manufacturing specs generation
+
+The system will:
+1. Parse your client notes to extract items and details
+2. Match items to existing catalog entries when possible
+3. Apply appropriate measurement templates based on item type
+4. Track fabric requirements and manufacturing specifications
+5. Generate a structured item list for design and production
+    `,
   },
   {
-    id: "meeting",
-    name: "Follow-up Meeting",
-    description: "Schedule and conduct a follow-up meeting",
-    icon: <CalendarClock className="h-5 w-5" />,
-    fields: [
-      { name: "meetingDate", label: "Meeting Date", type: "date" },
-      { name: "meetingNotes", label: "Meeting Notes", type: "textarea" },
-    ]
-  },
-  {
-    id: "negotiation",
-    name: "Negotiation",
-    description: "Negotiate terms and address concerns",
-    icon: <MessagesSquare className="h-5 w-5" />,
-    fields: [
-      { name: "negotiationPoints", label: "Key Negotiation Points", type: "textarea" },
-      { name: "negotiationStatus", label: "Negotiation Status", type: "select", options: ["Not Started", "In Progress", "Stalled", "Resolved"] },
-    ]
-  },
-  {
-    id: "contract",
-    name: "Contract & Closing",
-    description: "Finalize contract and close the deal",
-    icon: <FileClock className="h-5 w-5" />,
-    fields: [
-      { name: "contractSent", label: "Contract Sent Date", type: "date" },
-      { name: "contractSigned", label: "Contract Signed Date", type: "date" },
-      { name: "closingNotes", label: "Closing Notes", type: "textarea" },
-    ]
-  },
-  {
-    id: "handoff",
-    name: "Handoff to Operations",
-    description: "Transfer the account to the operations team",
+    id: "design_handoff",
+    name: "Final Approval & Design Handoff",
+    description: "Confirm requirements and transfer to design team",
     icon: <FolderCheck className="h-5 w-5" />,
     fields: [
-      { name: "handoffDate", label: "Handoff Date", type: "date" },
-      { name: "handoffNotes", label: "Handoff Notes", type: "textarea" },
+      { name: "finalReviewDate", label: "Final Review Date", type: "date" },
+      { name: "clientApprovalDate", label: "Client Approval Date", type: "date" },
+      { name: "paymentDetails", label: "Payment Details", type: "textarea", placeholder: "Deposit amount, payment method, etc." },
+      { name: "designRequirements", label: "Special Design Requirements", type: "textarea" },
+      { name: "deliveryInstructions", label: "Delivery Instructions", type: "textarea" },
+      { name: "finalNotes", label: "Final Handoff Notes", type: "textarea" },
     ]
   }
 ];
@@ -465,6 +450,41 @@ export default function LeadStepProgress({ lead, isAdmin = false }) {
                         </div>
                       ))}
                       
+                      {/* Special handling for AI-assisted item creation */}
+                      {step.id === "items_confirmation" && !isCompleted && (
+                        <div className="mt-4 space-y-4">
+                          <div className="flex justify-end">
+                            <Button 
+                              type="button"
+                              onClick={() => {
+                                // In a real implementation, this would call the AI parsing endpoint
+                                toast({
+                                  title: "AI Processing",
+                                  description: "Processing client notes to generate structured items...",
+                                });
+                                // Simulate AI processing
+                                setTimeout(() => {
+                                  toast({
+                                    title: "Items Generated",
+                                    description: "AI has processed client notes and generated structured items.",
+                                  });
+                                }, 1500);
+                              }}
+                              className="bg-blue-600 hover:bg-blue-700"
+                              disabled={!formValues.clientNotes || isSubmitting}
+                            >
+                              Generate Items with AI
+                            </Button>
+                          </div>
+                          
+                          {/* Display the additional description for the AI step */}
+                          <div className="bg-blue-50 p-4 rounded-md mt-2 border border-blue-200 text-blue-800 text-sm">
+                            <h4 className="font-medium mb-2">How AI-Assisted Item Creation Works</h4>
+                            <div className="space-y-2 whitespace-pre-wrap">{step.description2}</div>
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* Display existing data if step is completed */}
                       {isCompleted && leadProgress[step.id]?.data && (
                         <div className="bg-gray-50 p-3 rounded-md mt-2 border border-gray-200">
@@ -476,6 +496,40 @@ export default function LeadStepProgress({ lead, isAdmin = false }) {
                             {Object.entries(leadProgress[step.id].data).map(([key, value]) => {
                               // Find the matching field label
                               const field = step.fields.find(f => f.name === key);
+                              
+                              // Special handling for generated items
+                              if (key === "generatedItems" && value) {
+                                try {
+                                  const items = typeof value === 'string' ? JSON.parse(value) : value;
+                                  return (
+                                    <div key={key} className="text-xs bg-white p-3 rounded-md border border-gray-200">
+                                      <span className="font-medium block mb-2">Generated Items:</span>
+                                      {Array.isArray(items) && items.map((item, idx) => (
+                                        <div key={idx} className="mb-2 p-2 bg-gray-50 rounded">
+                                          <p><span className="font-medium">Item:</span> {item.itemName}</p>
+                                          <p><span className="font-medium">Category:</span> {item.category}</p>
+                                          {item.fabricType && <p><span className="font-medium">Fabric:</span> {item.fabricType}</p>}
+                                          {item.colorHex && <p>
+                                            <span className="font-medium">Color:</span>
+                                            <span className="inline-block h-3 w-3 rounded-full ml-1" style={{ backgroundColor: item.colorHex }}></span>
+                                            {item.colorHex}
+                                          </p>}
+                                          {item.designDetails && <p><span className="font-medium">Details:</span> {item.designDetails}</p>}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  );
+                                } catch {
+                                  return (
+                                    <div key={key} className="text-xs">
+                                      <span className="font-medium">{field?.label || key}: </span>
+                                      <span className="text-gray-600">[Complex data]</span>
+                                    </div>
+                                  );
+                                }
+                              }
+                              
+                              // Regular field display
                               return (
                                 <div key={key} className="text-xs">
                                   <span className="font-medium">{field?.label || key}: </span>

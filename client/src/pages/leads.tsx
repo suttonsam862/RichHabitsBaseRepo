@@ -74,66 +74,8 @@ export default function Leads() {
     refetchOnWindowFocus: true, // Enable to make sure changes are reflected
   });
 
-  // Use data from the API
-  const sampleLeads: Lead[] = [
-    {
-      id: 1,
-      userId: 1,
-      name: "Emily Davis",
-      email: "emily@example.com",
-      phone: "+1 (555) 123-4567",
-      source: "Website",
-      status: "new",
-      notes: "Interested in the premium package",
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 2,
-      userId: 1,
-      name: "Mark Wilson",
-      email: "mark@example.com",
-      phone: "+1 (555) 987-6543",
-      source: "Referral",
-      status: "contacted",
-      notes: "Looking for custom solutions",
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 3,
-      userId: 1,
-      name: "Sarah Johnson",
-      email: "sarah@example.com",
-      phone: "+1 (555) 789-0123",
-      source: "Social Media",
-      status: "qualified",
-      notes: "Ready for a demo",
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 4,
-      userId: 1,
-      name: "John Smith",
-      email: "john@example.com",
-      phone: "+1 (555) 456-7890",
-      source: "Email Campaign",
-      status: "proposal",
-      notes: "Sent proposal, waiting for response",
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 5,
-      userId: 1,
-      name: "Lisa Brown",
-      email: "lisa@example.com",
-      phone: "+1 (555) 234-5678",
-      source: "Trade Show",
-      status: "negotiation",
-      notes: "Negotiating contract terms",
-      createdAt: new Date().toISOString(),
-    },
-  ];
-
-  const leads = data?.data || sampleLeads;
+  // Use data from the API - use empty array as fallback
+  const leads = data?.data || [];
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -1987,6 +1929,49 @@ export default function Leads() {
           )}
         </DialogContent>
       </Dialog>
+      
+      {/* Lead Details Panel - Expandable alternative to dialog */}
+      {expandedLeadId && selectedLead && (
+        <LeadDetailsPanel 
+          lead={selectedLead}
+          isAdmin={isAdmin}
+          onClose={() => {
+            setExpandedLeadId(null);
+            setSelectedLead(null);
+          }}
+          onUpdate={() => {
+            // Refresh lead data after update
+            queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+          }}
+          onEdit={(lead) => {
+            // Set up the edit dialog with the lead data
+            setSelectedLeadId(lead.id);
+            form.reset({
+              name: lead.name,
+              email: lead.email,
+              phone: lead.phone || "",
+              companyName: lead.companyName || "",
+              source: lead.source || "",
+              status: lead.status as any,
+              notes: lead.notes || "",
+              value: lead.value || "",
+              // Organization fields
+              website: lead.website || "",
+              industry: lead.industry || "",
+              address: lead.address || "",
+              city: lead.city || "",
+              state: lead.state || "",
+              zip: lead.zip || "",
+              country: lead.country || "USA",
+              organizationType: lead.organizationType || "client",
+            });
+            
+            // Close the details panel and open the edit dialog
+            setExpandedLeadId(null);
+            setOpenEditDialog(true);
+          }}
+        />
+      )}
     </>
   );
 }

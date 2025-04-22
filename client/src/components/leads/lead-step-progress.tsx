@@ -456,19 +456,50 @@ export default function LeadStepProgress({ lead, isAdmin = false }) {
                           <div className="flex justify-end">
                             <Button 
                               type="button"
-                              onClick={() => {
-                                // In a real implementation, this would call the AI parsing endpoint
+                              onClick={async () => {
+                                if (!formValues.clientNotes) return;
+                                
                                 toast({
                                   title: "AI Processing",
                                   description: "Processing client notes to generate structured items...",
                                 });
-                                // Simulate AI processing
-                                setTimeout(() => {
+                                
+                                try {
+                                  // Call the AI parsing endpoint
+                                  const response = await apiRequest(
+                                    "POST",
+                                    "/api/ai/parseItems",
+                                    { clientNotes: formValues.clientNotes }
+                                  );
+                                  
+                                  if (!response.ok) {
+                                    throw new Error("Failed to process client notes with AI");
+                                  }
+                                  
+                                  const result = await response.json();
+                                  
+                                  if (result.success && result.data) {
+                                    // Update form values with the generated items
+                                    setFormValues(prev => ({
+                                      ...prev,
+                                      generatedItems: JSON.stringify(result.data)
+                                    }));
+                                    
+                                    toast({
+                                      title: "Items Generated",
+                                      description: `AI has processed client notes and generated ${result.data.length} structured items.`,
+                                    });
+                                  } else {
+                                    throw new Error(result.error || "Failed to parse items");
+                                  }
+                                } catch (error) {
+                                  console.error("Error in AI parsing:", error);
                                   toast({
-                                    title: "Items Generated",
-                                    description: "AI has processed client notes and generated structured items.",
+                                    title: "AI Processing Failed",
+                                    description: error.message || "Failed to process client notes. Please try again.",
+                                    variant: "destructive",
                                   });
-                                }, 1500);
+                                }
                               }}
                               className="bg-blue-600 hover:bg-blue-700"
                               disabled={!formValues.clientNotes || isSubmitting}

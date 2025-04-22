@@ -8,6 +8,7 @@ import { setupAuth, hashPassword, isAuthenticated } from "./auth";
 import { hasPermission } from '../shared/permissions';
 import anthropicService from "./services/anthropic-service";
 import shopifyService from "./services/shopify-service";
+import aiParsingService from "./services/ai-parsing-service";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -5885,6 +5886,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Item Parsing Endpoint
+  app.post("/api/ai/parseItems", isAuthenticated, async (req, res) => {
+    try {
+      const { clientNotes } = req.body;
+      
+      if (!clientNotes || typeof clientNotes !== 'string') {
+        return res.status(400).json({ error: "Client notes are required" });
+      }
+      
+      console.log("Processing client notes for AI parsing:", clientNotes);
+      
+      // Use the AI parsing service to extract structured items from client notes
+      const parsedItems = await aiParsingService.parseItemsFromNotes(clientNotes);
+      
+      res.json({
+        success: true,
+        data: parsedItems,
+        message: "Items successfully parsed from client notes"
+      });
+      
+    } catch (error: any) {
+      console.error('Error in AI item parsing:', error);
+      res.status(500).json({ 
+        error: error.message || "Failed to parse items", 
+        success: false
+      });
+    }
+  });
+  
   // AI Training Data Endpoints
   app.get("/api/ai-training-data", isAuthenticated, async (req, res) => {
     try {

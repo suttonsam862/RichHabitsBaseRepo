@@ -412,12 +412,10 @@ export class DatabaseStorage implements IStorage {
     }
   ): Promise<Lead> {
     try {
+      // Remove updatedAt since it doesn't exist in the leads table
       const [updatedLead] = await db
         .update(leads)
-        .set({
-          ...progress,
-          updatedAt: new Date()
-        })
+        .set(progress)
         .where(eq(leads.id, leadId))
         .returning();
       return updatedLead;

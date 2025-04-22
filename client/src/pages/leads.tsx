@@ -408,7 +408,7 @@ export default function Leads() {
         })
         .catch(error => {
           console.error("Error fetching contact logs:", error);
-          // Set empty contact logs instead of showing error
+          // Set empty contact logs instead of showing error toast
           setContactLogs([]);
         });
     }

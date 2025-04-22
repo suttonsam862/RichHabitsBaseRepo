@@ -559,7 +559,22 @@ export default function Leads() {
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-800 py-4 px-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">Leads</h1>
+          <div className="flex items-center space-x-4">
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">Leads</h1>
+            
+            {/* Link to Leads Steps page */}
+            {isAdmin && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => window.location.href = "/leads-steps"}
+                className="flex items-center gap-2"
+              >
+                <Eye className="h-4 w-4" />
+                <span>View Leads Steps</span>
+              </Button>
+            )}
+          </div>
           
           <Dialog open={openAddDialog} onOpenChange={setOpenAddDialog}>
             <DialogTrigger asChild>

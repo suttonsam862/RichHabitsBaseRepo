@@ -235,15 +235,11 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
         // Update local state first for responsive UI
         setContactComplete(true);
         
-        // First set the accordion to be closed (nothing open)
-        setOpenStep('');
-        
-        // Then add a delay before opening the second step
-        setTimeout(() => {
-          if (!itemsConfirmed) {
-            setOpenStep('items');
-          }
-        }, 350);
+        // Skip closing the accordion and directly open the next step
+        // This prevents the dialog from closing
+        if (!itemsConfirmed) {
+          setOpenStep('items');
+        }
         
         // Then update on server
         updateProgressMutation.mutate({ contactComplete: true });
@@ -390,6 +386,8 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                 description: "Lead contact information has been saved",
                 variant: "default",
               });
+              // Force-set the active tab to progress to ensure it stays visible
+              (document.querySelector('[data-value="progress"]') as HTMLElement)?.click();
               // Directly set the next step without the empty state and delay
               if (!itemsConfirmed) {
                 setOpenStep(nextStep);
@@ -401,6 +399,8 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                 description: "Item requirements have been confirmed",
                 variant: "default",
               });
+              // Force-set the active tab to progress to ensure it stays visible
+              (document.querySelector('[data-value="progress"]') as HTMLElement)?.click();
               // Directly set the next step without the empty state and delay
               if (!submittedToDesign) {
                 setOpenStep(nextStep);
@@ -412,6 +412,8 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                 description: "All steps have been completed successfully",
                 variant: "default",
               });
+              // Force-set the active tab to progress to ensure it stays visible
+              (document.querySelector('[data-value="progress"]') as HTMLElement)?.click();
               // Directly set the next step without the empty state and delay
               setOpenStep(nextStep);
               break;
@@ -481,7 +483,7 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
   // We now use the Accordion-based UI instead of these helper functions
 
   return (
-    <Card className="w-full">
+    <Card className="w-full lead-progress-checklist-container">
       <CardHeader className="pb-3">
         <CardTitle className="text-xl font-semibold">Lead Progress Checklist</CardTitle>
         <CardDescription>

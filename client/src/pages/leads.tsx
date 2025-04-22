@@ -430,6 +430,48 @@ export default function Leads() {
     }
   };
   
+  // Handle toggling the expandable lead details panel
+  const toggleLeadDetails = (lead: any) => {
+    if (expandedLeadId === lead.id) {
+      // If already expanded, close it
+      setExpandedLeadId(null);
+      setSelectedLead(null);
+    } else {
+      // If not expanded, open it and fetch needed data
+      setExpandedLeadId(lead.id);
+      setSelectedLead(lead);
+      
+      // Also fetch contact logs for this lead
+      apiRequest("GET", `/api/leads/${lead.id}/contact-logs`)
+        .then(res => {
+          // Check if response is ok before trying to parse JSON
+          if (!res.ok) {
+            console.warn(`Contact logs response not OK: ${res.status} ${res.statusText}`);
+            return { data: [] };
+          }
+          
+          // Try to parse as JSON with fallback
+          try {
+            return res.json();
+          } catch (e) {
+            console.error("Error parsing contact logs JSON:", e);
+            return { data: [] };
+          }
+        })
+        .then(data => {
+          console.log("Contact logs loaded:", data);
+          // Make sure we have an array of logs, even if empty
+          const logs = Array.isArray(data.data) ? data.data : [];
+          setContactLogs(logs);
+        })
+        .catch(error => {
+          console.error("Error fetching contact logs:", error);
+          // Set empty contact logs instead of showing error
+          setContactLogs([]);
+        });
+    }
+  };
+  
   // Create a mutation to delete a lead
   const deleteLeadMutation = useMutation({
     mutationFn: async (leadId: number) => {

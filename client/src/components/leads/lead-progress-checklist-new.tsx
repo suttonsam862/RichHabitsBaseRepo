@@ -81,7 +81,7 @@ export default function LeadProgressChecklistNew({
     }
   };
 
-  // Mutation to update progress
+  // Mutation to update progress with enhanced error handling and response validation
   const updateProgressMutation = useMutation({
     mutationFn: async (updates: {
       contactComplete?: boolean;
@@ -90,7 +90,16 @@ export default function LeadProgressChecklistNew({
     }) => {
       console.log("Updating lead progress:", updates);
       try {
-        const response = await apiRequest("PATCH", `/api/leads/${leadId}/progress`, updates);
+        // Add timeout for the request to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
+        
+        const response = await apiRequest("PATCH", `/api/leads/${leadId}/progress`, updates, {
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
         if (!response.ok) {
           console.error("Server returned error status:", response.status);
           let errorText = await response.text();
@@ -104,32 +113,71 @@ export default function LeadProgressChecklistNew({
           }
           throw new Error(`Failed to update lead progress: ${errorText}`);
         }
-        return response.json();
+        
+        // Validate the response
+        const responseData = await response.json();
+        
+        // Check if the response data is valid
+        if (!responseData || (typeof responseData !== 'object')) {
+          throw new Error('Invalid response format from server');
+        }
+        
+        // Normalize data structure in case it's nested
+        const normalizedData = responseData.data || responseData;
+        
+        // Final validation to ensure we have a valid lead object
+        if (!normalizedData || !normalizedData.id) {
+          console.error("Invalid lead data in response:", normalizedData);
+          throw new Error('Missing or incomplete lead data in response');
+        }
+        
+        return responseData;
       } catch (error) {
-        console.error("Exception during lead progress update:", error);
-        throw error;
+        // Handle different error types
+        if (error.name === 'AbortError') {
+          throw new Error('Request timed out. Please try again.');
+        } else if (error instanceof SyntaxError) {
+          console.error("JSON parsing error:", error);
+          throw new Error('Could not parse server response. Please try again.');
+        } else {
+          console.error("Exception during lead progress update:", error);
+          throw error;
+        }
       }
     },
     onSuccess: (data) => {
       console.log("Lead progress updated successfully:", data);
       
-      // IMPORTANT: First update the local state before calling onUpdate
-      // This ensures our local state is in sync with the server
-      // when the dialog might be closed by the parent component
-      const updatedLead = data.data || data;
-      if (updatedLead) {
-        setContactComplete(!!updatedLead.contactComplete);
-        setItemsConfirmed(!!updatedLead.itemsConfirmed);
-        setSubmittedToDesign(!!updatedLead.submittedToDesign);
+      try {
+        // IMPORTANT: First update the local state before calling onUpdate
+        // This ensures our local state is in sync with the server
+        // when the dialog might be closed by the parent component
+        const updatedLead = data.data || data;
+        if (updatedLead && typeof updatedLead === 'object') {
+          // Use type checking and fallbacks for robustness
+          setContactComplete(updatedLead.contactComplete === true);
+          setItemsConfirmed(updatedLead.itemsConfirmed === true);
+          setSubmittedToDesign(updatedLead.submittedToDesign === true);
+          
+          // Invalidate and refetch leads data
+          queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+          
+          // NOW we can safely call the parent's update function
+          // because our local state is already updated
+          console.log("Calling parent onUpdate");
+          onUpdate();
+        } else {
+          console.error("Invalid lead data structure:", updatedLead);
+          throw new Error("Invalid lead data returned from server");
+        }
+      } catch (error) {
+        console.error("Error processing successful response:", error);
+        toast({
+          title: "Processing Error",
+          description: "There was an error applying your changes. Please refresh the page.",
+          variant: "destructive",
+        });
       }
-      
-      // Invalidate and refetch leads data
-      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
-      
-      // NOW we can safely call the parent's update function
-      // because our local state is already updated
-      console.log("Calling parent onUpdate");
-      onUpdate(); 
     },
     onError: (error: Error) => {
       console.error("Error updating lead progress:", error);
@@ -141,47 +189,112 @@ export default function LeadProgressChecklistNew({
     },
   });
 
-  // Mutation to add contact log
+  // Mutation to add contact log with enhanced error handling and response validation
   const addContactLogMutation = useMutation({
     mutationFn: async (data: {
       leadId: number;
       contactMethod: string;
       notes: string;
     }) => {
-      const response = await apiRequest("POST", `/api/leads/${leadId}/contact-logs`, data);
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to add contact log: ${errorText}`);
+      console.log("Adding contact log:", data);
+      try {
+        // Add timeout for the request to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
+        
+        const response = await apiRequest("POST", `/api/leads/${leadId}/contact-logs`, data, {
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          console.error("Server returned error status:", response.status);
+          let errorText = await response.text();
+          console.error("Error response body:", errorText);
+          try {
+            // Try to parse as JSON in case the error is in JSON format
+            const errorJson = JSON.parse(errorText);
+            errorText = errorJson.error || errorText;
+          } catch (e) {
+            // Not JSON, use the text as is
+          }
+          throw new Error(`Failed to add contact log: ${errorText}`);
+        }
+        
+        // Validate the response
+        const responseData = await response.json();
+        
+        // Check if the response data is valid
+        if (!responseData) {
+          throw new Error('Invalid response format from server');
+        }
+        
+        return responseData;
+      } catch (error) {
+        // Handle different error types
+        if (error.name === 'AbortError') {
+          throw new Error('Request timed out. Please try again.');
+        } else if (error instanceof SyntaxError) {
+          console.error("JSON parsing error:", error);
+          throw new Error('Could not parse server response. Please try again.');
+        } else {
+          console.error("Exception during contact log addition:", error);
+          throw error;
+        }
       }
-      return response.json();
     },
-    onSuccess: () => {
-      // Update local state first for responsive UI
-      setContactComplete(true);
+    onSuccess: (data) => {
+      console.log("Contact log added successfully:", data);
       
-      // Reset form and close dialog
-      setContactNotes("");
-      setIsContactLogOpen(false);
-      
-      // Then update on server if needed
-      if (!contactComplete) {
-        updateProgressMutation.mutate({ contactComplete: true });
+      try {
+        // Update local state first for responsive UI
+        setContactComplete(true);
+        
+        // Reset form and close dialog
+        setContactNotes("");
+        setIsContactLogOpen(false);
+        
+        // Then update on server if needed
+        if (!contactComplete) {
+          // Use a try-catch block to prevent this from breaking the success flow
+          try {
+            updateProgressMutation.mutate({ contactComplete: true });
+          } catch (error) {
+            console.error("Error updating lead progress after contact log:", error);
+            // We don't throw here since we still want to show success for the contact log
+          }
+        }
+        
+        // Show success message
+        toast({
+          title: "Contact log added",
+          description: "The contact log has been added successfully.",
+        });
+        
+        // Call onUpdate to refresh the parent component's UI 
+        onUpdate();
+        
+        // Schedule a background refetch to ensure data consistency
+        // Using Promise.all with catch to handle potential network issues
+        setTimeout(() => {
+          Promise.all([
+            queryClient.invalidateQueries({ queryKey: [`/api/leads/${leadId}/contact-logs`] }),
+            queryClient.invalidateQueries({ queryKey: [`/api/leads`] })
+          ]).catch(err => {
+            console.error("Error refreshing data after contact log:", err);
+            // Don't throw, this is just background refreshing
+          });
+        }, 500);
+      } catch (error) {
+        console.error("Error processing contact log success:", error);
+        // Don't throw to prevent UI from getting stuck
+        toast({
+          title: "Warning",
+          description: "Contact log added, but there was an issue refreshing the page. Please refresh manually.",
+          variant: "default",
+        });
       }
-      
-      // Show success message
-      toast({
-        title: "Contact log added",
-        description: "The contact log has been added successfully.",
-      });
-      
-      // Call onUpdate to refresh the parent component's UI 
-      onUpdate();
-      
-      // Schedule a background refetch to ensure data consistency
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: [`/api/leads/${leadId}/contact-logs`] });
-        queryClient.invalidateQueries({ queryKey: [`/api/leads`] });
-      }, 500);
     },
     onError: (error: Error) => {
       console.error('Error adding contact log:', error);
@@ -211,15 +324,19 @@ export default function LeadProgressChecklistNew({
   };
 
   const handleToggleStep = async (step: string, value: boolean) => {
+    let previousLeadData: any = null;
+    let stateUpdated = false;
+    let progressUpdates: { 
+      contactComplete?: boolean; 
+      itemsConfirmed?: boolean; 
+      submittedToDesign?: boolean; 
+    } = {};
+
     try {
       console.log(`Starting handleToggleStep for ${step} with value ${value}`);
       
       // This object will track what we're updating
-      let progressUpdates: { 
-        contactComplete?: boolean; 
-        itemsConfirmed?: boolean; 
-        submittedToDesign?: boolean; 
-      } = {};
+      progressUpdates = {};
       
       // Store the updates but DON'T update UI state yet
       // Instead, wait for the server response to be successful first
@@ -236,152 +353,237 @@ export default function LeadProgressChecklistNew({
           // Don't call setSubmittedToDesign yet
           progressUpdates.submittedToDesign = value;
           break;
+        default:
+          console.error("Unknown step:", step);
+          throw new Error(`Unknown step: ${step}`);
       }
       
       console.log("Preparing update with:", progressUpdates);
       
-      // Apply optimistic update to the cache
-      queryClient.setQueryData(["/api/leads"], (oldData: any) => {
-        if (!oldData?.data) {
-          console.log("No existing lead data in cache");
-          return oldData;
-        }
-        
-        return {
-          ...oldData,
-          data: oldData.data.map((lead: any) => {
-            if (lead.id === leadId) {
-              return { ...lead, ...progressUpdates };
-            }
-            return lead;
-          })
-        };
-      });
+      // Backup the current state for restoration in case of error
+      previousLeadData = queryClient.getQueryData(["/api/leads"]);
+      
+      // Apply optimistic update to the cache - safely
+      try {
+        queryClient.setQueryData(["/api/leads"], (oldData: any) => {
+          if (!oldData?.data) {
+            console.log("No existing lead data in cache");
+            return oldData;
+          }
+          
+          return {
+            ...oldData,
+            data: oldData.data.map((lead: any) => {
+              if (lead.id === leadId) {
+                return { ...lead, ...progressUpdates };
+              }
+              return lead;
+            })
+          };
+        });
+      } catch (cacheError) {
+        console.error("Error updating cache:", cacheError);
+        // Continue execution despite cache error
+      }
       
       console.log("Sending update to server...");
       
-      // Send update to the server
-      const result = await updateProgressMutation.mutateAsync(progressUpdates);
+      // Configure request with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
       
-      console.log("Server response:", result);
-      
-      if (result) {
-        // Get the updated lead data - handle both response formats
-        const updatedLead = result.data || result;
+      try {
+        // Send update to the server
+        const result = await updateProgressMutation.mutateAsync(progressUpdates);
         
-        if (updatedLead) {
-          console.log("Updating local state with:", updatedLead);
+        clearTimeout(timeoutId); // Clear timeout
+        
+        console.log("Server response:", result);
+        
+        if (result) {
+          // Get the updated lead data - handle both response formats
+          const updatedLead = result.data || result;
           
-          // Update local state with server values
-          const newContactComplete = !!updatedLead.contactComplete;
-          const newItemsConfirmed = !!updatedLead.itemsConfirmed;
-          const newSubmittedToDesign = !!updatedLead.submittedToDesign;
-          
-          setContactComplete(newContactComplete);
-          setItemsConfirmed(newItemsConfirmed);
-          setSubmittedToDesign(newSubmittedToDesign);
-          
-          // Update the expanded state based on completion status and what step was just changed
-          if (step === 'contact' && value === true) {
-            // When Step 1 is completed, collapse it and expand Step 2
-            setExpandedSteps({
-              contact: false, // Collapse Step 1
-              items: true,   // Expand Step 2
-              design: false
-            });
-          } else if (step === 'items' && value === true) {
-            // When Step 2 is completed, collapse it and expand Step 3
-            setExpandedSteps({
-              contact: false,
-              items: false,  // Collapse Step 2
-              design: true   // Expand Step 3
-            });
-          } else if (step === 'design' && value === true) {
-            // When Step 3 is completed, collapse all steps
-            setExpandedSteps({
-              contact: false,
-              items: false,
-              design: false
-            });
-          } else {
-            // When a step is uncompleted, adjust state naturally
-            setExpandedSteps({
-              contact: !newContactComplete, // Only expanded if not complete
-              items: newContactComplete && !newItemsConfirmed, // Expanded if previous step is complete and this one isn't
-              design: newContactComplete && newItemsConfirmed && !newSubmittedToDesign // Expanded if both previous steps are complete and this one isn't
-            });
-          }
-          
-          // Show appropriate toast
-          switch (step) {
-            case 'contact':
-              toast({
-                title: "Step 1 Complete",
-                description: "Lead contact information has been saved",
-                variant: "default",
-              });
-              break;
-            case 'items':
-              toast({
-                title: "Step 2 Complete",
-                description: "Item requirements have been confirmed",
-                variant: "default",
-              });
-              break;
-            case 'design':
-              toast({
-                title: "Lead Process Complete!",
-                description: "All steps have been completed successfully",
-                variant: "default",
-              });
-              break;
-          }
-          
-          // Update the lead data in cache
-          queryClient.setQueryData(["/api/leads"], (oldData: any) => {
-            if (!oldData?.data) return oldData;
+          if (updatedLead && typeof updatedLead === 'object' && 'id' in updatedLead) {
+            console.log("Updating local state with:", updatedLead);
             
-            return {
-              ...oldData,
-              data: oldData.data.map((lead: any) => {
-                if (lead.id === leadId) {
-                  return updatedLead;
-                }
-                return lead;
-              })
-            };
-          });
+            // Update local state with server values (using triple equals for strict boolean checking)
+            const newContactComplete = updatedLead.contactComplete === true;
+            const newItemsConfirmed = updatedLead.itemsConfirmed === true;
+            const newSubmittedToDesign = updatedLead.submittedToDesign === true;
+            
+            // Update state atomically to avoid race conditions
+            setContactComplete(newContactComplete);
+            setItemsConfirmed(newItemsConfirmed);
+            setSubmittedToDesign(newSubmittedToDesign);
+
+            // Mark that we've updated state
+            stateUpdated = true;
+            
+            // Update the expanded state based on completion status and what step was just changed
+            if (step === 'contact' && value === true) {
+              // When Step 1 is completed, collapse it and expand Step 2
+              setExpandedSteps({
+                contact: false, // Collapse Step 1
+                items: true,   // Expand Step 2
+                design: false
+              });
+            } else if (step === 'items' && value === true) {
+              // When Step 2 is completed, collapse it and expand Step 3
+              setExpandedSteps({
+                contact: false,
+                items: false,  // Collapse Step 2
+                design: true   // Expand Step 3
+              });
+            } else if (step === 'design' && value === true) {
+              // When Step 3 is completed, collapse all steps
+              setExpandedSteps({
+                contact: false,
+                items: false,
+                design: false
+              });
+            } else {
+              // When a step is uncompleted, adjust state naturally
+              setExpandedSteps({
+                contact: !newContactComplete, // Only expanded if not complete
+                items: newContactComplete && !newItemsConfirmed, // Expanded if previous step is complete and this one isn't
+                design: newContactComplete && newItemsConfirmed && !newSubmittedToDesign // Expanded if both previous steps are complete and this one isn't
+              });
+            }
+            
+            // Show appropriate toast
+            switch (step) {
+              case 'contact':
+                toast({
+                  title: value ? "Step 1 Complete" : "Step 1 Reverted",
+                  description: value ? 
+                    "Lead contact information has been saved" : 
+                    "Lead contact step has been marked as incomplete",
+                  variant: "default",
+                });
+                break;
+              case 'items':
+                toast({
+                  title: value ? "Step 2 Complete" : "Step 2 Reverted",
+                  description: value ? 
+                    "Item requirements have been confirmed" : 
+                    "Item requirement step has been marked as incomplete",
+                  variant: "default",
+                });
+                break;
+              case 'design':
+                toast({
+                  title: value ? "Lead Process Complete!" : "Step 3 Reverted",
+                  description: value ? 
+                    "All steps have been completed successfully" : 
+                    "Design submission step has been marked as incomplete",
+                  variant: "default",
+                });
+                break;
+            }
+            
+            // Update the lead data in cache - safely
+            try {
+              queryClient.setQueryData(["/api/leads"], (oldData: any) => {
+                if (!oldData?.data) return oldData;
+                
+                return {
+                  ...oldData,
+                  data: oldData.data.map((lead: any) => {
+                    if (lead.id === leadId) {
+                      return updatedLead;
+                    }
+                    return lead;
+                  })
+                };
+              });
+            } catch (cacheError) {
+              console.error("Error updating cache with server response:", cacheError);
+              // Continue execution despite cache error
+              // Force a background refetch to ensure consistency
+              setTimeout(() => {
+                queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+              }, 500);
+            }
+            
+            // Call onUpdate to refresh parent component
+            onUpdate();
+          } else {
+            console.error("Invalid lead data in response:", updatedLead);
+            throw new Error("Invalid lead data returned from server");
+          }
         } else {
-          console.error("Received success response but no lead data:", result);
-          throw new Error("Received success response but no lead data");
+          console.error("Received empty response");
+          throw new Error("Received empty response from server");
         }
-      } else {
-        console.error("Received empty response");
-        throw new Error("Received empty response from server");
+      } catch (requestError) {
+        clearTimeout(timeoutId); // Clear timeout if exception occurs
+        throw requestError; // Rethrow to be caught by outer try/catch
       }
     } catch (error) {
-      // Handle errors and revert UI
+      // Handle all errors and revert UI
       console.error("Error updating lead progress:", error);
       
-      // Revert local state
-      switch (step) {
-        case 'contact':
-          setContactComplete(!value);
-          break;
-        case 'items':
-          setItemsConfirmed(!value);
-          break;
-        case 'design':
-          setSubmittedToDesign(!value);
-          break;
+      // Revert cache to previous state if we have it
+      if (previousLeadData) {
+        try {
+          queryClient.setQueryData(["/api/leads"], previousLeadData);
+        } catch (revertError) {
+          console.error("Error reverting cache:", revertError);
+          // Force a background refetch if cache reversion fails
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+          }, 500);
+        }
+      }
+      
+      // Revert local state if it was updated
+      if (stateUpdated) {
+        switch (step) {
+          case 'contact':
+            setContactComplete(!value);
+            break;
+          case 'items':
+            setItemsConfirmed(!value);
+            break;
+          case 'design':
+            setSubmittedToDesign(!value);
+            break;
+        }
+      }
+      
+      // Generate an appropriate error message
+      let errorMessage = "Could not update the lead progress. ";
+      
+      if (error.name === 'AbortError') {
+        errorMessage += "Request timed out.";
+      } else if (error.message) {
+        // Truncate overly long error messages
+        const maxLength = 100;
+        errorMessage += error.message.length > maxLength ? 
+          error.message.substring(0, maxLength) + '...' : 
+          error.message;
+      } else {
+        errorMessage += "An unexpected error occurred.";
       }
       
       // Show error toast
       toast({
         title: "Update Failed",
-        description: "Could not update the lead progress. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
+      
+      // If there are server connection issues, suggest a page refresh
+      if (error.name === 'AbortError' || error.message?.includes('network') || error.message?.includes('connection')) {
+        setTimeout(() => {
+          toast({
+            title: "Connection Issue",
+            description: "You may need to refresh the page to reconnect to the server.",
+            variant: "default",
+          });
+        }, 2000);
+      }
     }
   };
 

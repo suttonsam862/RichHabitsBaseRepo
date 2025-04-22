@@ -281,12 +281,36 @@ export default function LeadProgressChecklistNew({
           setItemsConfirmed(newItemsConfirmed);
           setSubmittedToDesign(newSubmittedToDesign);
           
-          // Update the expanded state based on completion status
-          setExpandedSteps({
-            contact: !newContactComplete, // Only expanded if not complete
-            items: newContactComplete && !newItemsConfirmed, // Expanded if previous step is complete and this one isn't
-            design: newContactComplete && newItemsConfirmed && !newSubmittedToDesign // Expanded if both previous steps are complete and this one isn't
-          });
+          // Update the expanded state based on completion status and what step was just changed
+          if (step === 'contact' && value === true) {
+            // When Step 1 is completed, collapse it and expand Step 2
+            setExpandedSteps({
+              contact: false, // Collapse Step 1
+              items: true,   // Expand Step 2
+              design: false
+            });
+          } else if (step === 'items' && value === true) {
+            // When Step 2 is completed, collapse it and expand Step 3
+            setExpandedSteps({
+              contact: false,
+              items: false,  // Collapse Step 2
+              design: true   // Expand Step 3
+            });
+          } else if (step === 'design' && value === true) {
+            // When Step 3 is completed, collapse all steps
+            setExpandedSteps({
+              contact: false,
+              items: false,
+              design: false
+            });
+          } else {
+            // When a step is uncompleted, adjust state naturally
+            setExpandedSteps({
+              contact: !newContactComplete, // Only expanded if not complete
+              items: newContactComplete && !newItemsConfirmed, // Expanded if previous step is complete and this one isn't
+              design: newContactComplete && newItemsConfirmed && !newSubmittedToDesign // Expanded if both previous steps are complete and this one isn't
+            });
+          }
           
           // Show appropriate toast
           switch (step) {

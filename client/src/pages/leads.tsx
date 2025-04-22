@@ -1371,7 +1371,24 @@ export default function Leads() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => toggleLeadDetails(lead)}
+                                onClick={() => {
+                                  // Using direct state updates instead of toggleLeadDetails function
+                                  setExpandedLeadId(lead.id);
+                                  setSelectedLead(lead);
+                                  
+                                  // Also fetch contact logs for this lead
+                                  apiRequest("GET", `/api/leads/${lead.id}/contact-logs`)
+                                    .then(res => res.json())
+                                    .then(data => {
+                                      console.log("Contact logs loaded:", data);
+                                      const logs = Array.isArray(data.data) ? data.data : [];
+                                      setContactLogs(logs);
+                                    })
+                                    .catch(error => {
+                                      console.error("Error fetching contact logs:", error);
+                                      setContactLogs([]);
+                                    });
+                                }}
                               >
                                 View
                               </Button>

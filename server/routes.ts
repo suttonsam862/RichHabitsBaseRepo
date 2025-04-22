@@ -12,6 +12,8 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { insertAiTrainingDataSchema } from "../shared/schema";
+// Import the script to add leads-steps to admin users
+import "./add-leads-steps";
 
 // Helper function to calculate duration in days between two dates
 function calculateDuration(startDate: string | null, endDate: string | null): number {

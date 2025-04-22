@@ -412,12 +412,49 @@ export class DatabaseStorage implements IStorage {
     }
   ): Promise<Lead> {
     try {
-      // Remove updatedAt since it doesn't exist in the leads table
+      console.log(`Executing updateLeadProgress for lead ID ${leadId} with data:`, progress);
+      
+      // Check if the lead exists before attempting to update
+      const existingLead = await this.getLeadById(leadId);
+      if (!existingLead) {
+        const error = new Error(`Lead with ID ${leadId} not found when trying to update progress`);
+        console.error(error);
+        throw error;
+      }
+      
+      console.log(`Existing lead found:`, {
+        id: existingLead.id,
+        name: existingLead.name,
+        currentProgress: {
+          contactComplete: existingLead.contactComplete,
+          itemsConfirmed: existingLead.itemsConfirmed,
+          submittedToDesign: existingLead.submittedToDesign
+        }
+      });
+      
+      // Execute the update query
       const [updatedLead] = await db
         .update(leads)
         .set(progress)
         .where(eq(leads.id, leadId))
         .returning();
+      
+      if (!updatedLead) {
+        const error = new Error(`Lead with ID ${leadId} was not returned after update`);
+        console.error(error);
+        throw error;
+      }
+      
+      console.log(`Lead progress update successful - updated lead:`, {
+        id: updatedLead.id,
+        name: updatedLead.name,
+        updatedProgress: {
+          contactComplete: updatedLead.contactComplete,
+          itemsConfirmed: updatedLead.itemsConfirmed,
+          submittedToDesign: updatedLead.submittedToDesign
+        }
+      });
+      
       return updatedLead;
     } catch (error) {
       console.error(`Error updating lead progress for lead ${leadId}:`, error);

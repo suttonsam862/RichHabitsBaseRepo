@@ -426,22 +426,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Lead progress checklist endpoints
   app.patch("/api/leads/:id/progress", async (req, res) => {
     try {
+      console.log("PATCH /api/leads/:id/progress - Start processing request for lead ID:", req.params.id);
+      console.log("Request body:", JSON.stringify(req.body));
+      
       if (!req.isAuthenticated()) {
+        console.log("User not authenticated");
         return res.status(401).json({ error: "Not authenticated" });
       }
       
       const user = req.user as User;
+      console.log("Authenticated user:", { id: user.id, role: user.role, name: user.name });
+      
       const leadId = parseInt(req.params.id);
       
       if (isNaN(leadId)) {
+        console.log("Invalid lead ID provided:", req.params.id);
         return res.status(400).json({ error: "Invalid lead ID" });
       }
       
       // Get the lead to check permissions
       const lead = await storage.getLeadById(leadId);
       if (!lead) {
+        console.log("Lead not found:", leadId);
         return res.status(404).json({ error: "Lead not found" });
       }
+      
+      console.log("Found lead:", { 
+        id: lead.id, 
+        name: lead.name, 
+        salesRepId: lead.salesRepId, 
+        claimedById: lead.claimedById 
+      });
       
       // Check if user has appropriate permissions to update this lead
       const isLeadOwner = lead.userId === user.id || lead.salesRepId === user.id || lead.claimedById === user.id;
@@ -452,65 +467,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
         PERMISSIONS.EDIT_LEADS
       );
       
+      console.log("Permission check:", { isLeadOwner, isAdmin, canUpdateAllLeads });
+      
       if (!canUpdateAllLeads && !isLeadOwner && !isAdmin) {
+        console.log("Permission denied for lead update");
         return res.status(403).json({ error: "You don't have permission to update this lead's progress" });
       }
       
       // Validate progress data
-      const progressData = z.object({
-        contactComplete: z.boolean().optional(),
-        itemsConfirmed: z.boolean().optional(),
-        submittedToDesign: z.boolean().optional()
-      }).parse(req.body);
-      
-      // Update the lead progress
-      const updatedLead = await storage.updateLeadProgress(leadId, progressData);
-      
-      // Create appropriate activity based on what was updated
-      if (progressData.contactComplete !== undefined) {
-        await storage.createActivity({
-          userId: user.id,
-          type: "lead",
-          content: progressData.contactComplete 
-            ? `Initial contact with ${lead.name} marked as complete` 
-            : `Initial contact with ${lead.name} marked as incomplete`,
-          relatedId: leadId,
-          relatedType: "lead"
+      let progressData;
+      try {
+        progressData = z.object({
+          contactComplete: z.boolean().optional(),
+          itemsConfirmed: z.boolean().optional(),
+          submittedToDesign: z.boolean().optional()
+        }).parse(req.body);
+        console.log("Validated progress data:", progressData);
+      } catch (validationError) {
+        console.error("Validation error:", validationError);
+        return res.status(400).json({ 
+          error: "Invalid progress data provided", 
+          details: validationError instanceof z.ZodError ? validationError.errors : String(validationError),
+          success: false 
         });
       }
       
-      if (progressData.itemsConfirmed !== undefined) {
-        await storage.createActivity({
-          userId: user.id,
-          type: "lead",
-          content: progressData.itemsConfirmed 
-            ? `Items for ${lead.name} confirmed` 
-            : `Items for ${lead.name} marked as not confirmed`,
-          relatedId: leadId,
-          relatedType: "lead"
+      try {
+        // Update the lead progress
+        console.log("Calling storage.updateLeadProgress with:", leadId, progressData);
+        const updatedLead = await storage.updateLeadProgress(leadId, progressData);
+        console.log("Lead progress updated successfully:", updatedLead);
+        
+        // Create activity logs in parallel for better performance
+        const activityPromises = [];
+        
+        if (progressData.contactComplete !== undefined) {
+          activityPromises.push(
+            storage.createActivity({
+              userId: user.id,
+              type: "lead",
+              content: progressData.contactComplete 
+                ? `Initial contact with ${lead.name} marked as complete` 
+                : `Initial contact with ${lead.name} marked as incomplete`,
+              relatedId: leadId,
+              relatedType: "lead"
+            })
+          );
+        }
+        
+        if (progressData.itemsConfirmed !== undefined) {
+          activityPromises.push(
+            storage.createActivity({
+              userId: user.id,
+              type: "lead",
+              content: progressData.itemsConfirmed 
+                ? `Items for ${lead.name} confirmed` 
+                : `Items for ${lead.name} marked as not confirmed`,
+              relatedId: leadId,
+              relatedType: "lead"
+            })
+          );
+        }
+        
+        if (progressData.submittedToDesign !== undefined) {
+          activityPromises.push(
+            storage.createActivity({
+              userId: user.id,
+              type: "lead",
+              content: progressData.submittedToDesign 
+                ? `Lead ${lead.name} submitted to design team` 
+                : `Lead ${lead.name} removed from design queue`,
+              relatedId: leadId,
+              relatedType: "lead"
+            })
+          );
+        }
+        
+        if (activityPromises.length > 0) {
+          await Promise.all(activityPromises);
+          console.log("All activity logs created successfully");
+        }
+        
+        // Always return a standard JSON format for consistency
+        console.log("Sending success response with updated lead data");
+        return res.json({ data: updatedLead, success: true });
+      } catch (updateError: any) {
+        console.error("Error in database operations:", updateError);
+        return res.status(500).json({ 
+          error: `Database error: ${updateError.message}`, 
+          success: false 
         });
       }
-      
-      if (progressData.submittedToDesign !== undefined) {
-        await storage.createActivity({
-          userId: user.id,
-          type: "lead",
-          content: progressData.submittedToDesign 
-            ? `Lead ${lead.name} submitted to design team` 
-            : `Lead ${lead.name} removed from design queue`,
-          relatedId: leadId,
-          relatedType: "lead"
-        });
-      }
-      
-      // Always return a standard JSON format for consistency
-      res.json({ data: updatedLead, success: true });
     } catch (error: any) {
-      console.error('Error updating lead progress:', error);
+      console.error('Error in lead progress update route:', error);
       if (error instanceof z.ZodError) {
+        console.error('Validation error:', error.errors);
         res.status(400).json({ error: error.errors, success: false });
       } else {
-        res.status(500).json({ error: error.message, success: false });
+        console.error('Server error:', error.message);
+        res.status(500).json({ 
+          error: `An unexpected error occurred: ${error.message}`, 
+          success: false 
+        });
       }
     }
   });

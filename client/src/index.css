@@ -166,4 +166,17 @@
     transition: none !important;
     opacity: 1 !important;
   }
+  
+  /* Styles for the NEW progress checklist panels */
+  [data-progress-panel-id] {
+    overflow: visible !important;
+    position: relative !important;
+    z-index: 5 !important;
+  }
+  
+  /* Make sure buttons don't trigger unwanted tab switches */
+  [data-progress-panel-id] button {
+    position: relative !important;
+    z-index: 10 !important;
+  }
 }

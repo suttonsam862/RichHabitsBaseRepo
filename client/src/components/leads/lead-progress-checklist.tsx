@@ -1,7 +1,4 @@
-import React from "react";
-import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -9,30 +6,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { 
-  CheckCircle2, 
-  Circle, 
-  Phone, 
-  FileCheck, 
-  FileText,
-  Calendar, 
-  BookOpen, 
-  ArrowRight,
-  CheckSquare,
-  Package,
-  ChevronDown,
-  ChevronUp
-} from "lucide-react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { BookOpen, Calendar, CheckCircle2, CheckSquare, Circle, Clipboard, Clock, FileCheck, ListChecks, Phone } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { format, parseISO } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -41,18 +22,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatDate } from "@/lib/utils";
 
 interface ContactLog {
   id: number;
@@ -72,182 +45,89 @@ interface LeadProgressChecklistProps {
   onUpdate: () => void;
 }
 
-const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
+export default function LeadProgressChecklist({
   leadId,
   contactComplete: initialContactComplete,
   itemsConfirmed: initialItemsConfirmed,
   submittedToDesign: initialSubmittedToDesign,
-  contactLogs = [],
+  contactLogs,
   onUpdate,
-}) => {
+}: LeadProgressChecklistProps) {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [contactMethod, setContactMethod] = React.useState<string>("email");
-  const [contactNotes, setContactNotes] = React.useState<string>("");
-  const [isContactLogOpen, setIsContactLogOpen] = React.useState<boolean>(false);
-  const [isContactLogHistoryOpen, setIsContactLogHistoryOpen] = React.useState<boolean>(false);
+  const [contactComplete, setContactComplete] = useState(initialContactComplete);
+  const [itemsConfirmed, setItemsConfirmed] = useState(initialItemsConfirmed);
+  const [submittedToDesign, setSubmittedToDesign] = useState(initialSubmittedToDesign);
+  const [expandedPanel, setExpandedPanel] = useState<string | null>(null);
+  const [isContactLogOpen, setIsContactLogOpen] = useState(false);
+  const [isContactLogHistoryOpen, setIsContactLogHistoryOpen] = useState(false);
+  const [contactMethod, setContactMethod] = useState("phone");
+  const [contactNotes, setContactNotes] = useState("");
   
-  // Create state values from props so we can update them properly
-  const [contactComplete, setContactComplete] = React.useState<boolean>(initialContactComplete);
-  const [itemsConfirmed, setItemsConfirmed] = React.useState<boolean>(initialItemsConfirmed);
-  const [submittedToDesign, setSubmittedToDesign] = React.useState<boolean>(initialSubmittedToDesign);
-  
-  // Track which step is currently open in the accordion
-  const [openStep, setOpenStep] = React.useState<string>(() => {
-    // Initialize with the first incomplete step, but keep completed steps closed
-    if (initialContactComplete) {
-      // First step is complete, so it should be closed
-      if (!initialItemsConfirmed) return "items"; // Open the second step
-      if (!initialSubmittedToDesign) return "design"; // Open the third step
-      return "complete"; // All steps complete
-    } else {
-      // First step is not complete, so it should be open by default
-      return "contact";
+  const formatDate = (dateString: string) => {
+    try {
+      return format(parseISO(dateString), 'MMM d, yyyy h:mm a');
+    } catch (e) {
+      console.error("Date formatting error:", e);
+      return dateString || 'Unknown date';
     }
-  });
+  };
 
-  // Progress update mutation
+  // Mutation to update progress
   const updateProgressMutation = useMutation({
-    mutationFn: async (progress: { 
-      contactComplete?: boolean; 
-      itemsConfirmed?: boolean; 
-      submittedToDesign?: boolean; 
+    mutationFn: async (updates: {
+      contactComplete?: boolean;
+      itemsConfirmed?: boolean;
+      submittedToDesign?: boolean;
     }) => {
-      // Log the actual request for debugging
-      console.log(`Sending PATCH to /api/leads/${leadId}/progress with data:`, progress);
-      
-      const res = await apiRequest(
-        "PATCH", 
-        `/api/leads/${leadId}/progress`, 
-        progress
-      );
-      
-      // Handle response - always handle non-JSON responses gracefully
-      try {
-        const contentType = res.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          const json = await res.json();
-          console.log("Server response:", json);
-          return json;
-        } else {
-          // Not JSON, just return success status
-          console.log("Non-JSON response, status:", res.status);
-          return { success: res.ok, data: { ...progress } };
-        }
-      } catch (err) {
-        console.log('Error parsing progress update response:', err);
-        // If JSON parsing fails, return success status based on HTTP status with the requested progress data
-        return { success: res.ok, data: { ...progress } };
+      console.log("Updating lead progress:", updates);
+      const response = await apiRequest("PATCH", `/api/leads/${leadId}/progress`, updates);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to update lead progress: ${errorText}`);
       }
+      return response.json();
     },
-    // We'll handle the success case in the handleToggleStep function itself
-    // since we're using mutateAsync and await there
+    onSuccess: () => {
+      console.log("Lead progress updated successfully");
+      // Invalidate and refetch leads data
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+    },
     onError: (error: Error) => {
-      console.error('Error updating lead progress:', error);
+      console.error("Error updating lead progress:", error);
       toast({
-        title: "Failed to update progress",
-        description: error.message,
+        title: "Error",
+        description: `Failed to update lead progress: ${error.message}`,
         variant: "destructive",
       });
     },
   });
 
-  // Contact log mutation
+  // Mutation to add contact log
   const addContactLogMutation = useMutation({
-    mutationFn: async (contactLog: { 
-      leadId: number; 
-      contactMethod: string; 
-      notes: string | null; 
+    mutationFn: async (data: {
+      leadId: number;
+      contactMethod: string;
+      notes: string;
     }) => {
-      const res = await apiRequest(
-        "POST", 
-        `/api/leads/${leadId}/contact-logs`, 
-        contactLog
-      );
-      
-      // Handle response - always handle non-JSON responses gracefully
-      try {
-        const contentType = res.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          return await res.json();
-        } else {
-          // Not JSON, just return success status with the submitted data
-          return { 
-            success: res.ok, 
-            data: { 
-              ...contactLog,
-              id: Date.now(), // Temporary ID in case we can't get the real one
-              userId: 0, // Placeholder
-              timestamp: new Date().toISOString()
-            } 
-          };
-        }
-      } catch (err) {
-        console.log('Error parsing contact log response:', err);
-        // If JSON parsing fails, return success status based on HTTP status
-        return { 
-          success: res.ok, 
-          data: { 
-            ...contactLog,
-            id: Date.now(), // Temporary ID in case we can't get the real one
-            userId: 0, // Placeholder
-            timestamp: new Date().toISOString()
-          } 
-        };
+      const response = await apiRequest("POST", `/api/leads/${leadId}/contact-logs`, data);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to add contact log: ${errorText}`);
       }
+      return response.json();
     },
-    onSuccess: (data) => {
-      // Instead of invalidating immediately, update the contact logs cache directly
-      // This prevents UI navigation issues by not causing a full refetch
-      queryClient.setQueryData([`/api/leads/${leadId}/contact-logs`], (oldData: any) => {
-        // If we don't have previous data, create an array with the new log
-        if (!oldData || !oldData.data) {
-          return { data: [data.data] };
-        }
-        
-        // Add the new contact log to the existing array
-        return { 
-          ...oldData,
-          data: [...oldData.data, data.data]
-        };
-      });
-      
-      // Update the lead data in the cache to avoid full refetch
-      queryClient.setQueryData(["/api/leads"], (oldData: any) => {
-        if (!oldData || !oldData.data) return oldData;
-        
-        // Find and update the specific lead
-        const updatedLeads = oldData.data.map((lead: any) => {
-          if (lead.id === leadId) {
-            return {
-              ...lead,
-              contactComplete: true // Since we've added a contact log, this should be true
-            };
-          }
-          return lead;
-        });
-        
-        return { ...oldData, data: updatedLeads };
-      });
-      
-      // Also mark contact as complete if this is the first contact
-      if (!contactComplete) {
-        // Update local state first for responsive UI
-        setContactComplete(true);
-        
-        // Skip closing the accordion and directly open the next step
-        // This prevents the dialog from closing
-        if (!itemsConfirmed) {
-          setOpenStep('items');
-        }
-        
-        // Then update on server
-        updateProgressMutation.mutate({ contactComplete: true });
-      }
+    onSuccess: () => {
+      // Update local state first for responsive UI
+      setContactComplete(true);
       
       // Reset form and close dialog
       setContactNotes("");
       setIsContactLogOpen(false);
+      
+      // Then update on server if needed
+      if (!contactComplete) {
+        updateProgressMutation.mutate({ contactComplete: true });
+      }
       
       // Show success message
       toast({
@@ -291,7 +171,6 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
     });
   };
 
-  // Improved function that implements accordion-style step flow
   const handleToggleStep = async (step: string, value: boolean) => {
     try {
       // This object will track what we're updating
@@ -302,50 +181,25 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
       } = {};
       
       // First update the UI state directly for immediate feedback
-      console.log(`Updating step ${step} to ${value}`);
-      
-      // If this is completing a step, we need to handle step transitions
-      let nextStep = step;
-      
       switch (step) {
         case 'contact': {
-          // Update local component state
           setContactComplete(value);
           progressUpdates.contactComplete = value;
-          
-          if (value) {
-            // If completing this step, we should advance to the next one
-            nextStep = 'items';
-          }
           break;
         }
-        
         case 'items': {
-          // Update local component state
           setItemsConfirmed(value);
           progressUpdates.itemsConfirmed = value;
-          
-          if (value) {
-            // If completing this step, we should advance to the next one
-            nextStep = 'design';
-          }
           break;
         }
-        
         case 'design': {
-          // Update local component state
           setSubmittedToDesign(value);
           progressUpdates.submittedToDesign = value;
-          
-          if (value) {
-            // If completing this step, we mark "complete" as active
-            nextStep = 'complete';
-          }
           break;
         }
       }
       
-      // Apply optimistic update to the cache so UI is immediately responsive
+      // Apply optimistic update to the cache
       queryClient.setQueryData(["/api/leads"], (oldData: any) => {
         if (!oldData?.data) return oldData;
         
@@ -360,25 +214,18 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
         };
       });
       
-      // Now send the update to the server with more robust handling
-      console.log("Sending update to server:", progressUpdates);
+      // Send update to the server
       const result = await updateProgressMutation.mutateAsync(progressUpdates);
       
-      // Verify success and process the updated data from server
       if (result?.success && result?.data) {
-        // Update the local state with the server-returned values (making sure local state is in sync)
+        // Update local state with server values
         setContactComplete(!!result.data.contactComplete);
         setItemsConfirmed(!!result.data.itemsConfirmed);
         setSubmittedToDesign(!!result.data.submittedToDesign);
-
-        // If this was a completion (not an undo), immediately close the current step and open the next one
+        
+        // Automatically show the next step if completing a step
         if (value) {
-          console.log(`Completed step ${step}, transitioning to ${nextStep}`);
-          
-          // IMPORTANT: Don't set openStep to empty string as that can cause the dialog to close
-          // Instead, directly transition to the next step without an empty intermediate state
-          
-          // Show success message specific to this step
+          // Show appropriate toast
           switch (step) {
             case 'contact':
               toast({
@@ -386,63 +233,56 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                 description: "Lead contact information has been saved",
                 variant: "default",
               });
-              // Force-set the active tab to progress to ensure it stays visible
+              
+              // Force tab to stay on progress
               (document.querySelector('[data-value="progress"]') as HTMLElement)?.click();
-              // Directly set the next step without the empty state and delay
+              
+              // Expand the next panel if it's not already completed
               if (!itemsConfirmed) {
-                setOpenStep(nextStep);
+                setExpandedPanel('items');
               }
               break;
+              
             case 'items':
               toast({
                 title: "Step 2 Complete",
                 description: "Item requirements have been confirmed",
                 variant: "default",
               });
-              // Force-set the active tab to progress to ensure it stays visible
+              
+              // Force tab to stay on progress
               (document.querySelector('[data-value="progress"]') as HTMLElement)?.click();
-              // Directly set the next step without the empty state and delay
+              
+              // Expand the next panel if it's not already completed
               if (!submittedToDesign) {
-                setOpenStep(nextStep);
+                setExpandedPanel('design');
               }
               break;
+              
             case 'design':
               toast({
                 title: "Lead Process Complete!",
                 description: "All steps have been completed successfully",
                 variant: "default",
               });
-              // Force-set the active tab to progress to ensure it stays visible
+              
+              // Force tab to stay on progress
               (document.querySelector('[data-value="progress"]') as HTMLElement)?.click();
-              // Directly set the next step without the empty state and delay
-              setOpenStep(nextStep);
+              
+              // Show the complete panel
+              setExpandedPanel('complete');
               break;
-          }
-        } else {
-          // If this was an undo, we also need to adjust the open step accordingly
-          if (step === 'contact') {
-            setOpenStep('contact');
-          } else if (step === 'items' && !result.data.contactComplete) {
-            setOpenStep('contact');
-          } else if (step === 'items') {
-            setOpenStep('items');
-          } else if (step === 'design' && !result.data.itemsConfirmed) {
-            setOpenStep('items');
-          } else if (step === 'design') {
-            setOpenStep('design');
           }
         }
         
-        // Make sure our cache is updated with the latest data from server
+        // Update the lead data in cache
         queryClient.setQueryData(["/api/leads"], (oldData: any) => {
           if (!oldData?.data) return oldData;
           
-          // Update the specific lead with all server-provided values 
           return {
             ...oldData,
             data: oldData.data.map((lead: any) => {
               if (lead.id === leadId) {
-                // Use the full lead object returned from the server
                 return result.data;
               }
               return lead;
@@ -450,15 +290,14 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
           };
         });
         
-        // Also, explicitly call the parent's update function to sync the parent state
-        console.log("Calling parent's onUpdate function");
+        // Call parent update function
         onUpdate();
       }
     } catch (error) {
-      // Handle errors and revert UI if needed
+      // Handle errors and revert UI
       console.error("Error updating lead progress:", error);
       
-      // Revert the local state changes to match server state
+      // Revert local state
       switch (step) {
         case 'contact':
           setContactComplete(!value);
@@ -480,7 +319,9 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
     }
   };
 
-  // We now use the Accordion-based UI instead of these helper functions
+  const togglePanel = (panel: string) => {
+    setExpandedPanel(expandedPanel === panel ? null : panel);
+  };
 
   return (
     <Card className="w-full lead-progress-checklist-container">
@@ -491,21 +332,17 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Accordion 
-          type="single" 
-          value={openStep} 
-          onValueChange={setOpenStep} 
-          collapsible 
-          className="space-y-3"
-          // Add a stable key to prevent unwanted re-renders that could affect dialog state
-          key={`lead-progress-${leadId}`}
-        >
+        <div className="space-y-3">
           {/* Step 1: Contact Client */}
-          <AccordionItem 
-            value="contact" 
+          <div 
             className={`rounded-lg border overflow-hidden ${contactComplete ? 'bg-green-50 border-green-100' : ''}`}
+            data-progress-panel-id="contact"
           >
-            <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-gray-50">
+            {/* Step Header */}
+            <div 
+              className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center"
+              onClick={() => togglePanel('contact')}
+            >
               <div className="flex items-start space-x-3 w-full">
                 <div className={`h-8 w-8 rounded-full ${contactComplete ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'} flex items-center justify-center`}>
                   {contactComplete ? <CheckCircle2 className="h-5 w-5" /> : <Phone className="h-5 w-5" />}
@@ -519,199 +356,215 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                     {contactComplete && <span className="ml-2 font-medium">✓ Complete</span>}
                   </p>
                 </div>
+                <div className="ml-auto">
+                  <svg 
+                    width="24" 
+                    height="24" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    className={`transition-transform ${expandedPanel === 'contact' ? 'rotate-180' : ''}`}
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
               </div>
-            </AccordionTrigger>
+            </div>
             
-            <AccordionContent className="px-4 pb-4">
-              <div className="mt-3 mb-4 flex justify-end">
-                {contactComplete ? (
-                  <div className="flex items-center">
-                    <Badge className="bg-green-600 text-white mr-2">Completed</Badge>
+            {/* Step Content */}
+            {expandedPanel === 'contact' && (
+              <div className="px-4 pb-4">
+                <div className="mt-3 mb-4 flex justify-end">
+                  {contactComplete ? (
+                    <div className="flex items-center">
+                      <Badge className="bg-green-600 text-white mr-2">Completed</Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-gray-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleStep('contact', false);
+                        }}
+                        disabled={updateProgressMutation.isPending}
+                      >
+                        <Circle className="mr-1 h-3.5 w-3.5" /> Undo
+                      </Button>
+                    </div>
+                  ) : (
                     <Button
-                      variant="outline"
+                      variant="default"
                       size="sm"
-                      className="text-gray-600"
-                      onClick={() => handleToggleStep('contact', false)}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleStep('contact', true);
+                      }}
                       disabled={updateProgressMutation.isPending}
                     >
-                      <Circle className="mr-1 h-3.5 w-3.5" /> Undo
+                      <CheckSquare className="mr-1 h-3.5 w-3.5" /> 
+                      {updateProgressMutation.isPending ? "Saving..." : "Mark Complete"}
                     </Button>
-                  </div>
-                ) : (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                    onClick={() => handleToggleStep('contact', true)}
-                    disabled={updateProgressMutation.isPending}
-                  >
-                    <CheckSquare className="mr-1 h-3.5 w-3.5" /> 
-                    {updateProgressMutation.isPending ? "Saving..." : "Mark Complete"}
-                  </Button>
-                )}
-              </div>
-              
-              <div className="flex space-x-2 mt-4">
-                <Dialog 
-                  open={isContactLogOpen} 
-                  modal={true}
-                  onOpenChange={(open: boolean): void => {
-                    console.log(`Contact log dialog ${open ? 'opening' : 'closing'}`);
-                    setIsContactLogOpen(open);
-                  }}
-                >
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Phone className="mr-2 h-3.5 w-3.5" />
-                      Log Contact
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent 
-                    onClick={(e: React.MouseEvent): void => {
-                      // Prevent click events from bubbling up to parent dialog
-                      e.stopPropagation();
-                    }}
-                    onPointerDownOutside={(e): void => {
-                      // Prevent clicks outside from closing the dialog
-                      e.preventDefault();
-                    }}
-                    onInteractOutside={(e): void => {
-                      // Prevent any outside interaction from affecting parent dialog
-                      e.preventDefault();
-                    }}>
-                    <DialogHeader>
-                      <DialogTitle>Add Contact Log</DialogTitle>
-                      <DialogDescription>
-                        Record your communication with the client.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="contactMethod">Contact Method</Label>
-                        <Select
-                          value={contactMethod}
-                          onValueChange={setContactMethod}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select contact method" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="email">Email</SelectItem>
-                            <SelectItem value="phone">Phone</SelectItem>
-                            <SelectItem value="in-person">In Person</SelectItem>
-                            <SelectItem value="video">Video Call</SelectItem>
-                            <SelectItem value="text">Text Message</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="notes">Notes</Label>
-                        <Textarea
-                          id="notes"
-                          placeholder="What did you discuss?"
-                          value={contactNotes}
-                          onChange={(e) => setContactNotes(e.target.value)}
-                          rows={5}
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button
-                        type="button" 
-                        variant="outline" 
-                        onClick={() => setIsContactLogOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        onClick={handleAddContactLog}
-                        disabled={addContactLogMutation.isPending}
-                      >
-                        {addContactLogMutation.isPending ? "Saving..." : "Add Log"}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                  )}
+                </div>
                 
-                <Dialog 
-                  open={isContactLogHistoryOpen} 
-                  modal={true}
-                  onOpenChange={(open: boolean): void => {
-                    console.log(`Contact history dialog ${open ? 'opening' : 'closing'}`);
-                    setIsContactLogHistoryOpen(open);
-                  }}
-                >
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Calendar className="mr-2 h-3.5 w-3.5" />
-                      View History
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent 
-                    className="sm:max-w-[600px]" 
-                    onClick={(e: React.MouseEvent): void => {
-                      // Prevent click events from bubbling up to parent dialog
-                      e.stopPropagation();
-                    }}
-                    onPointerDownOutside={(e): void => {
-                      // Prevent clicks outside from closing the dialog
-                      e.preventDefault();
-                    }}
-                    onInteractOutside={(e): void => {
-                      // Prevent any outside interaction from affecting parent dialog
-                      e.preventDefault();
-                    }}
+                <div className="flex space-x-2 mt-4">
+                  <Dialog 
+                    open={isContactLogOpen} 
+                    modal={true}
+                    onOpenChange={setIsContactLogOpen}
                   >
-                    <DialogHeader>
-                      <DialogTitle>Contact History</DialogTitle>
-                      <DialogDescription>
-                        Past communications with this lead
-                      </DialogDescription>
-                    </DialogHeader>
-                    <ScrollArea className="h-[400px] mt-4">
-                      {contactLogs && contactLogs.length > 0 ? (
-                        <div className="space-y-6">
-                          {contactLogs.map((log) => (
-                            <div key={log.id} className="p-4 border rounded-lg bg-gray-50">
-                              <div className="flex justify-between mb-2">
-                                <Badge variant="outline" className="capitalize">
-                                  {log.contactMethod}
-                                </Badge>
-                                <span className="text-xs text-gray-500">
-                                  {formatDate(log.timestamp)}
-                                </span>
-                              </div>
-                              <p className="text-sm whitespace-pre-wrap">{log.notes || "No notes provided"}</p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center p-8 text-gray-500">
-                          <BookOpen className="mx-auto h-10 w-10 opacity-20 mb-2" />
-                          <p>No contact history available</p>
-                        </div>
-                      )}
-                    </ScrollArea>
-                    <DialogFooter>
-                      <Button type="button" variant="outline" onClick={() => setIsContactLogHistoryOpen(false)}>
-                        Close
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsContactLogOpen(true);
+                        }}
+                      >
+                        <Phone className="mr-2 h-3.5 w-3.5" />
+                        Log Contact
                       </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                    </DialogTrigger>
+                    <DialogContent onClick={(e) => e.stopPropagation()}>
+                      <DialogHeader>
+                        <DialogTitle>Add Contact Log</DialogTitle>
+                        <DialogDescription>
+                          Record your communication with the client.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="contactMethod">Contact Method</Label>
+                          <Select
+                            value={contactMethod}
+                            onValueChange={setContactMethod}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select contact method" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="email">Email</SelectItem>
+                              <SelectItem value="phone">Phone</SelectItem>
+                              <SelectItem value="in-person">In Person</SelectItem>
+                              <SelectItem value="video">Video Call</SelectItem>
+                              <SelectItem value="text">Text Message</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="notes">Notes</Label>
+                          <Textarea
+                            id="notes"
+                            placeholder="What did you discuss?"
+                            value={contactNotes}
+                            onChange={(e) => setContactNotes(e.target.value)}
+                            rows={5}
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => setIsContactLogOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={handleAddContactLog}
+                          disabled={addContactLogMutation.isPending}
+                        >
+                          {addContactLogMutation.isPending ? "Saving..." : "Add Log"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  
+                  <Dialog 
+                    open={isContactLogHistoryOpen} 
+                    modal={true}
+                    onOpenChange={setIsContactLogHistoryOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsContactLogHistoryOpen(true);
+                        }}
+                      >
+                        <Calendar className="mr-2 h-3.5 w-3.5" />
+                        View History
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent 
+                      className="sm:max-w-[600px]" 
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <DialogHeader>
+                        <DialogTitle>Contact History</DialogTitle>
+                        <DialogDescription>
+                          Past communications with this lead
+                        </DialogDescription>
+                      </DialogHeader>
+                      <ScrollArea className="h-[400px] mt-4">
+                        {contactLogs && contactLogs.length > 0 ? (
+                          <div className="space-y-6">
+                            {contactLogs.map((log) => (
+                              <div key={log.id} className="p-4 border rounded-lg bg-gray-50">
+                                <div className="flex justify-between mb-2">
+                                  <Badge variant="outline" className="capitalize">
+                                    {log.contactMethod}
+                                  </Badge>
+                                  <span className="text-xs text-gray-500">
+                                    {formatDate(log.timestamp)}
+                                  </span>
+                                </div>
+                                <p className="text-sm whitespace-pre-wrap">{log.notes || "No notes provided"}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center p-8 text-gray-500">
+                            <BookOpen className="mx-auto h-10 w-10 opacity-20 mb-2" />
+                            <p>No contact history available</p>
+                          </div>
+                        )}
+                      </ScrollArea>
+                      <DialogFooter>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => setIsContactLogHistoryOpen(false)}
+                        >
+                          Close
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
-            </AccordionContent>
-          </AccordionItem>
+            )}
+          </div>
           
           {/* Step 2: Confirm Items */}
-          <AccordionItem 
-            value="items" 
-            disabled={!contactComplete}
+          <div 
             className={`rounded-lg border overflow-hidden 
               ${itemsConfirmed ? 'bg-green-50 border-green-100' : ''} 
               ${!contactComplete ? 'opacity-70' : ''}`}
+            data-progress-panel-id="items"
           >
-            <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-gray-50">
+            {/* Step Header */}
+            <div 
+              className={`px-4 py-3 ${contactComplete ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed'} flex items-center`}
+              onClick={() => contactComplete && togglePanel('items')}
+            >
               <div className="flex items-start space-x-3 w-full">
                 <div className={`h-8 w-8 rounded-full ${itemsConfirmed ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'} flex items-center justify-center`}>
                   {itemsConfirmed ? <CheckCircle2 className="h-5 w-5" /> : <FileCheck className="h-5 w-5" />}
@@ -725,132 +578,247 @@ const LeadProgressChecklist: React.FC<LeadProgressChecklistProps> = ({
                     {itemsConfirmed && <span className="ml-2 font-medium">✓ Complete</span>}
                   </p>
                 </div>
-              </div>
-            </AccordionTrigger>
-            
-            <AccordionContent className="px-4 pb-4">
-              <div className="mt-3 mb-4 flex justify-end">
-                {itemsConfirmed ? (
-                  <div className="flex items-center">
-                    <Badge className="bg-green-600 text-white mr-2">Completed</Badge>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-gray-600"
-                      onClick={() => handleToggleStep('items', false)}
-                      disabled={updateProgressMutation.isPending}
-                    >
-                      <Circle className="mr-1 h-3.5 w-3.5" /> Undo
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                    onClick={() => handleToggleStep('items', true)}
-                    disabled={updateProgressMutation.isPending}
+                <div className="ml-auto">
+                  <svg 
+                    width="24" 
+                    height="24" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    className={`transition-transform ${expandedPanel === 'items' ? 'rotate-180' : ''}`}
                   >
-                    <CheckSquare className="mr-1 h-3.5 w-3.5" /> 
-                    {updateProgressMutation.isPending ? "Saving..." : "Mark Complete"}
-                  </Button>
-                )}
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
               </div>
-              
-              <div className="mt-4 bg-gray-50 p-4 rounded-md">
-                <p className="text-sm text-gray-600">
-                  Confirm the client's order details, quantities, sizes, and specific requirements.
-                  Once all items and specifications are confirmed, mark this step as complete.
-                </p>
+            </div>
+            
+            {/* Step Content */}
+            {expandedPanel === 'items' && (
+              <div className="px-4 pb-4">
+                <div className="mt-3 mb-4 flex justify-end">
+                  {itemsConfirmed ? (
+                    <div className="flex items-center">
+                      <Badge className="bg-green-600 text-white mr-2">Completed</Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-gray-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleStep('items', false);
+                        }}
+                        disabled={updateProgressMutation.isPending}
+                      >
+                        <Circle className="mr-1 h-3.5 w-3.5" /> Undo
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleStep('items', true);
+                      }}
+                      disabled={updateProgressMutation.isPending || !contactComplete}
+                    >
+                      <CheckSquare className="mr-1 h-3.5 w-3.5" /> 
+                      {updateProgressMutation.isPending ? "Saving..." : "Mark Complete"}
+                    </Button>
+                  )}
+                </div>
+                <div className="mt-4 p-3 bg-gray-50 rounded-md">
+                  <h4 className="text-sm font-medium mb-2">Item Confirmation Checklist</h4>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start">
+                      <CheckSquare className="h-4 w-4 mr-2 text-gray-500 mt-0.5" />
+                      <span>Determine quantities of each item needed</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckSquare className="h-4 w-4 mr-2 text-gray-500 mt-0.5" />
+                      <span>Confirm sizes and customization details</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckSquare className="h-4 w-4 mr-2 text-gray-500 mt-0.5" />
+                      <span>Verify delivery timeline expectations</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckSquare className="h-4 w-4 mr-2 text-gray-500 mt-0.5" />
+                      <span>Obtain necessary logos or branding materials</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
-            </AccordionContent>
-          </AccordionItem>
+            )}
+          </div>
           
           {/* Step 3: Submit to Design */}
-          <AccordionItem 
-            value="design" 
-            disabled={!itemsConfirmed}
+          <div 
             className={`rounded-lg border overflow-hidden 
               ${submittedToDesign ? 'bg-green-50 border-green-100' : ''} 
-              ${!itemsConfirmed ? 'opacity-70' : ''}`}
+              ${(!contactComplete || !itemsConfirmed) ? 'opacity-70' : ''}`}
+            data-progress-panel-id="design"
           >
-            <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-gray-50">
+            {/* Step Header */}
+            <div 
+              className={`px-4 py-3 ${(contactComplete && itemsConfirmed) ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed'} flex items-center`}
+              onClick={() => (contactComplete && itemsConfirmed) && togglePanel('design')}
+            >
               <div className="flex items-start space-x-3 w-full">
                 <div className={`h-8 w-8 rounded-full ${submittedToDesign ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'} flex items-center justify-center`}>
-                  {submittedToDesign ? <CheckCircle2 className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
+                  {submittedToDesign ? <CheckCircle2 className="h-5 w-5" /> : <ListChecks className="h-5 w-5" />}
                 </div>
                 <div className="flex-1 text-left">
                   <h3 className={`font-medium ${submittedToDesign ? 'text-green-800' : 'text-gray-900'}`}>
                     Step 3: Submit to Design
                   </h3>
                   <p className={`text-sm ${submittedToDesign ? 'text-green-700' : 'text-gray-500'}`}>
-                    Send confirmed requirements to the design team
+                    Submit final requirements to the design team
                     {submittedToDesign && <span className="ml-2 font-medium">✓ Complete</span>}
                   </p>
                 </div>
-              </div>
-            </AccordionTrigger>
-            
-            <AccordionContent className="px-4 pb-4">
-              <div className="mt-3 mb-4 flex justify-end">
-                {submittedToDesign ? (
-                  <div className="flex items-center">
-                    <Badge className="bg-green-600 text-white mr-2">Completed</Badge>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-gray-600"
-                      onClick={() => handleToggleStep('design', false)}
-                      disabled={updateProgressMutation.isPending}
-                    >
-                      <Circle className="mr-1 h-3.5 w-3.5" /> Undo
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                    onClick={() => handleToggleStep('design', true)}
-                    disabled={updateProgressMutation.isPending}
+                <div className="ml-auto">
+                  <svg 
+                    width="24" 
+                    height="24" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    className={`transition-transform ${expandedPanel === 'design' ? 'rotate-180' : ''}`}
                   >
-                    <CheckSquare className="mr-1 h-3.5 w-3.5" /> 
-                    {updateProgressMutation.isPending ? "Saving..." : "Mark Complete"}
-                  </Button>
-                )}
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
               </div>
-              
-              <div className="mt-4 bg-gray-50 p-4 rounded-md">
-                <p className="text-sm text-gray-600">
-                  Submit all confirmed requirements to the design team for processing.
-                  This will move the lead to the next stage in the production pipeline.
-                </p>
+            </div>
+            
+            {/* Step Content */}
+            {expandedPanel === 'design' && (
+              <div className="px-4 pb-4">
+                <div className="mt-3 mb-4 flex justify-end">
+                  {submittedToDesign ? (
+                    <div className="flex items-center">
+                      <Badge className="bg-green-600 text-white mr-2">Completed</Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-gray-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleStep('design', false);
+                        }}
+                        disabled={updateProgressMutation.isPending}
+                      >
+                        <Circle className="mr-1 h-3.5 w-3.5" /> Undo
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleStep('design', true);
+                      }}
+                      disabled={updateProgressMutation.isPending || !contactComplete || !itemsConfirmed}
+                    >
+                      <CheckSquare className="mr-1 h-3.5 w-3.5" /> 
+                      {updateProgressMutation.isPending ? "Saving..." : "Mark Complete"}
+                    </Button>
+                  )}
+                </div>
+                <div className="mt-4 p-3 bg-gray-50 rounded-md">
+                  <h4 className="text-sm font-medium mb-2">Design Submission Requirements</h4>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start">
+                      <CheckSquare className="h-4 w-4 mr-2 text-gray-500 mt-0.5" />
+                      <span>Gather all client-provided logos and graphics</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckSquare className="h-4 w-4 mr-2 text-gray-500 mt-0.5" />
+                      <span>Document color preferences and style guide</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckSquare className="h-4 w-4 mr-2 text-gray-500 mt-0.5" />
+                      <span>Detail placement instructions for customization</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckSquare className="h-4 w-4 mr-2 text-gray-500 mt-0.5" />
+                      <span>Specify any special production considerations</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-        
-        {/* Success Message when all steps are complete */}
-        {openStep === 'complete' && submittedToDesign && (
-          <div className="mt-6 p-4 bg-green-50 border border-green-100 rounded-lg">
-            <div className="flex items-center">
-              <CheckCircle2 className="h-5 w-5 text-green-600 mr-2" />
-              <h4 className="font-medium text-green-800">Lead Processing Complete</h4>
-            </div>
-            <p className="text-sm text-green-700 mt-1 ml-7">
-              All steps completed! The design team is now working on this lead.
-            </p>
-            <div className="ml-7 mt-2">
-              <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                <Package className="mr-2 h-3.5 w-3.5" />
-                View in Design Queue
-              </Button>
-            </div>
+            )}
           </div>
-        )}
+          
+          {/* Complete */}
+          <div 
+            className={`rounded-lg border overflow-hidden 
+              ${contactComplete && itemsConfirmed && submittedToDesign ? 'bg-green-50 border-green-100' : ''} 
+              ${(!contactComplete || !itemsConfirmed || !submittedToDesign) ? 'opacity-70' : ''}`}
+            data-progress-panel-id="complete"
+          >
+            {/* Step Header */}
+            <div 
+              className={`px-4 py-3 ${(contactComplete && itemsConfirmed && submittedToDesign) ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed'} flex items-center`}
+              onClick={() => (contactComplete && itemsConfirmed && submittedToDesign) && togglePanel('complete')}
+            >
+              <div className="flex items-start space-x-3 w-full">
+                <div className={`h-8 w-8 rounded-full ${contactComplete && itemsConfirmed && submittedToDesign ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'} flex items-center justify-center`}>
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+                <div className="flex-1 text-left">
+                  <h3 className={`font-medium ${contactComplete && itemsConfirmed && submittedToDesign ? 'text-green-800' : 'text-gray-900'}`}>
+                    Lead Process Complete
+                  </h3>
+                  <p className={`text-sm ${contactComplete && itemsConfirmed && submittedToDesign ? 'text-green-700' : 'text-gray-500'}`}>
+                    All steps have been completed
+                  </p>
+                </div>
+                <div className="ml-auto">
+                  <svg 
+                    width="24" 
+                    height="24" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    className={`transition-transform ${expandedPanel === 'complete' ? 'rotate-180' : ''}`}
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            {/* Step Content */}
+            {expandedPanel === 'complete' && (
+              <div className="px-4 pb-4">
+                <div className="mt-3 text-center p-4 bg-green-50 rounded-md">
+                  <CheckCircle2 className="h-10 w-10 mx-auto mb-2 text-green-600" />
+                  <h3 className="text-lg font-medium text-green-800 mb-1">All Steps Completed!</h3>
+                  <p className="text-sm text-green-700">
+                    Lead has been successfully processed through all required steps.
+                    The design team will continue the process from here.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
-};
-
-export default LeadProgressChecklist;
+}

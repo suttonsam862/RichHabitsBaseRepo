@@ -9,6 +9,7 @@ import { HybridLayout } from "./components/hybrid/hybrid-layout";
 import Dashboard from "./pages/dashboard";
 import Leads from "./pages/leads";
 import LeadsWhiteboard from "./pages/leads-whiteboard";
+import LeadsSteps from "./pages/leads-steps";
 import Orders from "./pages/orders";
 import Reports from "./pages/reports";
 import Analytics from "./pages/analytics";
@@ -136,6 +137,9 @@ function DashboardLayout() {
         </Route>
         <Route path="/leads-whiteboard">
           <ProtectedPageLoader pageId="leads"><LeadsWhiteboard /></ProtectedPageLoader>
+        </Route>
+        <Route path="/leads-steps">
+          <ProtectedPageLoader pageId="leads"><LeadsSteps /></ProtectedPageLoader>
         </Route>
         <Route path="/orders">
           <ProtectedPageLoader pageId="orders"><Orders /></ProtectedPageLoader>

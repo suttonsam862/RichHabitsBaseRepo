@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CalendarIcon, Mail, Phone, Building2, Clock, BriefcaseIcon, DollarSign, Clipboard, Tag } from 'lucide-react';
-import LeadProgressChecklist from './lead-progress-checklist';
+import LeadProgressChecklistNew from './lead-progress-checklist-new';
 import { useToast } from '@/hooks/use-toast';
 
 interface ContactLog {
@@ -268,7 +268,7 @@ export default function LeadDetailsPanel({
             data-progress-panel="true"
           >
             {lead.claimed ? (
-              <LeadProgressChecklist 
+              <LeadProgressChecklistNew 
                 leadId={lead.id}
                 contactComplete={lead.contactComplete || false}
                 itemsConfirmed={lead.itemsConfirmed || false}

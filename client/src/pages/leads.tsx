@@ -1311,12 +1311,29 @@ export default function Leads() {
                                                 className="h-8"
                                                 onClick={() => {
                                                   // Using direct state updates instead of toggleLeadDetails function
-                                                  setExpandedLeadId(lead.id);
+                                                  console.log("View button clicked for lead in drag-n-drop view:", lead.id);
                                                   setSelectedLead(lead);
+                                                  setTimeout(() => {
+                                                    setExpandedLeadId(lead.id);
+                                                    document.getElementById('lead-details-panel-container')?.scrollIntoView({ behavior: 'smooth' });
+                                                  }, 100);
                                                   
                                                   // Also fetch contact logs for this lead
                                                   apiRequest("GET", `/api/leads/${lead.id}/contact-logs`)
-                                                    .then(res => res.json())
+                                                    .then(res => {
+                                                      // Check if response is ok before trying to parse JSON
+                                                      if (!res.ok) {
+                                                        console.warn(`Contact logs response not OK: ${res.status} ${res.statusText}`);
+                                                        return { data: [] };
+                                                      }
+                                                      
+                                                      try {
+                                                        return res.json();
+                                                      } catch (e) {
+                                                        console.error("Error parsing contact logs JSON:", e);
+                                                        return { data: [] };
+                                                      }
+                                                    })
                                                     .then(data => {
                                                       console.log("Contact logs loaded:", data);
                                                       const logs = Array.isArray(data.data) ? data.data : [];
@@ -1324,6 +1341,7 @@ export default function Leads() {
                                                     })
                                                     .catch(error => {
                                                       console.error("Error fetching contact logs:", error);
+                                                      // Still set empty logs so the panel can open
                                                       setContactLogs([]);
                                                     });
                                                 }}
@@ -1977,52 +1995,71 @@ export default function Leads() {
       </Dialog>
       
       {/* Lead Details Panel - Expandable alternative to dialog */}
-      <div className="px-4 pb-8" id="lead-details-panel-container">
+      <div className="px-4 pb-8 mt-6" id="lead-details-panel-container">
         {expandedLeadId && selectedLead ? (
-          <div className="bg-white rounded-lg shadow-lg border border-brand-200 mb-8 relative z-10">
-            <LeadDetailsPanel 
-              lead={selectedLead}
-              isAdmin={isAdmin}
-              onClose={() => {
-                console.log("Closing lead details panel");
-                setExpandedLeadId(null);
-                setSelectedLead(null);
-              }}
-              onUpdate={() => {
-                // Refresh lead data after update
-                console.log("Refreshing lead data after update");
-                queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
-              }}
-              onEdit={(lead) => {
-                console.log("Opening edit dialog for lead", lead.id);
-                // Set up the edit dialog with the lead data
-                setSelectedLeadId(lead.id);
-                form.reset({
-                  name: lead.name,
-                  email: lead.email,
-                  phone: lead.phone || "",
-                  companyName: lead.companyName || "",
-                  source: lead.source || "",
-                  status: lead.status as any,
-                  notes: lead.notes || "",
-                  value: lead.value || "",
-                  // Organization fields
-                  website: lead.website || "",
-                  industry: lead.industry || "",
-                  address: lead.address || "",
-                  city: lead.city || "",
-                  state: lead.state || "",
-                  zip: lead.zip || "",
-                  country: lead.country || "USA",
-                  organizationType: lead.organizationType || "client",
-                });
-                
-                // Close the details panel and open the edit dialog
-                setExpandedLeadId(null);
-                setOpenEditDialog(true);
-              }}
-            />
-          </div>
+          <>
+            <div className="bg-brand-50 py-3 px-4 rounded-t-lg border border-brand-200 border-b-0 flex justify-between">
+              <h2 className="text-lg font-semibold text-brand-800">
+                Lead Details - #{expandedLeadId}
+              </h2>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="text-brand-800 hover:bg-brand-100"
+                onClick={() => {
+                  console.log("Closing lead details panel via top button");
+                  setExpandedLeadId(null);
+                  setSelectedLead(null);
+                }}
+              >
+                Close
+              </Button>
+            </div>
+            <div className="bg-white rounded-b-lg shadow-lg border border-brand-200 border-t-0 mb-8 relative z-10">
+              <LeadDetailsPanel 
+                lead={selectedLead}
+                isAdmin={isAdmin}
+                onClose={() => {
+                  console.log("Closing lead details panel");
+                  setExpandedLeadId(null);
+                  setSelectedLead(null);
+                }}
+                onUpdate={() => {
+                  // Refresh lead data after update
+                  console.log("Refreshing lead data after update");
+                  queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+                }}
+                onEdit={(lead) => {
+                  console.log("Opening edit dialog for lead", lead.id);
+                  // Set up the edit dialog with the lead data
+                  setSelectedLeadId(lead.id);
+                  form.reset({
+                    name: lead.name,
+                    email: lead.email,
+                    phone: lead.phone || "",
+                    companyName: lead.companyName || "",
+                    source: lead.source || "",
+                    status: lead.status as any,
+                    notes: lead.notes || "",
+                    value: lead.value || "",
+                    // Organization fields
+                    website: lead.website || "",
+                    industry: lead.industry || "",
+                    address: lead.address || "",
+                    city: lead.city || "",
+                    state: lead.state || "",
+                    zip: lead.zip || "",
+                    country: lead.country || "USA",
+                    organizationType: lead.organizationType || "client",
+                  });
+                  
+                  // Close the details panel and open the edit dialog
+                  setExpandedLeadId(null);
+                  setOpenEditDialog(true);
+                }}
+              />
+            </div>
+          </>
         ) : null}
       </div>
     </>

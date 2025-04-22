@@ -116,8 +116,8 @@ export default function LeadDetailsPanel({
   };
 
   return (
-    <Card className="w-full mt-4 border-2 border-brand-100 shadow-md">
-      <CardHeader className="bg-gray-50 pb-4">
+    <Card className="w-full border-0 shadow-none">
+      <CardHeader className="bg-gray-50 pb-4 sticky top-0 z-10">
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="text-xl font-semibold">{lead.name}</CardTitle>
@@ -139,6 +139,7 @@ export default function LeadDetailsPanel({
               variant="default" 
               size="sm"
               onClick={handleClose}
+              className="bg-brand-600 hover:bg-brand-700 text-white"
             >
               Close
             </Button>
@@ -341,6 +342,7 @@ export default function LeadDetailsPanel({
           variant="default" 
           size="sm"
           onClick={handleClose}
+          className="bg-brand-600 hover:bg-brand-700 text-white"
         >
           Close
         </Button>

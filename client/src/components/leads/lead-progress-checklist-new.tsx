@@ -105,9 +105,24 @@ export default function LeadProgressChecklistNew({
     },
     onSuccess: (data) => {
       console.log("Lead progress updated successfully:", data);
+      
+      // IMPORTANT: First update the local state before calling onUpdate
+      // This ensures our local state is in sync with the server
+      // when the dialog might be closed by the parent component
+      const updatedLead = data.data || data;
+      if (updatedLead) {
+        setContactComplete(!!updatedLead.contactComplete);
+        setItemsConfirmed(!!updatedLead.itemsConfirmed);
+        setSubmittedToDesign(!!updatedLead.submittedToDesign);
+      }
+      
       // Invalidate and refetch leads data
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
-      onUpdate(); // Call the parent's update function
+      
+      // NOW we can safely call the parent's update function
+      // because our local state is already updated
+      console.log("Calling parent onUpdate");
+      onUpdate(); 
     },
     onError: (error: Error) => {
       console.error("Error updating lead progress:", error);
@@ -199,23 +214,24 @@ export default function LeadProgressChecklistNew({
         submittedToDesign?: boolean; 
       } = {};
       
-      // Update the UI state for immediate feedback
+      // Store the updates but DON'T update UI state yet
+      // Instead, wait for the server response to be successful first
       switch (step) {
         case 'contact':
-          setContactComplete(value);
+          // Don't call setContactComplete yet
           progressUpdates.contactComplete = value;
           break;
         case 'items':
-          setItemsConfirmed(value);
+          // Don't call setItemsConfirmed yet
           progressUpdates.itemsConfirmed = value;
           break;
         case 'design':
-          setSubmittedToDesign(value);
+          // Don't call setSubmittedToDesign yet
           progressUpdates.submittedToDesign = value;
           break;
       }
       
-      console.log("Applying optimistic update with:", progressUpdates);
+      console.log("Preparing update with:", progressUpdates);
       
       // Apply optimistic update to the cache
       queryClient.setQueryData(["/api/leads"], (oldData: any) => {

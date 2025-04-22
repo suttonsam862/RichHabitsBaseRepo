@@ -11,9 +11,7 @@ import shopifyService from "./services/shopify-service";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { insertAiTrainingDataSchema } from "../shared/schema";
-// Import the script to add leads-steps to admin users
-import "./add-leads-steps";
+import { insertAiTrainingDataSchema, users, ROLES } from "../shared/schema";
 
 // Helper function to calculate duration in days between two dates
 function calculateDuration(startDate: string | null, endDate: string | null): number {
@@ -107,8 +105,68 @@ import { isAdmin, hasRequiredPermission } from "./auth";
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   
+  // Special endpoint to add leads-steps page to admin users
+  try {
+    // Get all admin users (using ROLES.ADMIN)
+    const adminUsers = await db.select().from(users).where(eq(users.role, ROLES.ADMIN));
+    
+    console.log(`Found ${adminUsers.length} admin users to update with leads-steps page`);
+    
+    for (const user of adminUsers) {
+      // Get current visiblePages
+      let visiblePages = user.visiblePages || [];
+      
+      // Check if leads-steps is already in the list
+      if (!visiblePages.includes('leads-steps')) {
+        // Add leads-steps to the visiblePages array
+        visiblePages.push('leads-steps');
+        
+        // Update the user
+        await db.update(users)
+          .set({ visiblePages })
+          .where(eq(users.id, user.id));
+        
+        console.log(`Updated visiblePages for admin user: ${user.username || user.email}`);
+      } else {
+        console.log(`Admin user ${user.username || user.email} already has leads-steps page visible`);
+      }
+    }
+  } catch (error) {
+    console.error('Error updating admin users with leads-steps page:', error);
+  }
+  
   // Set up authentication routes
   setupAuth(app);
+  
+  // Manual endpoint to add leads-steps to visible pages for the current user
+  app.get("/api/add-leads-steps-page", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      
+      // Get current visiblePages
+      let visiblePages = user.visiblePages || [];
+      
+      // Check if leads-steps is already in the list
+      if (!visiblePages.includes('leads-steps')) {
+        // Add leads-steps to the visiblePages array
+        visiblePages.push('leads-steps');
+        
+        // Update the user
+        await db.update(users)
+          .set({ visiblePages })
+          .where(eq(users.id, user.id));
+        
+        console.log(`Manually added leads-steps page to user ${user.username || user.email}`);
+        res.json({ success: true, message: "Added leads-steps page to your visible pages" });
+      } else {
+        console.log(`User ${user.username || user.email} already has leads-steps page visible`);
+        res.json({ success: true, message: "Leads-steps page already in your visible pages" });
+      }
+    } catch (error: any) {
+      console.error('Error adding leads-steps page for user:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
   
   // Dashboard stats
   app.get("/api/dashboard/stats", async (req, res) => {

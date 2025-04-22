@@ -8,8 +8,8 @@ import { eq } from 'drizzle-orm';
  */
 async function addLeadsStepsToAdmins() {
   try {
-    // Get all admin users
-    const adminUsers = await db.select().from(users).where(eq(users.role, ROLES.Admin));
+    // Get all admin users (use ROLES.ADMIN instead of ROLES.Admin)
+    const adminUsers = await db.select().from(users).where(eq(users.role, ROLES.ADMIN));
     
     console.log(`Found ${adminUsers.length} admin users to update`);
     

@@ -1060,7 +1060,24 @@ export default function Leads() {
                                             {lead.value && <span className="font-semibold">${lead.value}</span>}
                                           </div>
                                         }
-                                        onClick={() => toggleLeadDetails(lead)}
+                                        onClick={() => {
+                                          // Using direct state updates instead of toggleLeadDetails function
+                                          setExpandedLeadId(lead.id);
+                                          setSelectedLead(lead);
+                                          
+                                          // Also fetch contact logs for this lead
+                                          apiRequest("GET", `/api/leads/${lead.id}/contact-logs`)
+                                            .then(res => res.json())
+                                            .then(data => {
+                                              console.log("Contact logs loaded:", data);
+                                              const logs = Array.isArray(data.data) ? data.data : [];
+                                              setContactLogs(logs);
+                                            })
+                                            .catch(error => {
+                                              console.error("Error fetching contact logs:", error);
+                                              setContactLogs([]);
+                                            });
+                                        }}
                                       />
                                     </div>
                                   )}
@@ -1274,7 +1291,24 @@ export default function Leads() {
                                                 size="sm"
                                                 variant="ghost"
                                                 className="h-8"
-                                                onClick={() => toggleLeadDetails(lead)}
+                                                onClick={() => {
+                                                  // Using direct state updates instead of toggleLeadDetails function
+                                                  setExpandedLeadId(lead.id);
+                                                  setSelectedLead(lead);
+                                                  
+                                                  // Also fetch contact logs for this lead
+                                                  apiRequest("GET", `/api/leads/${lead.id}/contact-logs`)
+                                                    .then(res => res.json())
+                                                    .then(data => {
+                                                      console.log("Contact logs loaded:", data);
+                                                      const logs = Array.isArray(data.data) ? data.data : [];
+                                                      setContactLogs(logs);
+                                                    })
+                                                    .catch(error => {
+                                                      console.error("Error fetching contact logs:", error);
+                                                      setContactLogs([]);
+                                                    });
+                                                }}
                                               >
                                                 <Eye className="h-3.5 w-3.5" />
                                                 <span className="sr-only">View</span>

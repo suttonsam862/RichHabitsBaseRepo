@@ -488,6 +488,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("PATCH /api/leads/:id/progress - Start processing request for lead ID:", req.params.id);
       console.log("Request body:", JSON.stringify(req.body));
+  
+  // Detailed lead step progress endpoint
+  app.patch("/api/leads/:id/progress/:stepId", async (req, res) => {
+    try {
+      console.log(`PATCH /api/leads/${req.params.id}/progress/${req.params.stepId} - Processing request`);
+      console.log("Request body:", JSON.stringify(req.body));
+      
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as User;
+      const leadId = parseInt(req.params.id);
+      const stepId = req.params.stepId;
+      
+      // Validate step data
+      if (!req.body || typeof req.body !== 'object') {
+        return res.status(400).json({ error: "Invalid request body" });
+      }
+      
+      // Get the lead
+      const lead = await storage.getLeadById(leadId);
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      
+      // Check permissions (admin, lead owner, or sales executive)
+      const canUpdateLead = user.role === ROLES.ADMIN || 
+                           user.role === 'executive' || 
+                           String(lead.salesRepId) === String(user.id);
+      
+      if (!canUpdateLead) {
+        return res.status(403).json({ error: "You don't have permission to update this lead" });
+      }
+      
+      // Update the lead progress
+      const progress = lead.progress || {};
+      progress[stepId] = {
+        ...progress[stepId],
+        ...req.body,
+        updatedAt: new Date().toISOString(),
+        updatedBy: user.id
+      };
+      
+      // Save the updated lead
+      await storage.updateLead(leadId, { progress });
+      
+      return res.json({ success: true, message: "Lead progress updated successfully" });
+      
+    } catch (error: any) {
+      console.error(`Error updating lead step progress:`, error);
+      res.status(500).json({ error: error.message || "An error occurred updating lead progress" });
+    }
+  });
       
       if (!req.isAuthenticated()) {
         console.log("User not authenticated");

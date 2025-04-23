@@ -41,7 +41,9 @@ import {
   Building,
   DollarSign,
   Tag,
-  CalendarRange
+  CalendarRange,
+  HelpCircle,
+  Plus
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
@@ -55,14 +57,48 @@ const LEAD_STEPS = [
     description: "Make first contact and qualify the lead's needs",
     icon: <Phone className="h-5 w-5" />,
     fields: [
-      { name: "contactMethod", label: "Contact Method", type: "select", options: ["Phone", "Email", "In Person", "Social Media", "Video Call", "Text Message"] },
-      { name: "contactDate", label: "Contact Date", type: "date" },
-      { name: "contactNotes", label: "Contact Notes", type: "textarea" },
-      { name: "budget", label: "Budget Range", type: "select", options: ["Under $1,000", "$1,000-$5,000", "$5,000-$10,000", "$10,000-$25,000", "$25,000-$50,000", "Over $50,000"] },
-      { name: "timeframe", label: "Timeframe", type: "select", options: ["Immediate", "Within 30 days", "1-3 months", "3-6 months", "6-12 months", "Over 12 months"] },
-      { name: "needsAssessment", label: "Detailed Needs Assessment", type: "textarea" },
-      { name: "targetEventDate", label: "Target Event/Delivery Date", type: "date" },
-      { name: "specialRequirements", label: "Special Requirements", type: "textarea" },
+      { 
+        name: "contactMethod", 
+        label: "Contact Method", 
+        type: "select", 
+        options: ["Phone", "Email", "Connection", "Website", "Social Media", "Outreach"] 
+      },
+      { 
+        name: "contactDate", 
+        label: "Contact Date", 
+        type: "date" 
+      },
+      { 
+        name: "budget", 
+        label: "Budget Range", 
+        type: "select", 
+        options: ["Under $1,000", "$1,000-$5,000", "$5,000-$10,000", "$10,000-$25,000", "$25,000-$50,000", "Over $50,000"],
+        description: "Ask the client about their total project budget to help tailor solutions within their financial constraints."
+      },
+      { 
+        name: "timeframe", 
+        type: "select", 
+        label: "Timeframe", 
+        options: ["Immediate", "Within 30 days", "1-3 months", "3-6 months", "6-12 months", "Over 12 months"],
+        description: "Determine the client's required delivery timeline to ensure we can meet their expectations."
+      },
+      { 
+        name: "lineItems", 
+        label: "Custom Line Items", 
+        type: "custom-line-items",
+        description: "Add products, fabrics, and measurements from your conversation with the client."
+      },
+      { 
+        name: "needsAssessment", 
+        label: "Design Needs Assessment", 
+        type: "textarea",
+        description: "Document the client's design requirements including colors, styles, logos, and any specific elements they want to incorporate."
+      },
+      { 
+        name: "targetEventDate", 
+        label: "Target Event/Delivery Date", 
+        type: "date" 
+      },
     ]
   },
   {
@@ -402,16 +438,38 @@ export default function LeadStepProgress({ lead, isAdmin = false }) {
                       {/* Display form fields */}
                       {step.fields.map((field) => (
                         <div key={field.name} className="space-y-2">
-                          <label className="text-sm font-medium">
-                            {field.label}
-                          </label>
+                          <div className="flex justify-between items-center">
+                            <label className="text-sm font-medium">
+                              {field.label}
+                            </label>
+                            {/* Optional info tooltip for fields with descriptions */}
+                            {field.description && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="cursor-help">
+                                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="max-w-xs text-xs">{field.description}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </div>
+                          
+                          {/* Field help text display */}
+                          {field.description && (
+                            <p className="text-xs text-muted-foreground mb-2">{field.description}</p>
+                          )}
                           
                           {field.type === "textarea" ? (
                             <Textarea
                               name={field.name}
                               value={formValues[field.name] || ""}
                               onChange={handleInputChange}
-                              placeholder={`Enter ${field.label.toLowerCase()}`}
+                              placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
                               disabled={isCompleted || isSubmitting || !canUpdateLead()}
                               className="w-full"
                             />
@@ -437,13 +495,39 @@ export default function LeadStepProgress({ lead, isAdmin = false }) {
                               disabled={isCompleted || isSubmitting || !canUpdateLead()}
                               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                             />
+                          ) : field.type === "custom-line-items" ? (
+                            <div className="space-y-4 border border-input rounded-md p-4 bg-muted/10">
+                              <p className="text-sm text-muted-foreground">
+                                Add custom line items from your client conversation
+                              </p>
+                              
+                              {/* Line items section - placeholder until we implement the full component */}
+                              <div className="flex flex-col space-y-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="w-full"
+                                  onClick={() => {
+                                    // This will be replaced with a proper line item editor component
+                                    toast({
+                                      title: "Feature In Development",
+                                      description: "The custom line items editor will be available soon.",
+                                    });
+                                  }}
+                                  disabled={isCompleted || isSubmitting || !canUpdateLead()}
+                                >
+                                  <Plus className="h-4 w-4 mr-1" />
+                                  Add Line Item
+                                </Button>
+                              </div>
+                            </div>
                           ) : (
                             <input
                               type="text"
                               name={field.name}
                               value={formValues[field.name] || ""}
                               onChange={handleInputChange}
-                              placeholder={`Enter ${field.label.toLowerCase()}`}
+                              placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
                               disabled={isCompleted || isSubmitting || !canUpdateLead()}
                               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                             />

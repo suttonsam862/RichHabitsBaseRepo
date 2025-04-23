@@ -582,7 +582,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  });
   
   // Contact logs endpoints
   app.get("/api/leads/:id/contact-logs", async (req, res) => {

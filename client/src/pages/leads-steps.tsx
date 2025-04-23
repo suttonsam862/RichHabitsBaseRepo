@@ -7,12 +7,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
+// No tabs needed
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +25,6 @@ import LeadStepProgress from "@/components/leads/lead-step-progress";
 export default function LeadsSteps() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [selectedTab, setSelectedTab] = useState("all-leads");
   
   const { user } = useAuth();
   
@@ -53,16 +47,7 @@ export default function LeadsSteps() {
   // Remove archived leads from the data set
   const leads = allLeads.filter((lead: any) => lead.status !== 'archived');
   
-  // Set default tab based on user role
-  useEffect(() => {
-    if (isAdmin) {
-      setSelectedTab(selectedTab || 'all-leads');
-    } else {
-      setSelectedTab('my-leads'); // Non-admins always see "my-leads" by default
-    }
-  }, [user?.role, isAdmin]);
-  
-  // Filter the leads based on search term, status, and user access level
+  // Filter the leads based on search term, status, and only show leads assigned to current user
   const filteredLeads = leads.filter((lead: any) => {
     // Filter by search term
     const matchesSearch = 
@@ -75,22 +60,15 @@ export default function LeadsSteps() {
     // Filter by status
     const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
     
-    // Filter by assigned sales rep (for "my-leads" tab)
+    // Filter by assigned to current user
     const isAssignedToCurrentUser = lead.salesRepId === currentUserId;
     
-    // Final filtering logic based on tab and user role
-    if (selectedTab === "all-leads") {
-      // Only admins can see all leads
-      return isAdmin && matchesSearch && matchesStatus;
-    } else if (selectedTab === "my-leads") {
-      // Everyone can see their own leads
+    // Admin users can see all leads, others only see their assigned leads
+    if (isAdmin) {
+      return matchesSearch && matchesStatus;
+    } else {
       return matchesSearch && matchesStatus && isAssignedToCurrentUser;
-    } else if (selectedTab === "unassigned-leads") {
-      // Only admins and agents can see unassigned leads
-      return (isAdmin || isAgent) && matchesSearch && matchesStatus && !lead.salesRepId;
     }
-    
-    return false;
   });
   
   // Get unique statuses for filter dropdown
@@ -106,96 +84,80 @@ export default function LeadsSteps() {
           </p>
         </div>
         
-        {/* Tabs for switching between lead views */}
-        <Tabs 
-          defaultValue="all-leads" 
-          className="w-full"
-          value={selectedTab}
-          onValueChange={setSelectedTab}
-        >
-          <TabsList className="grid grid-cols-3 w-full max-w-md">
-            <TabsTrigger value="all-leads">All Leads</TabsTrigger>
-            <TabsTrigger value="my-leads">My Leads</TabsTrigger>
-            <TabsTrigger value="unassigned-leads">Unassigned</TabsTrigger>
-          </TabsList>
-          
-          {/* Shared content for all tabs */}
-          <div className="my-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Lead Progress Tracking</CardTitle>
-                <CardDescription>
-                  Follow leads through each step of the sales process. Update progress to keep track of where each lead stands.
-                </CardDescription>
-                
-                {/* Search and filter controls */}
-                <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 mt-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground/70" />
-                    <Input
-                      type="search"
-                      placeholder="Search leads..."
-                      className="w-full pl-8"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Filter className="h-4 w-4 text-muted-foreground/70" />
-                    <Select
-                      value={statusFilter}
-                      onValueChange={setStatusFilter}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Filter by status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {statuses.map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {status === "all" ? "All Statuses" : 
-                              status.charAt(0).toUpperCase() + status.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardHeader>
+        {/* Card content */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Lead Progress Tracking</CardTitle>
+            <CardDescription>
+              Follow leads through each step of the sales process. Update progress to keep track of where each lead stands.
+            </CardDescription>
+            
+            {/* Search and filter controls */}
+            <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 mt-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground/70" />
+                <Input
+                  type="search"
+                  placeholder="Search leads..."
+                  className="w-full pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
               
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading"/>
-                  </div>
-                ) : filteredLeads.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p>No leads found matching your criteria.</p>
-                    {searchTerm && (
-                      <Button 
-                        variant="link" 
-                        onClick={() => setSearchTerm("")}
-                        className="mt-2"
-                      >
-                        Clear search
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {filteredLeads.map((lead: any) => (
-                      <LeadStepProgress 
-                        key={lead.id} 
-                        lead={lead} 
-                        isAdmin={isAdmin}
-                      />
+              <div className="flex items-center space-x-2">
+                <Filter className="h-4 w-4 text-muted-foreground/70" />
+                <Select
+                  value={statusFilter}
+                  onValueChange={setStatusFilter}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statuses.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status === "all" ? "All Statuses" : 
+                          status.charAt(0).toUpperCase() + status.slice(1)}
+                      </SelectItem>
                     ))}
-                  </div>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardHeader>
+          
+          <CardContent>
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading"/>
+              </div>
+            ) : filteredLeads.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No leads found matching your criteria.</p>
+                {searchTerm && (
+                  <Button 
+                    variant="link" 
+                    onClick={() => setSearchTerm("")}
+                    className="mt-2"
+                  >
+                    Clear search
+                  </Button>
                 )}
-              </CardContent>
-            </Card>
-          </div>
-        </Tabs>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {filteredLeads.map((lead: any) => (
+                  <LeadStepProgress 
+                    key={lead.id} 
+                    lead={lead} 
+                    isAdmin={isAdmin}
+                  />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

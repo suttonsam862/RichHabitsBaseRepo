@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
   Card, 
@@ -26,7 +26,6 @@ import {
 import { Search, Filter } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import LeadStepProgress from "@/components/leads/lead-step-progress";
-import { Lead } from "@/types";
 
 export default function LeadsSteps() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,9 +34,11 @@ export default function LeadsSteps() {
   
   const { user } = useAuth();
   
-  // Get user permissions
-  const canViewAllLeads = user?.permissions?.includes('view_all_leads') || user?.role === 'admin';
-  const isAdmin = user?.role === 'admin';
+  // Get user permissions and role info
+  const isAdmin = user?.role === 'admin' || user?.role === 'executive';
+  const isAgent = user?.role === 'agent' || user?.role === 'sales';
+  const canViewAllLeads = user?.permissions?.includes('view_all_leads') || isAdmin;
+  const currentUserId = user?.id?.toString();
   
   // Fetch leads data
   const { data, isLoading } = useQuery({
@@ -47,9 +48,21 @@ export default function LeadsSteps() {
   });
   
   // Use data from the API - use empty array as fallback
-  const leads = data?.data || [];
+  const allLeads = data?.data || [];
   
-  // Filter the leads based on search term and status
+  // Remove archived leads from the data set
+  const leads = allLeads.filter((lead: any) => lead.status !== 'archived');
+  
+  // Set default tab based on user role
+  useEffect(() => {
+    if (isAdmin) {
+      setSelectedTab(selectedTab || 'all-leads');
+    } else {
+      setSelectedTab('my-leads'); // Non-admins always see "my-leads" by default
+    }
+  }, [user?.role, isAdmin]);
+  
+  // Filter the leads based on search term, status, and user access level
   const filteredLeads = leads.filter((lead: any) => {
     // Filter by search term
     const matchesSearch = 
@@ -63,15 +76,18 @@ export default function LeadsSteps() {
     const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
     
     // Filter by assigned sales rep (for "my-leads" tab)
-    const isAssignedToCurrentUser = lead.salesRepId === user?.id?.toString();
+    const isAssignedToCurrentUser = lead.salesRepId === currentUserId;
     
-    // Final filtering logic
+    // Final filtering logic based on tab and user role
     if (selectedTab === "all-leads") {
-      return matchesSearch && matchesStatus;
+      // Only admins can see all leads
+      return isAdmin && matchesSearch && matchesStatus;
     } else if (selectedTab === "my-leads") {
+      // Everyone can see their own leads
       return matchesSearch && matchesStatus && isAssignedToCurrentUser;
     } else if (selectedTab === "unassigned-leads") {
-      return matchesSearch && matchesStatus && !lead.salesRepId;
+      // Only admins and agents can see unassigned leads
+      return (isAdmin || isAgent) && matchesSearch && matchesStatus && !lead.salesRepId;
     }
     
     return false;
@@ -167,7 +183,7 @@ export default function LeadsSteps() {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {filteredLeads.map((lead: Lead) => (
+                    {filteredLeads.map((lead: any) => (
                       <LeadStepProgress 
                         key={lead.id} 
                         lead={lead} 

@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import AiGeneratedItems from "./ai-generated-items";
 import { 
   CheckCircle2, 
   Circle, 

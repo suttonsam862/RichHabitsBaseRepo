@@ -1,0 +1,50 @@
+      const campId = parseInt(req.params.campId);
+      
+      // Get all registrations for this camp that have a Shopify order ID
+      const registrations = await db.select()
+        .from(campRegistrations)
+        .where(and(
+          eq(campRegistrations.campId, campId),
+          sql`shopify_order_id IS NOT NULL`
+        ));
+      
+      // For each registration, fetch the Shopify order details
+      const enrichedRegistrations = [];
+      
+      for (const registration of registrations) {
+        try {
+          // Create a mock request with the order ID parameter
+          const mockReq = {
+            ...req,
+            params: { id: registration.shopifyOrderId }
+          };
+          
+          // Create a mock response to capture the order data
+          const mockRes = {
+            json: (data) => data
+          };
+          
+          // Get the Shopify order details
+          const orderDetails = await shopifyService.getShopifyOrder(mockReq, mockRes);
+          
+          // Combine registration with order details
+          enrichedRegistrations.push({
+            ...registration,
+            shopifyOrder: orderDetails.order
+          });
+        } catch (orderErr) {
+          console.error(`Failed to fetch Shopify order ${registration.shopifyOrderId}:`, orderErr);
+          // Include registration even without order details
+          enrichedRegistrations.push(registration);
+        }
+      }
+      
+      res.json({ data: enrichedRegistrations });
+    } catch (error) {
+      console.error("Error fetching Shopify registrations:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  return httpServer;
+}

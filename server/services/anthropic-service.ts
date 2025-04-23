@@ -431,8 +431,39 @@ Ensure all measurements are accurate and typical for this pattern type. Include 
   }
   
   /**
-   * Convert AI research result to database schema format
+   * Get a completion from Anthropic Claude and parse it as JSON
+   * This is used for structured data extraction like parsing client notes
    */
+  async getCompletionWithJSON(systemPrompt: string, userPrompt: string): Promise<any> {
+    try {
+      const response = await anthropic.messages.create({
+        model: CURRENT_MODEL,
+        system: systemPrompt,
+        max_tokens: 4000,
+        temperature: 0.2,
+        messages: [{ role: 'user', content: userPrompt }],
+      });
+
+      // Extract the text content from the response
+      const contentBlock = response.content[0];
+      const content = 'text' in contentBlock ? contentBlock.text : '';
+      
+      // Try to parse as JSON, with protection for malformed responses
+      try {
+        // Remove any extra markdown backticks if present
+        const cleanedContent = content.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
+        return JSON.parse(cleanedContent);
+      } catch (parseError) {
+        console.error('Failed to parse JSON from Anthropic response:', parseError);
+        console.log('Raw response content:', content);
+        return null;
+      }
+    } catch (error) {
+      console.error('Anthropic API error:', error);
+      return null;
+    }
+  }
+  
   convertToFabricTypeSchema(result: FabricResearchResult, createdBy?: number): InsertFabricType {
     return {
       name: result.fabricType,

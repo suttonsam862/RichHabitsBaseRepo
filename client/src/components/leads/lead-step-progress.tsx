@@ -515,7 +515,14 @@ export default function LeadStepProgress({ lead, isAdmin = false }) {
                               <AiGeneratedItems
                                 items={
                                   typeof formValues.generatedItems === 'string'
-                                    ? JSON.parse(formValues.generatedItems)
+                                    ? (() => {
+                                        try {
+                                          return JSON.parse(formValues.generatedItems);
+                                        } catch (e) {
+                                          console.error('Error parsing generatedItems JSON:', e);
+                                          return []; // Return empty array if parsing fails
+                                        }
+                                      })()
                                     : formValues.generatedItems
                                 }
                                 onChange={(updatedItems) => {
@@ -551,7 +558,17 @@ export default function LeadStepProgress({ lead, isAdmin = false }) {
                               // Special handling for generated items
                               if (key === "generatedItems" && value) {
                                 try {
-                                  const items = typeof value === 'string' ? JSON.parse(value) : value;
+                                  let items;
+                                  if (typeof value === 'string') {
+                                    try {
+                                      items = JSON.parse(value);
+                                    } catch (e) {
+                                      console.error('Error parsing completed generatedItems JSON:', e);
+                                      throw e; // Re-throw to trigger the catch block below
+                                    }
+                                  } else {
+                                    items = value;
+                                  }
                                   return (
                                     <div key={key} className="mt-2">
                                       <AiGeneratedItems items={items} />

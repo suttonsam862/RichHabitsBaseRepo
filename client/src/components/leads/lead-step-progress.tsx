@@ -508,6 +508,25 @@ export default function LeadStepProgress({ lead, isAdmin = false }) {
                             </Button>
                           </div>
                           
+                          {/* Display AI-generated items if present */}
+                          {formValues.generatedItems && (
+                            <div className="mt-4">
+                              <AiGeneratedItems
+                                items={
+                                  typeof formValues.generatedItems === 'string'
+                                    ? JSON.parse(formValues.generatedItems)
+                                    : formValues.generatedItems
+                                }
+                                onChange={(updatedItems) => {
+                                  setFormValues(prev => ({
+                                    ...prev,
+                                    generatedItems: JSON.stringify(updatedItems)
+                                  }));
+                                }}
+                              />
+                            </div>
+                          )}
+                          
                           {/* Display the additional description for the AI step */}
                           <div className="bg-blue-50 p-4 rounded-md mt-2 border border-blue-200 text-blue-800 text-sm">
                             <h4 className="font-medium mb-2">How AI-Assisted Item Creation Works</h4>
@@ -533,21 +552,8 @@ export default function LeadStepProgress({ lead, isAdmin = false }) {
                                 try {
                                   const items = typeof value === 'string' ? JSON.parse(value) : value;
                                   return (
-                                    <div key={key} className="text-xs bg-white p-3 rounded-md border border-gray-200">
-                                      <span className="font-medium block mb-2">Generated Items:</span>
-                                      {Array.isArray(items) && items.map((item, idx) => (
-                                        <div key={idx} className="mb-2 p-2 bg-gray-50 rounded">
-                                          <p><span className="font-medium">Item:</span> {item.itemName}</p>
-                                          <p><span className="font-medium">Category:</span> {item.category}</p>
-                                          {item.fabricType && <p><span className="font-medium">Fabric:</span> {item.fabricType}</p>}
-                                          {item.colorHex && <p>
-                                            <span className="font-medium">Color:</span>
-                                            <span className="inline-block h-3 w-3 rounded-full ml-1" style={{ backgroundColor: item.colorHex }}></span>
-                                            {item.colorHex}
-                                          </p>}
-                                          {item.designDetails && <p><span className="font-medium">Details:</span> {item.designDetails}</p>}
-                                        </div>
-                                      ))}
+                                    <div key={key} className="mt-2">
+                                      <AiGeneratedItems items={items} />
                                     </div>
                                   );
                                 } catch {

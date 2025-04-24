@@ -7,7 +7,7 @@ import { setupAuth, isAuthenticated } from "./auth";
 import anthropicService from "./services/anthropic-service";
 import shopifyService from "./services/shopify-service";
 import aiParsingService from "./services/ai-parsing-service";
-import { ROLES } from "../shared/schema";
+import { ROLES, products } from "../shared/schema";
 
 // Simple permission check helper
 function hasPermission(role: string, userPermissions: string[] = [], requiredPermission: string): boolean {
@@ -121,6 +121,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error parsing items from notes:", error);
       res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  // Products routes
+  app.get("/api/products", async (req, res) => {
+    try {
+      const productsList = await db.select().from(products);
+      res.json({ products: productsList });
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      res.status(500).json({ error: "Failed to fetch products" });
+    }
+  });
+  
+  app.post("/api/products", isAuthenticated, async (req, res) => {
+    try {
+      const { name, description, category, sport, item, fabricOptions, cogs, wholesalePrice } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Product name is required" });
+      }
+      
+      // Generate a unique SKU
+      const sku = `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      
+      const [product] = await db
+        .insert(products)
+        .values({
+          sku,
+          name,
+          description,
+          category,
+          sport: sport || "General",
+          item: item || "Custom Item",
+          fabricOptions: fabricOptions || "Various",
+          cogs: cogs || "0",
+          wholesalePrice: wholesalePrice || "0",
+          createdById: req.user.id,
+          aiGenerated: false,
+        })
+        .returning();
+      
+      res.status(201).json({ product });
+    } catch (error) {
+      console.error("Error creating product:", error);
+      res.status(500).json({ error: "Failed to create product" });
+    }
+  });
+  
+  // AI Product Generation
+  app.post("/api/products/generate", isAuthenticated, async (req, res) => {
+    try {
+      const { prompt } = req.body;
+      
+      if (!prompt) {
+        return res.status(400).json({ error: "Product description prompt is required" });
+      }
+      
+      // First use AI to parse the prompt into structured data
+      const systemMessage = `You are an expert in athletic apparel and equipment. 
+      Extract detailed product information from the user's prompt.
+      You should return a JSON object with the following fields:
+      - name (a concise product name)
+      - description (a detailed paragraph about the product)
+      - category (a product category like "singlet", "jacket", "shorts", etc.)
+      - sport (what sport this is for, e.g., "wrestling", "basketball", etc.)
+      - item (the specific item type)
+      - fabricOptions (recommended fabric types)
+      - cogs (estimated cost of goods)
+      - wholesalePrice (recommended wholesale price)`;
+      
+      try {
+        const response = await anthropicService.getCompletionWithJSON(
+          systemMessage,
+          prompt
+        );
+        
+        // Generate a unique SKU
+        const sku = `AI-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        
+        // Create the product using the AI-generated data
+        const [product] = await db
+          .insert(products)
+          .values({
+            sku,
+            name: response.name || "AI-Generated Product",
+            description: response.description || prompt,
+            category: response.category || "Custom",
+            sport: response.sport || "General",
+            item: response.item || "Custom Item",
+            fabricOptions: response.fabricOptions || "Various",
+            cogs: response.cogs || "0",
+            wholesalePrice: response.wholesalePrice || "0",
+            createdById: req.user.id,
+            aiGenerated: true,
+          })
+          .returning();
+        
+        res.status(201).json({ product });
+        
+      } catch (aiError) {
+        console.error("AI generation error:", aiError);
+        // Fallback to a simpler product creation if AI fails
+        const sku = `AI-FALLBACK-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        
+        const [product] = await db
+          .insert(products)
+          .values({
+            sku,
+            name: "Custom Product",
+            description: prompt,
+            category: "Custom",
+            sport: "General",
+            item: "Custom Item",
+            fabricOptions: "Various",
+            cogs: "0",
+            wholesalePrice: "0",
+            createdById: req.user.id,
+            aiGenerated: true,
+          })
+          .returning();
+        
+        res.status(201).json({ 
+          product, 
+          warning: "AI generation encountered an issue. Created a basic product instead."
+        });
+      }
+    } catch (error) {
+      console.error("Error in product generation:", error);
+      res.status(500).json({ error: "Failed to generate product" });
     }
   });
   

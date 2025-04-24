@@ -214,6 +214,8 @@ export const products = pgTable('products', {
   lineItemManagement: text('line_item_management'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
+  aiGenerated: boolean('ai_generated').default(false),
+  createdById: integer('created_by_id'),
 });
 
 // Fabric Options schema

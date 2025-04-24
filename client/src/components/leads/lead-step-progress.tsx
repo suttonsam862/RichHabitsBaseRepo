@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import AiGeneratedItems from "./ai-generated-items";
+import CustomLineItemsEditor from "./custom-line-items-editor";
 import { 
   CheckCircle2, 
   Circle, 
@@ -496,31 +497,27 @@ export default function LeadStepProgress({ lead, isAdmin = false }) {
                               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                             />
                           ) : field.type === "custom-line-items" ? (
-                            <div className="space-y-4 border border-input rounded-md p-4 bg-muted/10">
-                              <p className="text-sm text-muted-foreground">
-                                Add custom line items from your client conversation
-                              </p>
-                              
-                              {/* Line items section - placeholder until we implement the full component */}
-                              <div className="flex flex-col space-y-2">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="w-full"
-                                  onClick={() => {
-                                    // This will be replaced with a proper line item editor component
-                                    toast({
-                                      title: "Feature In Development",
-                                      description: "The custom line items editor will be available soon.",
-                                    });
-                                  }}
-                                  disabled={isCompleted || isSubmitting || !canUpdateLead()}
-                                >
-                                  <Plus className="h-4 w-4 mr-1" />
-                                  Add Line Item
-                                </Button>
-                              </div>
-                            </div>
+                            <CustomLineItemsEditor
+                              value={formValues[field.name] ? (
+                                typeof formValues[field.name] === 'string' 
+                                  ? (() => {
+                                      try {
+                                        return JSON.parse(formValues[field.name]);
+                                      } catch (e) {
+                                        console.error('Error parsing line items JSON:', e);
+                                        return [];
+                                      }
+                                    })()
+                                  : formValues[field.name]
+                              ) : []}
+                              onChange={(items) => {
+                                setFormValues(prev => ({
+                                  ...prev,
+                                  [field.name]: items
+                                }));
+                              }}
+                              disabled={isCompleted || isSubmitting || !canUpdateLead()}
+                            />
                           ) : (
                             <input
                               type="text"

@@ -1,0 +1,6 @@
+{
+  "livePreview": {
+    "port": 5173,
+    "defaultUrl": "http://localhost:5173"
+  }
+} 

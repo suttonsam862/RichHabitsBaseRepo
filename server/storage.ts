@@ -116,7 +116,7 @@ import {
   type RegistrationCommunication,
   type InsertRegistrationCommunication
 } from "@shared/schema";
-import { db } from "./db";
+import { db, supabase } from "./db";
 import { eq, desc, sql, and, or, isNull, isNotNull, notExists, asc, inArray } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";

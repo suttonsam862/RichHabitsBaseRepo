@@ -68,6 +68,83 @@ export function isAdmin(req: Request, res: Response, next: NextFunction) {
   res.status(403).json({ error: "Forbidden: Admin access required" });
 }
 
+// Separate strategies for admin/staff and customers
+passport.use('staff', new LocalStrategy(
+  {
+    usernameField: "username",
+    passwordField: "password",
+  },
+  async (username, password, done) => {
+    try {
+      console.log("Staff auth attempt with username:", username);
+      
+      // First try to find the user by username
+      let user = await storage.getUserByUsername(username);
+      
+      // If not found by username, try by email
+      if (!user) {
+        user = await storage.getUserByEmail(username);
+      }
+      
+      if (!user || user.role === ROLES.VIEWER) {
+        console.log("Staff member not found or insufficient privileges");
+        return done(null, false, { message: "Invalid credentials or insufficient privileges" });
+      }
+      
+      console.log("Staff member found, validating password...");
+      const isValid = await comparePasswords(password, user.password);
+      if (!isValid) {
+        console.log("Invalid password");
+        return done(null, false, { message: "Invalid credentials" });
+      }
+      
+      console.log("Staff authentication successful for user:", user.id);
+      return done(null, user);
+    } catch (error) {
+      console.error("Staff authentication error:", error);
+      return done(error);
+    }
+  }
+));
+
+passport.use('customer', new LocalStrategy(
+  {
+    usernameField: "username",
+    passwordField: "password",
+  },
+  async (username, password, done) => {
+    try {
+      console.log("Customer auth attempt with username:", username);
+      
+      // First try to find the user by username
+      let user = await storage.getUserByUsername(username);
+      
+      // If not found by username, try by email
+      if (!user) {
+        user = await storage.getUserByEmail(username);
+      }
+      
+      if (!user || user.role !== ROLES.VIEWER) {
+        console.log("Customer not found or invalid role");
+        return done(null, false, { message: "Invalid credentials" });
+      }
+      
+      console.log("Customer found, validating password...");
+      const isValid = await comparePasswords(password, user.password);
+      if (!isValid) {
+        console.log("Invalid password");
+        return done(null, false, { message: "Invalid credentials" });
+      }
+      
+      console.log("Customer authentication successful for user:", user.id);
+      return done(null, user);
+    } catch (error) {
+      console.error("Customer authentication error:", error);
+      return done(error);
+    }
+  }
+));
+
 export function setupAuth(app: Express) {
   // Very simple in-memory session configuration
   // Very simple session configuration
@@ -87,46 +164,6 @@ export function setupAuth(app: Express) {
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
-
-  passport.use(
-    new LocalStrategy(
-      {
-        usernameField: "username", // Changed from "email" to "username"
-        passwordField: "password",
-      },
-      async (username, password, done) => {
-        try {
-          console.log("Auth attempt with username:", username);
-          
-          // First try to find the user by username
-          let user = await storage.getUserByUsername(username);
-          
-          // If not found by username, try by email
-          if (!user) {
-            user = await storage.getUserByEmail(username);
-          }
-          
-          if (!user) {
-            console.log("User not found for login attempt");
-            return done(null, false, { message: "Invalid username/email or password" });
-          }
-          
-          console.log("User found, validating password...");
-          const isValid = await comparePasswords(password, user.password);
-          if (!isValid) {
-            console.log("Invalid password");
-            return done(null, false, { message: "Invalid username/email or password" });
-          }
-          
-          console.log("Authentication successful for user:", user.id);
-          return done(null, user);
-        } catch (error) {
-          console.error("Authentication error:", error);
-          return done(error);
-        }
-      }
-    )
-  );
 
   passport.serializeUser((user: any, done) => {
     done(null, user.id);
@@ -256,8 +293,9 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err: any, user: any, info: any) => {
+  // Staff/Admin login route
+  app.post("/api/staff/login", (req, res, next) => {
+    passport.authenticate("staff", (err: any, user: any, info: any) => {
       if (err) {
         return res.status(500).json({ error: "Authentication error" });
       }
@@ -280,6 +318,88 @@ export function setupAuth(app: Express) {
           } 
         });
       });
+    })(req, res, next);
+  });
+
+  // Customer login route
+  app.post("/api/customer/login", (req, res, next) => {
+    passport.authenticate("customer", (err: any, user: any, info: any) => {
+      if (err) {
+        return res.status(500).json({ error: "Authentication error" });
+      }
+      if (!user) {
+        return res.status(401).json({ error: info?.message || "Invalid credentials" });
+      }
+      req.login(user, (err: any) => {
+        if (err) {
+          return res.status(500).json({ error: "Login error" });
+        }
+        return res.json({ 
+          user: {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            fullName: user.fullName,
+            role: user.role,
+            permissions: user.permissions,
+            visiblePages: user.visiblePages,
+          } 
+        });
+      });
+    })(req, res, next);
+  });
+
+  // Keep the existing /api/login as a fallback that tries both strategies
+  app.post("/api/login", (req, res, next) => {
+    // Try staff login first
+    passport.authenticate("staff", (err: any, user: any, info: any) => {
+      if (err) {
+        return res.status(500).json({ error: "Authentication error" });
+      }
+      if (user) {
+        req.login(user, (err: any) => {
+          if (err) {
+            return res.status(500).json({ error: "Login error" });
+          }
+          return res.json({ 
+            user: {
+              id: user.id,
+              email: user.email,
+              username: user.username,
+              fullName: user.fullName,
+              role: user.role,
+              permissions: user.permissions,
+              visiblePages: user.visiblePages,
+            } 
+          });
+        });
+      } else {
+        // If staff login fails, try customer login
+        passport.authenticate("customer", (err: any, user: any, info: any) => {
+          if (err) {
+            return res.status(500).json({ error: "Authentication error" });
+          }
+          if (!user) {
+            return res.status(401).json({ error: info?.message || "Invalid credentials" });
+          }
+          req.login(user, (err: any) => {
+            if (err) {
+              return res.status(500).json({ error: "Login error" });
+            }
+            return res.json({ 
+              user: {
+                id: user.id,
+                email: user.email,
+                username: user.username,
+                fullName: user.fullName,
+                role: user.role,
+                permissions: user.permissions,
+                visiblePages: user.visiblePages,
+              } 
+            });
+          });
+        })(req, res, next);
+      }
     })(req, res, next);
   });
 

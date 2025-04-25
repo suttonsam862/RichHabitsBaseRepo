@@ -2,6 +2,16 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import * as crypto from "crypto";
+import * as dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { setupAuth } from "./auth";
+import { errorHandler } from "./middleware/error-handler";
+
+// Load environment variables from config.env
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '../config.env') });
 
 // Generate a random SESSION_SECRET if one isn't provided
 if (!process.env.SESSION_SECRET) {
@@ -60,34 +70,43 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
-  const server = await registerRoutes(app);
+// Setup authentication
+setupAuth(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+// Register routes
+await registerRoutes(app);
 
-    res.status(status).json({ message });
-    throw err;
+// Error handling middleware
+app.use(errorHandler);
+
+// Importantly only setup vite in development and after
+// setting up all the other routes so the catch-all route
+// doesn't interfere with the other routes
+if (app.get("env") === "development") {
+  await setupVite(app);
+} else {
+  serveStatic(app);
+}
+
+// Start server
+const port = process.env.PORT || 3000;
+const server = app.listen(port, () => {
+  log(`serving on port ${port}`);
+});
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
   });
+});
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-
-  // Using port 5000 to match Replit workflow expectations in .replit
-  // The workflow is configured to wait for port 5000
-  const port = process.env.PORT || 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0", 
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
+process.on('SIGINT', () => {
+  console.log('SIGINT signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
   });
-})();
+});
